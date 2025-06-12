@@ -1,7 +1,10 @@
 // #![cfg(feature = "test-sbf")]
 
 use anchor_lang::{AnchorDeserialize, InstructionData, ToAccountMetas};
-use create_and_update::{DataAccount, ExistingCompressedAccountIxData, NewCompressedAccountIxData, FIRST_SEED, SECOND_SEED};
+use create_and_update::{
+    DataAccount, ExistingCompressedAccountIxData, NewCompressedAccountIxData, FIRST_SEED,
+    SECOND_SEED,
+};
 use light_client::indexer::{CompressedAccount, TreeInfo};
 use light_program_test::{
     program_test::LightProgramTest, AddressWithTree, Indexer, ProgramTestConfig, Rpc, RpcError,

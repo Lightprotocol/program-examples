@@ -1,0 +1,61 @@
+name: Lint and Format
+
+on:
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  RUSTFLAGS: "-D warnings"
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    name: Rust Lint and Format
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+
+      - name: Cache Rust dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-lint-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-lint-
+            ${{ runner.os }}-cargo-
+
+      - name: Check formatting
+        run: cargo fmt --all --check
+
+      - name: Run clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
+      - name: Run clippy (create-and-update)
+        run: cargo clippy --manifest-path create-and-update/Cargo.toml --all-targets --all-features -- -D warnings
+
+      - name: Run clippy (counter/anchor)
+        run: cargo clippy --manifest-path counter/anchor/Cargo.toml --all-targets --all-features -- -D warnings
+
+      - name: Run clippy (counter/native) 
+        run: cargo clippy --manifest-path counter/native/Cargo.toml --all-targets --all-features -- -D warnings
+
+      - name: Run clippy (counter/pinocchio)
+        run: cargo clippy --manifest-path counter/pinocchio/Cargo.toml --all-targets --all-features -- -D warnings
+
+      - name: Run clippy (account-comparison)
+        run: cargo clippy --manifest-path account-comparison/Cargo.toml --all-targets --all-features -- -D warnings

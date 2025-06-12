@@ -1,10 +1,9 @@
 #![cfg(feature = "test-sbf")]
 
-
 use borsh::{BorshDeserialize, BorshSerialize};
 use counter::{
-    CloseCounterInstructionData, CreateCounterInstructionData, DecrementCounterInstructionData,
-    IncrementCounterInstructionData, ResetCounterInstructionData, CounterAccount,
+    CloseCounterInstructionData, CounterAccount, CreateCounterInstructionData,
+    DecrementCounterInstructionData, IncrementCounterInstructionData, ResetCounterInstructionData,
 };
 use light_client::indexer::CompressedAccount;
 use light_program_test::{
@@ -133,7 +132,11 @@ pub async fn create_counter(
     let instruction = Instruction {
         program_id: counter::ID.into(),
         accounts,
-        data: [&[counter::InstructionType::CreateCounter as u8][..], &inputs[..]].concat(),
+        data: [
+            &[counter::InstructionType::CreateCounter as u8][..],
+            &inputs[..],
+        ]
+        .concat(),
     };
 
     rpc.create_and_send_transaction(&[instruction], &payer.pubkey(), &[payer])
@@ -163,9 +166,9 @@ pub async fn increment_counter(
         .state_trees
         .unwrap();
 
-    let counter_account = CounterAccount::deserialize(
-        &mut compressed_account.data.as_ref().unwrap().data.as_slice()
-    ).unwrap();
+    let counter_account =
+        CounterAccount::deserialize(&mut compressed_account.data.as_ref().unwrap().data.as_slice())
+            .unwrap();
 
     let meta = CompressedAccountMeta {
         tree_info: packed_accounts.packed_tree_infos[0],
@@ -184,7 +187,11 @@ pub async fn increment_counter(
     let instruction = Instruction {
         program_id: counter::ID.into(),
         accounts,
-        data: [&[counter::InstructionType::IncrementCounter as u8][..], &inputs[..]].concat(),
+        data: [
+            &[counter::InstructionType::IncrementCounter as u8][..],
+            &inputs[..],
+        ]
+        .concat(),
     };
 
     rpc.create_and_send_transaction(&[instruction], &payer.pubkey(), &[payer])
@@ -214,9 +221,9 @@ pub async fn decrement_counter(
         .state_trees
         .unwrap();
 
-    let counter_account = CounterAccount::deserialize(
-        &mut compressed_account.data.as_ref().unwrap().data.as_slice()
-    ).unwrap();
+    let counter_account =
+        CounterAccount::deserialize(&mut compressed_account.data.as_ref().unwrap().data.as_slice())
+            .unwrap();
 
     let meta = CompressedAccountMeta {
         tree_info: packed_accounts.packed_tree_infos[0],
@@ -235,7 +242,11 @@ pub async fn decrement_counter(
     let instruction = Instruction {
         program_id: counter::ID.into(),
         accounts,
-        data: [&[counter::InstructionType::DecrementCounter as u8][..], &inputs[..]].concat(),
+        data: [
+            &[counter::InstructionType::DecrementCounter as u8][..],
+            &inputs[..],
+        ]
+        .concat(),
     };
 
     rpc.create_and_send_transaction(&[instruction], &payer.pubkey(), &[payer])
@@ -265,9 +276,9 @@ pub async fn reset_counter(
         .state_trees
         .unwrap();
 
-    let counter_account = CounterAccount::deserialize(
-        &mut compressed_account.data.as_ref().unwrap().data.as_slice()
-    ).unwrap();
+    let counter_account =
+        CounterAccount::deserialize(&mut compressed_account.data.as_ref().unwrap().data.as_slice())
+            .unwrap();
 
     let meta = CompressedAccountMeta {
         tree_info: packed_accounts.packed_tree_infos[0],
@@ -286,7 +297,11 @@ pub async fn reset_counter(
     let instruction = Instruction {
         program_id: counter::ID.into(),
         accounts,
-        data: [&[counter::InstructionType::ResetCounter as u8][..], &inputs[..]].concat(),
+        data: [
+            &[counter::InstructionType::ResetCounter as u8][..],
+            &inputs[..],
+        ]
+        .concat(),
     };
 
     rpc.create_and_send_transaction(&[instruction], &payer.pubkey(), &[payer])
@@ -316,9 +331,9 @@ pub async fn close_counter(
         .state_trees
         .unwrap();
 
-    let counter_account = CounterAccount::deserialize(
-        &mut compressed_account.data.as_ref().unwrap().data.as_slice()
-    ).unwrap();
+    let counter_account =
+        CounterAccount::deserialize(&mut compressed_account.data.as_ref().unwrap().data.as_slice())
+            .unwrap();
 
     let meta_close = CompressedAccountMetaClose {
         tree_info: packed_accounts.packed_tree_infos[0],
@@ -336,7 +351,11 @@ pub async fn close_counter(
     let instruction = Instruction {
         program_id: counter::ID.into(),
         accounts,
-        data: [&[counter::InstructionType::CloseCounter as u8][..], &inputs[..]].concat(),
+        data: [
+            &[counter::InstructionType::CloseCounter as u8][..],
+            &inputs[..],
+        ]
+        .concat(),
     };
 
     rpc.create_and_send_transaction(&[instruction], &payer.pubkey(), &[payer])

@@ -87,7 +87,8 @@ pub mod create_and_update {
         // Create new compressed account
         let (new_address, new_address_seed) = derive_address(
             &[SECOND_SEED, ctx.accounts.signer.key().as_ref()],
-            &new_account.address_tree_info
+            &new_account
+                .address_tree_info
                 .get_tree_pubkey(&light_cpi_accounts)
                 .map_err(|_| ErrorCode::AccountNotEnoughKeys)?,
             &crate::ID,
@@ -124,7 +125,9 @@ pub mod create_and_update {
                     .to_account_info()
                     .map_err(ProgramError::from)?,
             ],
-            vec![new_account.address_tree_info.into_new_address_params_packed(new_address_seed)],
+            vec![new_account
+                .address_tree_info
+                .into_new_address_params_packed(new_address_seed)],
         );
 
         cpi_inputs
