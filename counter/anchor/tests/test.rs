@@ -135,7 +135,6 @@ where
         )
         .await?
         .value;
-
     let output_state_tree_index = rpc
         .get_random_state_tree_info()?
         .pack_output_tree_index(&mut remaining_accounts)?;
