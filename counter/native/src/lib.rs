@@ -109,10 +109,13 @@ impl From<CounterError> for ProgramError {
 }
 
 pub fn process_instruction(
-    _program_id: &Pubkey,
+    program_id: &Pubkey,
     accounts: &[AccountInfo],
     instruction_data: &[u8],
 ) -> Result<(), ProgramError> {
+    if program_id != &crate::ID {
+        return Err(ProgramError::IncorrectProgramId);
+    }
     if instruction_data.is_empty() {
         return Err(ProgramError::InvalidInstructionData);
     }

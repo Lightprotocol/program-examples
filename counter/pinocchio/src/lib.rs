@@ -15,10 +15,7 @@ use light_sdk_pinocchio::{
     LightDiscriminator, LightHasher, ValidityProof,
 };
 use pinocchio::{
-    account_info::AccountInfo,
-    entrypoint,
-    program_error::ProgramError,
-    pubkey::Pubkey,
+    account_info::AccountInfo, entrypoint, program_error::ProgramError, pubkey::Pubkey,
 };
 
 pub const ID: Pubkey = pubkey_array!("GRLu2hKaAiMbxpkAM1HeXzks9YeGuz18SEgXEizVvPqX");
@@ -59,7 +56,6 @@ pub struct CounterAccount {
     pub owner: Pubkey,
     pub value: u64,
 }
-
 
 #[derive(BorshSerialize, BorshDeserialize)]
 pub struct CreateCounterInstructionData {
@@ -114,10 +110,13 @@ impl From<CounterError> for ProgramError {
 }
 
 pub fn process_instruction(
-    _program_id: &Pubkey,
+    program_id: &Pubkey,
     accounts: &[AccountInfo],
     instruction_data: &[u8],
 ) -> Result<(), ProgramError> {
+    if program_id != &crate::ID {
+        return Err(ProgramError::IncorrectProgramId);
+    }
     if instruction_data.is_empty() {
         return Err(ProgramError::InvalidInstructionData);
     }
@@ -127,28 +126,33 @@ pub fn process_instruction(
 
     match discriminator {
         InstructionType::CreateCounter => {
-            let instruction_data = CreateCounterInstructionData::try_from_slice(&instruction_data[1..])
-                .map_err(|_| ProgramError::InvalidInstructionData)?;
+            let instruction_data =
+                CreateCounterInstructionData::try_from_slice(&instruction_data[1..])
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
             create_counter(accounts, instruction_data)
         }
         InstructionType::IncrementCounter => {
-            let instruction_data = IncrementCounterInstructionData::try_from_slice(&instruction_data[1..])
-                .map_err(|_| ProgramError::InvalidInstructionData)?;
+            let instruction_data =
+                IncrementCounterInstructionData::try_from_slice(&instruction_data[1..])
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
             increment_counter(accounts, instruction_data)
         }
         InstructionType::DecrementCounter => {
-            let instruction_data = DecrementCounterInstructionData::try_from_slice(&instruction_data[1..])
-                .map_err(|_| ProgramError::InvalidInstructionData)?;
+            let instruction_data =
+                DecrementCounterInstructionData::try_from_slice(&instruction_data[1..])
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
             decrement_counter(accounts, instruction_data)
         }
         InstructionType::ResetCounter => {
-            let instruction_data = ResetCounterInstructionData::try_from_slice(&instruction_data[1..])
-                .map_err(|_| ProgramError::InvalidInstructionData)?;
+            let instruction_data =
+                ResetCounterInstructionData::try_from_slice(&instruction_data[1..])
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
             reset_counter(accounts, instruction_data)
         }
         InstructionType::CloseCounter => {
-            let instruction_data = CloseCounterInstructionData::try_from_slice(&instruction_data[1..])
-                .map_err(|_| ProgramError::InvalidInstructionData)?;
+            let instruction_data =
+                CloseCounterInstructionData::try_from_slice(&instruction_data[1..])
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
             close_counter(accounts, instruction_data)
         }
     }
@@ -211,10 +215,7 @@ pub fn increment_counter(
     )
     .map_err(ProgramError::from)?;
 
-    counter.value = counter
-        .value
-        .checked_add(1)
-        .ok_or(CounterError::Overflow)?;
+    counter.value = counter.value.checked_add(1).ok_or(CounterError::Overflow)?;
 
     let light_cpi_accounts = CpiAccounts::new(signer, &accounts[1..], LIGHT_CPI_SIGNER);
 
