@@ -185,7 +185,6 @@ pub fn create_counter(
 
     let cpi = CpiInputs::new_with_address(
         instuction_data.proof,
-        // vec![],
         vec![counter.to_account_info().map_err(ProgramError::from)?],
         vec![new_address_params],
     );

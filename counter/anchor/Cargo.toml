@@ -1,41 +1,12 @@
-[package]
-name = "counter"
-version = "0.0.11"
-description = "Created with Anchor"
-edition = "2021"
-license = "Apache-2.0"
+[workspace]
+members = ["programs/*"]
+resolver = "2"
 
-[lib]
-crate-type = ["cdylib", "lib"]
-name = "counter"
-
-[features]
-no-entrypoint = []
-no-idl = []
-cpi = ["no-entrypoint"]
-default = ["idl-build"]
-test-sbf = []
-idl-build = ["anchor-lang/idl-build", "light-sdk/idl-build"]
-
-[dependencies]
-anchor-lang = "0.31.1"
-light-hasher = { git = "https://github.com/lightprotocol/light-protocol.git", rev = "b2a236409bb7797615d217fbf4fff498c852d25e", features = [
-    "solana",
-] }
-light-sdk = { git = "https://github.com/lightprotocol/light-protocol.git", rev = "b2a236409bb7797615d217fbf4fff498c852d25e", features = [
-    "anchor",
-] }
-light-sdk-types = { git = "https://github.com/lightprotocol/light-protocol.git", rev = "b2a236409bb7797615d217fbf4fff498c852d25e", features = [
-    "anchor",
-] }
-
-[dev-dependencies]
-light-client = { git = "https://github.com/lightprotocol/light-protocol.git", rev = "b2a236409bb7797615d217fbf4fff498c852d25e" }
-solana-keypair = "2.2"
-solana-message = "2.2"
-solana-pubkey = { version = "2.2", features = ["curve25519", "sha2"] }
-solana-signer = "2.2"
-solana-transaction = "2.2"
-light-program-test = { git = "https://github.com/lightprotocol/light-protocol.git", rev = "b2a236409bb7797615d217fbf4fff498c852d25e" }
-tokio = "1.43.0"
-solana-sdk = "2.2"
+[profile.release]
+overflow-checks = true
+lto = "fat"
+codegen-units = 1
+[profile.release.build-override]
+opt-level = 3
+incremental = false
+codegen-units = 1
