@@ -1,7 +1,7 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Program, web3 } from "@coral-xyz/anchor";
-import { {{rust-name-camel-case}} } from "../target/types/{{rust-name-snake-case}}";
-import idl from "../target/idl/{{rust-name-snake-case}}.json";
+import { Counter } from "../target/types/counter";
+import idl from "../target/idl/counter.json";
 import {
   bn,
   CompressedAccountWithMerkleContext,
@@ -23,7 +23,7 @@ const anchorWalletPath = path.join(os.homedir(), ".config/solana/id.json");
 process.env.ANCHOR_WALLET = anchorWalletPath;
 
 describe("test-anchor", () => {
-  const program = anchor.workspace.{{rust-name-camel-case}} as Program<{{rust-name-camel-case}}>;
+  const program = anchor.workspace.Counter as Program<Counter>;
   const coder = new anchor.BorshCoder(idl as anchor.Idl);
 
   it("", async () => {
@@ -34,7 +34,7 @@ describe("test-anchor", () => {
       "http://127.0.0.1:3001",
       {
         commitment: "confirmed",
-      },
+      }
     );
     let lamports = web3.LAMPORTS_PER_SOL;
     await rpc.requestAirdrop(signer.publicKey, lamports);
@@ -47,7 +47,7 @@ describe("test-anchor", () => {
     const counterSeed = new TextEncoder().encode("counter");
     const seed = deriveAddressSeed(
       [counterSeed, signer.publicKey.toBytes()],
-      new web3.PublicKey(program.idl.address),
+      new web3.PublicKey(program.idl.address)
     );
     const address = deriveAddress(seed, addressTree);
     // Create counter compressed account.
@@ -58,7 +58,7 @@ describe("test-anchor", () => {
       address,
       program,
       outputMerkleTree,
-      signer,
+      signer
     );
     // Wait for indexer to catch up.
     await sleep(2000);
@@ -66,19 +66,19 @@ describe("test-anchor", () => {
     let counterAccount = await rpc.getCompressedAccount(bn(address.toBytes()));
 
     let counter = coder.types.decode(
-      "CounterCompressedAccount",
-      counterAccount.data.data,
+      "CounterAccount",
+      counterAccount.data.data
     );
     console.log("counter account ", counterAccount);
     console.log("des counter ", counter);
 
     await incrementCounterCompressedAccount(
       rpc,
-      counter.counter,
+      counter.value,
       counterAccount,
       program,
       outputMerkleTree,
-      signer,
+      signer
     );
 
     // Wait for indexer to catch up.
@@ -86,26 +86,26 @@ describe("test-anchor", () => {
 
     counterAccount = await rpc.getCompressedAccount(bn(address.toBytes()));
     counter = coder.types.decode(
-      "CounterCompressedAccount",
-      counterAccount.data.data,
+      "CounterAccount",
+      counterAccount.data.data
     );
     console.log("counter account ", counterAccount);
     console.log("des counter ", counter);
 
     await deleteCounterCompressedAccount(
       rpc,
-      counter.counter,
+      counter.value,
       counterAccount,
       program,
       outputMerkleTree,
-      signer,
+      signer
     );
 
     // Wait for indexer to catch up.
     await sleep(2000);
 
     const deletedCounterAccount = await rpc.getCompressedAccount(
-      bn(address.toBytes()),
+      bn(address.toBytes())
     );
     console.log("deletedCounterAccount ", deletedCounterAccount);
   });
@@ -116,9 +116,9 @@ async function CreateCounterCompressedAccount(
   addressTree: anchor.web3.PublicKey,
   addressQueue: anchor.web3.PublicKey,
   address: anchor.web3.PublicKey,
-  program: anchor.Program<{{rust-name-camel-case}}>,
+  program: anchor.Program<Counter>,
   outputMerkleTree: anchor.web3.PublicKey,
-  signer: anchor.web3.Keypair,
+  signer: anchor.web3.Keypair
 ) {
   {
     const proofRpcResult = await rpc.getValidityProofV0(
@@ -129,7 +129,7 @@ async function CreateCounterCompressedAccount(
           queue: addressQueue,
           address: bn(address.toBytes()),
         },
-      ],
+      ]
     );
     const systemAccountConfig = SystemAccountMetaConfig.new(program.programId);
     let remainingAccounts =
@@ -153,7 +153,7 @@ async function CreateCounterCompressedAccount(
       units: 1000000,
     });
     let tx = await program.methods
-      .create(proof, packedAddreesMerkleContext, outputMerkleTreeIndex)
+      .createCounter(proof, packedAddreesMerkleContext, outputMerkleTreeIndex)
       .accounts({
         signer: signer.publicKey,
       })
@@ -174,9 +174,9 @@ async function incrementCounterCompressedAccount(
   rpc: Rpc,
   counterValue: anchor.BN,
   counterAccount: CompressedAccountWithMerkleContext,
-  program: anchor.Program<{{rust-name-camel-case}}>,
+  program: anchor.Program<Counter>,
   outputMerkleTree: anchor.web3.PublicKey,
-  signer: anchor.web3.Keypair,
+  signer: anchor.web3.Keypair
 ) {
   {
     const proofRpcResult = await rpc.getValidityProofV0(
@@ -187,31 +187,30 @@ async function incrementCounterCompressedAccount(
           queue: counterAccount.treeInfo.queue,
         },
       ],
-      [],
+      []
     );
     const systemAccountConfig = SystemAccountMetaConfig.new(program.programId);
     let remainingAccounts =
       PackedAccounts.newWithSystemAccounts(systemAccountConfig);
 
     const merkleTreePubkeyIndex = remainingAccounts.insertOrGet(
-      counterAccount.treeInfo.tree,
+      counterAccount.treeInfo.tree
     );
     const queuePubkeyIndex = remainingAccounts.insertOrGet(
-      counterAccount.treeInfo.queue,
+      counterAccount.treeInfo.queue
     );
     const outputMerkleTreeIndex =
       remainingAccounts.insertOrGet(outputMerkleTree);
-
     const compressedAccountMeta = {
-      merkleContext: {
+      treeInfo: {
+        rootIndex: proofRpcResult.rootIndices[0],
+        proveByIndex: false,
         merkleTreePubkeyIndex,
         queuePubkeyIndex,
         leafIndex: counterAccount.leafIndex,
-        proveByIndex: false,
       },
-      rootIndex: proofRpcResult.rootIndices[0],
-      outputMerkleTreeIndex,
       address: counterAccount.address,
+      outputStateTreeIndex: outputMerkleTreeIndex,
     };
 
     let proof = {
@@ -221,7 +220,7 @@ async function incrementCounterCompressedAccount(
       units: 1000000,
     });
     let tx = await program.methods
-      .increment(proof, counterValue, compressedAccountMeta)
+      .incrementCounter(proof, counterValue, compressedAccountMeta)
       .accounts({
         signer: signer.publicKey,
       })
@@ -242,9 +241,9 @@ async function deleteCounterCompressedAccount(
   rpc: Rpc,
   counterValue: anchor.BN,
   counterAccount: CompressedAccountWithMerkleContext,
-  program: anchor.Program<{{rust-name-camel-case}}>,
+  program: anchor.Program<Counter>,
   outputMerkleTree: anchor.web3.PublicKey,
-  signer: anchor.web3.Keypair,
+  signer: anchor.web3.Keypair
 ) {
   {
     const proofRpcResult = await rpc.getValidityProofV0(
@@ -255,30 +254,29 @@ async function deleteCounterCompressedAccount(
           queue: counterAccount.treeInfo.queue,
         },
       ],
-      [],
+      []
     );
     const systemAccountConfig = SystemAccountMetaConfig.new(program.programId);
     let remainingAccounts =
       PackedAccounts.newWithSystemAccounts(systemAccountConfig);
 
     const merkleTreePubkeyIndex = remainingAccounts.insertOrGet(
-      counterAccount.treeInfo.tree,
+      counterAccount.treeInfo.tree
     );
     const queuePubkeyIndex = remainingAccounts.insertOrGet(
-      counterAccount.treeInfo.queue,
+      counterAccount.treeInfo.queue
     );
     const outputMerkleTreeIndex =
       remainingAccounts.insertOrGet(outputMerkleTree);
 
     const compressedAccountMeta = {
-      merkleContext: {
+      treeInfo: {
+        rootIndex: proofRpcResult.rootIndices[0],
+        proveByIndex: false,
         merkleTreePubkeyIndex,
         queuePubkeyIndex,
         leafIndex: counterAccount.leafIndex,
-        proveByIndex: false,
       },
-      rootIndex: proofRpcResult.rootIndices[0],
-      outputMerkleTreeIndex,
       address: counterAccount.address,
     };
 
@@ -289,7 +287,7 @@ async function deleteCounterCompressedAccount(
       units: 1000000,
     });
     let tx = await program.methods
-      .delete(proof, counterValue, compressedAccountMeta)
+      .closeCounter(proof, counterValue, compressedAccountMeta)
       .accounts({
         signer: signer.publicKey,
       })
@@ -313,7 +311,7 @@ class PackedAccounts {
   private map: Map<web3.PublicKey, [number, web3.AccountMeta]> = new Map();
 
   static newWithSystemAccounts(
-    config: SystemAccountMetaConfig,
+    config: SystemAccountMetaConfig
   ): PackedAccounts {
     const instance = new PackedAccounts();
     instance.addSystemAccounts(config);
@@ -347,7 +345,7 @@ class PackedAccounts {
   insertOrGetConfig(
     pubkey: web3.PublicKey,
     isSigner: boolean,
-    isWritable: boolean,
+    isWritable: boolean
   ): number {
     const entry = this.map.get(pubkey);
     if (entry) {
@@ -400,7 +398,7 @@ class SystemAccountMetaConfig {
     selfProgram: web3.PublicKey,
     cpiContext?: web3.PublicKey,
     solCompressionRecipient?: web3.PublicKey,
-    solPoolPda?: web3.PublicKey,
+    solPoolPda?: web3.PublicKey
   ) {
     this.selfProgram = selfProgram;
     this.cpiContext = cpiContext;
@@ -414,19 +412,19 @@ class SystemAccountMetaConfig {
 
   static newWithCpiContext(
     selfProgram: web3.PublicKey,
-    cpiContext: web3.PublicKey,
+    cpiContext: web3.PublicKey
   ): SystemAccountMetaConfig {
     return new SystemAccountMetaConfig(selfProgram, cpiContext);
   }
 }
 
 function getLightSystemAccountMetas(
-  config: SystemAccountMetaConfig,
+  config: SystemAccountMetaConfig
 ): web3.AccountMeta[] {
   let signerSeed = new TextEncoder().encode("cpi_authority");
   const cpiSigner = web3.PublicKey.findProgramAddressSync(
     [signerSeed],
-    config.selfProgram,
+    config.selfProgram
   )[0];
   const defaults = SystemAccountPubkeys.default();
   const metas: web3.AccountMeta[] = [
@@ -495,7 +493,7 @@ class SystemAccountPubkeys {
     accountCompressionAuthority: web3.PublicKey,
     registeredProgramPda: web3.PublicKey,
     noopProgram: web3.PublicKey,
-    solPoolPda: web3.PublicKey,
+    solPoolPda: web3.PublicKey
   ) {
     this.lightSystemProgram = lightSystemProgram;
     this.systemProgram = systemProgram;
@@ -514,7 +512,7 @@ class SystemAccountPubkeys {
       defaultStaticAccountsStruct().accountCompressionAuthority,
       defaultStaticAccountsStruct().registeredProgramPda,
       defaultStaticAccountsStruct().noopProgram,
-      web3.PublicKey.default,
+      web3.PublicKey.default
     );
   }
 }

@@ -91,6 +91,8 @@ pub mod counter {
             },
         )
         .map_err(ProgramError::from)?;
+        msg!("counter {}", counter.value);
+        msg!("counter {:?}", counter);
 
         counter.value = counter.value.checked_add(1).ok_or(CustomError::Overflow)?;
 
@@ -238,9 +240,9 @@ pub struct GenericAnchorAccounts<'info> {
     pub signer: Signer<'info>,
 }
 
-#[derive(
-    Clone, Debug, Default, AnchorDeserialize, AnchorSerialize, LightDiscriminator, LightHasher,
-)]
+// declared as event so that it is part of the idl.
+#[event]
+#[derive(Clone, Debug, Default, LightDiscriminator, LightHasher)]
 pub struct CounterAccount {
     #[hash]
     pub owner: Pubkey,

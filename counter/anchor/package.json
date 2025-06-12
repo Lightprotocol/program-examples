@@ -7,7 +7,7 @@
   },
   "dependencies": {
     "@coral-xyz/anchor": "0.31.1",
-    "@lightprotocol/stateless.js": "0.24.2",
+    "@lightprotocol/stateless.js": "0.21.0",
     "dotenv": "^16.5.0"
   },
   "devDependencies": {
