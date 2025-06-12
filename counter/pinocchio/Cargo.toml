@@ -1,0 +1,43 @@
+[package]
+name = "counter"
+version = "1.0.0"
+description = "Pinocchio counter program using light protocol"
+repository = "https://github.com/Lightprotocol/program-examples"
+license = "Apache-2.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "counter"
+
+[features]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+cpi = ["no-entrypoint"]
+test-sbf = []
+default = []
+
+[dependencies]
+light-sdk-pinocchio = { git = "https://github.com/lightprotocol/light-protocol.git", rev = "b2a236409bb7797615d217fbf4fff498c852d25e", features = ["v2"] }
+light-sdk-types = { git = "https://github.com/lightprotocol/light-protocol.git", rev = "b2a236409bb7797615d217fbf4fff498c852d25e" }
+light-hasher = { git = "https://github.com/lightprotocol/light-protocol.git", rev = "b2a236409bb7797615d217fbf4fff498c852d25e" }
+pinocchio = "0.8.4"
+light-macros = { git = "https://github.com/lightprotocol/light-protocol.git", rev = "b2a236409bb7797615d217fbf4fff498c852d25e" }
+borsh = "0.10.4"
+
+[dev-dependencies]
+light-program-test = { git = "https://github.com/lightprotocol/light-protocol.git", rev = "b2a236409bb7797615d217fbf4fff498c852d25e" }
+light-client = { git = "https://github.com/lightprotocol/light-protocol.git", rev = "b2a236409bb7797615d217fbf4fff498c852d25e" }
+tokio = "1.43.0"
+solana-sdk = "2.2"
+light-hasher = { git = "https://github.com/lightprotocol/light-protocol.git", rev = "b2a236409bb7797615d217fbf4fff498c852d25e", features = ["solana"] }
+light-compressed-account = { git = "https://github.com/lightprotocol/light-protocol.git", rev = "b2a236409bb7797615d217fbf4fff498c852d25e", features = ["solana"] }
+light-sdk = { git = "https://github.com/lightprotocol/light-protocol.git", rev = "b2a236409bb7797615d217fbf4fff498c852d25e" }
+
+[lints.rust.unexpected_cfgs]
+level = "allow"
+check-cfg = [
+    'cfg(target_os, values("solana"))',
+    'cfg(feature, values("frozen-abi", "no-entrypoint"))',
+]
