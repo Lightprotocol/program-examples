@@ -11,29 +11,39 @@ $ npm -g i @lightprotocol/zk-compression-cli
 
 ## Light Protocol Packages Used
 
-- `light-sdk` - Core SDK for compressed accounts in programs
+### Rust Packages
+- `light-sdk` - Core SDK for compressed accounts in native and anchor programs
+- `light-sdk-pinocchio` Core SDK for compressed accounts in pinocchio programs
 - `light-hasher` - Hashing utilities for ZK compression
-- `light-client` - Rpc client for interacting with compressed accounts
-- `light-program-test` - Testing utilities for compressed programs
+- `light-client` - RPC client and indexer for interacting with compressed accounts
+- `light-program-test` - Testing utilities for compressed programs.
 
-## Categories
 
-### Anchor
-Anchor framework examples using compressed accounts.
+### TypeScript/JavaScript Packages
+- `@lightprotocol/stateless.js` - Client library for interacting with compressed accounts
+- `@lightprotocol/zk-compression-cli` - Command-line tools for ZK compression development
 
-- [account-comparison](./anchor/account-comparison/) - Compare compressed vs regular Solana accounts
-- [counter](./anchor/counter/) - Simple counter using compressed accounts
+## Examples
 
-### Solana Program (Native)
-Coming soon.
+### Counter Program
+A counter program demonstrating compressed account operations (create, increment, decrement, reset, close) implemented in three different ways:
 
-### Pinocchio
-Coming soon.
+- **[counter/anchor](./counter/anchor/)** - Anchor framework implementation of a compressed counter account with Rust and TypeScript tests
+- **[counter/native](./counter/native/)** - Native Solana program implementation of a compressed counter account
+- **[counter/pinocchio](./counter/pinocchio/)** - Pinocchio SDK implementation of a compressed counter account
+
+### Other Examples
+
+- **[account-comparison](./account-comparison/)** - Compare compressed vs regular Solana accounts
+
 
 ## Getting Started
 
-Each example includes its own README with specific setup and usage instructions.
-
-## Contributing
-
-Add new examples following the existing structure with appropriate framework folders.
+1. install the light cli
+```bash
+$ npm -g i @lightprotocol/zk-compression-cli
+```
+2. instantiate a template Solana program with compressed accounts
+```bash
+$ light init <project-name>
+```
