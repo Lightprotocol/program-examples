@@ -13,9 +13,11 @@ use light_sdk::{
 
 declare_id!("HNqStLMpNuNJqhBF1FbGTKHEFbBLJmq8RdJJmZKWz6jH");
 
+/// CPI signer derived from the program ID for Light system program interactions
 pub const LIGHT_CPI_SIGNER: CpiSigner =
     derive_light_cpi_signer!("HNqStLMpNuNJqhBF1FbGTKHEFbBLJmq8RdJJmZKWz6jH");
 
+/// Seeds for deterministic address derivation
 pub const FIRST_SEED: &[u8] = b"first";
 pub const SECOND_SEED: &[u8] = b"second";
 
@@ -32,12 +34,14 @@ pub mod create_and_update {
         output_state_tree_index: u8,
         message: String,
     ) -> Result<()> {
+        // Setup CPI accounts for Light system program interaction
         let light_cpi_accounts = CpiAccounts::new(
             ctx.accounts.signer.as_ref(),
             ctx.remaining_accounts,
             crate::LIGHT_CPI_SIGNER,
         );
 
+        // Derive deterministic address using FIRST_SEED + signer pubkey
         let (address, address_seed) = derive_address(
             &[FIRST_SEED, ctx.accounts.signer.key().as_ref()],
             &address_tree_info
@@ -46,6 +50,7 @@ pub mod create_and_update {
             &crate::ID,
         );
 
+        // Initialize new compressed account with derived address
         let mut data_account = LightAccount::<'_, DataAccount>::new_init(
             &crate::ID,
             Some(address),
@@ -58,12 +63,15 @@ pub mod create_and_update {
             "Created compressed account with message: {}",
             data_account.message
         );
+
+        // Prepare CPI inputs with new account and address parameters
         let cpi_inputs = CpiInputs::new_with_address(
             proof,
             vec![data_account.to_account_info().map_err(ProgramError::from)?],
             vec![address_tree_info.into_new_address_params_packed(address_seed)],
         );
 
+        // Invoke Light system program to create the compressed account
         cpi_inputs
             .invoke_light_system_program(light_cpi_accounts)
             .map_err(ProgramError::from)?;
@@ -84,7 +92,7 @@ pub mod create_and_update {
             crate::LIGHT_CPI_SIGNER,
         );
 
-        // Create new compressed account
+        // Derive address for new account using SECOND_SEED
         let (new_address, new_address_seed) = derive_address(
             &[SECOND_SEED, ctx.accounts.signer.key().as_ref()],
             &new_account
@@ -94,6 +102,7 @@ pub mod create_and_update {
             &crate::ID,
         );
 
+        // Initialize new compressed account
         let mut new_data_account = LightAccount::<'_, DataAccount>::new_init(
             &crate::ID,
             Some(new_address),
@@ -102,6 +111,7 @@ pub mod create_and_update {
         new_data_account.owner = ctx.accounts.signer.key();
         new_data_account.message = new_account.message.clone();
 
+        // Create mutable reference to existing account for updates
         let mut updated_data_account = LightAccount::<'_, DataAccount>::new_mut(
             &crate::ID,
             &existing_account.account_meta,
@@ -112,9 +122,9 @@ pub mod create_and_update {
         )
         .map_err(ProgramError::from)?;
 
-        // Update the message
         updated_data_account.message = existing_account.update_message.clone();
 
+        // Batch both operations in single CPI call
         let cpi_inputs = CpiInputs::new_with_address(
             proof,
             vec![
@@ -156,7 +166,7 @@ pub mod create_and_update {
             crate::LIGHT_CPI_SIGNER,
         );
 
-        // Update first compressed account
+        // Create mutable reference to first account with current state
         let mut updated_first_account = LightAccount::<'_, DataAccount>::new_mut(
             &crate::ID,
             &first_account.account_meta,
@@ -167,10 +177,9 @@ pub mod create_and_update {
         )
         .map_err(ProgramError::from)?;
 
-        // Update the message of the first account
         updated_first_account.message = first_account.update_message.clone();
 
-        // Update second compressed account
+        // Create mutable reference to second account with current state
         let mut updated_second_account = LightAccount::<'_, DataAccount>::new_mut(
             &crate::ID,
             &second_account.account_meta,
@@ -181,9 +190,9 @@ pub mod create_and_update {
         )
         .map_err(ProgramError::from)?;
 
-        // Update the message of the second account
         updated_second_account.message = second_account.update_message.clone();
 
+        // Batch both updates in single CPI call
         let cpi_inputs = CpiInputs::new(
             proof,
             vec![
@@ -216,6 +225,7 @@ pub struct GenericAnchorAccounts<'info> {
     pub signer: Signer<'info>,
 }
 
+/// Compressed account data structure with hashable fields for state commitment
 #[derive(
     Clone, Debug, Default, BorshSerialize, BorshDeserialize, LightDiscriminator, LightHasher,
 )]
@@ -226,6 +236,7 @@ pub struct DataAccount {
     pub message: String,
 }
 
+/// Instruction data for existing compressed account operations
 #[derive(Clone, Debug, AnchorSerialize, AnchorDeserialize)]
 pub struct ExistingCompressedAccountIxData {
     pub account_meta: CompressedAccountMeta,
@@ -233,12 +244,12 @@ pub struct ExistingCompressedAccountIxData {
     pub update_message: String,
 }
 
+/// Instruction data for new compressed account creation
 #[derive(Clone, Debug, AnchorSerialize, AnchorDeserialize)]
 pub struct NewCompressedAccountIxData {
     pub address_tree_info: PackedAddressTreeInfo,
     pub message: String,
 }
-
 
 #[error_code]
 pub enum CustomError {

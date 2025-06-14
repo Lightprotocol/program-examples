@@ -18,12 +18,15 @@ use pinocchio::{
     account_info::AccountInfo, entrypoint, program_error::ProgramError, pubkey::Pubkey,
 };
 
+// Program ID for the counter program
 pub const ID: Pubkey = pubkey_array!("GRLu2hKaAiMbxpkAM1HeXzks9YeGuz18SEgXEizVvPqX");
+// CPI signer derived from program ID for Light protocol interactions
 pub const LIGHT_CPI_SIGNER: CpiSigner =
     derive_light_cpi_signer!("GRLu2hKaAiMbxpkAM1HeXzks9YeGuz18SEgXEizVvPqX");
 
 entrypoint!(process_instruction);
 
+/// Instruction discriminators for the counter program
 #[repr(u8)]
 pub enum InstructionType {
     CreateCounter = 0,
@@ -48,26 +51,38 @@ impl TryFrom<u8> for InstructionType {
     }
 }
 
+/// Compressed account state for the counter
+/// Uses Light protocol for state compression
 #[derive(
     Debug, Default, Clone, BorshSerialize, BorshDeserialize, LightDiscriminator, LightHasher,
 )]
 pub struct CounterAccount {
+    /// Owner of the counter - used in address derivation and authorization
     #[hash]
     pub owner: Pubkey,
+    /// Current counter value
     pub value: u64,
 }
 
+/// Instruction data for creating a new counter
 #[derive(BorshSerialize, BorshDeserialize)]
 pub struct CreateCounterInstructionData {
+    /// Zero-knowledge proof for the transaction
     pub proof: ValidityProof,
+    /// Information about the address tree for storing the new address
     pub address_tree_info: PackedAddressTreeInfo,
+    /// Index of the state tree where the counter will be stored
     pub output_state_tree_index: u8,
 }
 
+/// Instruction data for modifying an existing counter
 #[derive(BorshSerialize, BorshDeserialize)]
 pub struct IncrementCounterInstructionData {
+    /// Zero-knowledge proof for the transaction
     pub proof: ValidityProof,
+    /// Current counter value (for verification)
     pub counter_value: u64,
+    /// Metadata of the compressed account being modified
     pub account_meta: CompressedAccountMeta,
 }
 
@@ -85,13 +100,16 @@ pub struct ResetCounterInstructionData {
     pub account_meta: CompressedAccountMeta,
 }
 
+/// Instruction data for closing a counter account
 #[derive(BorshSerialize, BorshDeserialize)]
 pub struct CloseCounterInstructionData {
     pub proof: ValidityProof,
     pub counter_value: u64,
+    /// Close-specific metadata that handles account deletion
     pub account_meta: CompressedAccountMetaClose,
 }
 
+/// Program-specific error types
 #[derive(Debug, Clone)]
 pub enum CounterError {
     Unauthorized,
@@ -109,6 +127,7 @@ impl From<CounterError> for ProgramError {
     }
 }
 
+/// Main instruction handler - routes to specific instruction handlers
 pub fn process_instruction(
     program_id: &Pubkey,
     accounts: &[AccountInfo],
@@ -121,6 +140,7 @@ pub fn process_instruction(
         return Err(ProgramError::InvalidInstructionData);
     }
 
+    // First byte is the instruction discriminator
     let discriminator = InstructionType::try_from(instruction_data[0])
         .map_err(|_| ProgramError::InvalidInstructionData)?;
 
@@ -158,6 +178,7 @@ pub fn process_instruction(
     }
 }
 
+/// Creates a new counter account with compressed state
 pub fn create_counter(
     accounts: &[AccountInfo],
     instruction_data: CreateCounterInstructionData,
@@ -166,6 +187,7 @@ pub fn create_counter(
 
     let light_cpi_accounts = CpiAccounts::new(signer, &accounts[1..], LIGHT_CPI_SIGNER);
 
+    // Derive deterministic address based on signer and "counter" seed
     let (address, address_seed) = derive_address(
         &[b"counter", signer.key().as_ref()],
         &instruction_data
@@ -175,10 +197,12 @@ pub fn create_counter(
         &ID,
     );
 
+    // Convert address tree info into parameters for creating new address
     let new_address_params = instruction_data
         .address_tree_info
         .into_new_address_params_packed(address_seed);
 
+    // Initialize new compressed account
     let mut counter = LightAccount::<'_, CounterAccount>::new_init(
         &ID,
         Some(address),
@@ -188,6 +212,7 @@ pub fn create_counter(
     counter.owner = *signer.key();
     counter.value = 0;
 
+    // Create CPI call to Light system program with new address
     let cpi = CpiInputs::new_with_address(
         instruction_data.proof,
         vec![counter.to_account_info().map_err(ProgramError::from)?],
@@ -199,12 +224,14 @@ pub fn create_counter(
     Ok(())
 }
 
+/// Increments the counter value by 1 with overflow protection
 pub fn increment_counter(
     accounts: &[AccountInfo],
     instruction_data: IncrementCounterInstructionData,
 ) -> Result<(), ProgramError> {
     let signer = accounts.first().ok_or(ProgramError::NotEnoughAccountKeys)?;
 
+    // Load existing compressed account for mutation
     let mut counter = LightAccount::<'_, CounterAccount>::new_mut(
         &ID,
         &instruction_data.account_meta,
@@ -230,6 +257,7 @@ pub fn increment_counter(
     Ok(())
 }
 
+/// Decrements the counter value by 1 with underflow protection
 pub fn decrement_counter(
     accounts: &[AccountInfo],
     instruction_data: DecrementCounterInstructionData,
@@ -265,6 +293,7 @@ pub fn decrement_counter(
     Ok(())
 }
 
+/// Resets the counter value back to 0
 pub fn reset_counter(
     accounts: &[AccountInfo],
     instruction_data: ResetCounterInstructionData,
@@ -296,12 +325,14 @@ pub fn reset_counter(
     Ok(())
 }
 
+/// Closes/deletes the counter account from compressed state
 pub fn close_counter(
     accounts: &[AccountInfo],
     instruction_data: CloseCounterInstructionData,
 ) -> Result<(), ProgramError> {
     let signer = accounts.first().ok_or(ProgramError::NotEnoughAccountKeys)?;
 
+    // Create account handle for closure (no mutation needed)
     let counter = LightAccount::<'_, CounterAccount>::new_close(
         &ID,
         &instruction_data.account_meta,
