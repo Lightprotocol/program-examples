@@ -142,6 +142,72 @@ pub mod create_and_update {
 
         Ok(())
     }
+
+    /// Updates two existing compressed accounts in a single instruction
+    pub fn update_two_accounts<'info>(
+        ctx: Context<'_, '_, '_, 'info, GenericAnchorAccounts<'info>>,
+        proof: ValidityProof,
+        first_account: ExistingCompressedAccountIxData,
+        second_account: ExistingCompressedAccountIxData,
+    ) -> Result<()> {
+        let light_cpi_accounts = CpiAccounts::new(
+            ctx.accounts.signer.as_ref(),
+            ctx.remaining_accounts,
+            crate::LIGHT_CPI_SIGNER,
+        );
+
+        // Update first compressed account
+        let mut updated_first_account = LightAccount::<'_, DataAccount>::new_mut(
+            &crate::ID,
+            &first_account.account_meta,
+            DataAccount {
+                owner: ctx.accounts.signer.key(),
+                message: first_account.message.clone(),
+            },
+        )
+        .map_err(ProgramError::from)?;
+
+        // Update the message of the first account
+        updated_first_account.message = first_account.update_message.clone();
+
+        // Update second compressed account
+        let mut updated_second_account = LightAccount::<'_, DataAccount>::new_mut(
+            &crate::ID,
+            &second_account.account_meta,
+            DataAccount {
+                owner: ctx.accounts.signer.key(),
+                message: second_account.message.clone(),
+            },
+        )
+        .map_err(ProgramError::from)?;
+
+        // Update the message of the second account
+        updated_second_account.message = second_account.update_message.clone();
+
+        let cpi_inputs = CpiInputs::new(
+            proof,
+            vec![
+                updated_first_account
+                    .to_account_info()
+                    .map_err(ProgramError::from)?,
+                updated_second_account
+                    .to_account_info()
+                    .map_err(ProgramError::from)?,
+            ],
+        );
+
+        cpi_inputs
+            .invoke_light_system_program(light_cpi_accounts)
+            .map_err(ProgramError::from)?;
+
+        msg!(
+            "Updated first account to: '{}' and second account to: '{}'",
+            first_account.update_message,
+            second_account.update_message
+        );
+
+        Ok(())
+    }
 }
 
 #[derive(Accounts)]
@@ -172,6 +238,7 @@ pub struct NewCompressedAccountIxData {
     pub address_tree_info: PackedAddressTreeInfo,
     pub message: String,
 }
+
 
 #[error_code]
 pub enum CustomError {
