@@ -20,6 +20,8 @@ use solana_sdk::{
     signature::{Keypair, Signer},
 };
 
+/// Integration test for compressed counter program covering full lifecycle:
+/// create, increment, decrement, reset, and close operations
 #[tokio::test]
 async fn test_counter() {
     let config = ProgramTestConfig::new(true, Some(vec![("counter", counter::ID.into())]));
@@ -29,7 +31,7 @@ async fn test_counter() {
     let address_tree_info = rpc.get_address_tree_v1();
     let address_tree_pubkey = address_tree_info.tree;
 
-    // Create counter
+    // Derive deterministic address for the counter using program ID and payer pubkey as seeds
     let (address, _) = derive_address(
         &[b"counter", payer.pubkey().as_ref()],
         &address_tree_pubkey,
@@ -47,7 +49,7 @@ async fn test_counter() {
     .await
     .unwrap();
 
-    // Get the created counter
+    // Fetch the newly created compressed account and verify address matches
     let compressed_counter = rpc
         .get_compressed_account(address, None)
         .await
@@ -55,18 +57,17 @@ async fn test_counter() {
         .value;
     assert_eq!(compressed_counter.address.unwrap(), address);
 
-    // Test increment
     increment_counter(&payer, &mut rpc, &compressed_counter)
         .await
         .unwrap();
 
+    // Refetch after increment to get updated state
     let compressed_counter = rpc
         .get_compressed_account(address, None)
         .await
         .unwrap()
         .value;
 
-    // Test decrement
     decrement_counter(&payer, &mut rpc, &compressed_counter)
         .await
         .unwrap();
@@ -77,7 +78,6 @@ async fn test_counter() {
         .unwrap()
         .value;
 
-    // Test reset
     reset_counter(&payer, &mut rpc, &compressed_counter)
         .await
         .unwrap();
@@ -88,12 +88,12 @@ async fn test_counter() {
         .unwrap()
         .value;
 
-    // Test close
     close_counter(&payer, &mut rpc, &compressed_counter)
         .await
         .unwrap();
 }
 
+/// Creates a new compressed counter account at the specified address
 pub async fn create_counter(
     payer: &Keypair,
     rpc: &mut LightProgramTest,
@@ -106,6 +106,7 @@ pub async fn create_counter(
     accounts.add_pre_accounts_signer(payer.pubkey());
     accounts.add_system_accounts(system_account_meta_config);
 
+    // Get validity proof for address creation (no input accounts, only new address)
     let rpc_result = rpc
         .get_validity_proof(
             vec![],
@@ -118,6 +119,7 @@ pub async fn create_counter(
         .await?
         .value;
 
+    // Pack tree info for instruction data
     let output_merkle_tree_index = accounts.insert_or_get(*merkle_tree_pubkey);
     let packed_address_tree_info = rpc_result.pack_tree_infos(&mut accounts).address_trees[0];
     let (accounts, _, _) = accounts.to_account_metas();
@@ -129,6 +131,7 @@ pub async fn create_counter(
     };
     let inputs = instruction_data.try_to_vec().unwrap();
 
+    // Build instruction with discriminator byte + serialized data
     let instruction = Instruction {
         program_id: counter::ID.into(),
         accounts,
@@ -144,6 +147,7 @@ pub async fn create_counter(
     Ok(())
 }
 
+/// Increments the counter value by 1, consuming the old account and creating a new one
 pub async fn increment_counter(
     payer: &Keypair,
     rpc: &mut LightProgramTest,
@@ -156,6 +160,7 @@ pub async fn increment_counter(
 
     let hash = compressed_account.hash;
 
+    // Get validity proof for the existing compressed account
     let rpc_result = rpc
         .get_validity_proof(vec![hash], vec![], None)
         .await?
@@ -166,6 +171,7 @@ pub async fn increment_counter(
         .state_trees
         .unwrap();
 
+    // Deserialize current counter value from compressed account data
     let counter_account =
         CounterAccount::deserialize(&mut compressed_account.data.as_ref().unwrap().data.as_slice())
             .unwrap();
@@ -199,6 +205,7 @@ pub async fn increment_counter(
     Ok(())
 }
 
+/// Decrements the counter value by 1, consuming the old account and creating a new one
 pub async fn decrement_counter(
     payer: &Keypair,
     rpc: &mut LightProgramTest,
@@ -254,6 +261,7 @@ pub async fn decrement_counter(
     Ok(())
 }
 
+/// Resets the counter value to 0, consuming the old account and creating a new one
 pub async fn reset_counter(
     payer: &Keypair,
     rpc: &mut LightProgramTest,
@@ -309,6 +317,7 @@ pub async fn reset_counter(
     Ok(())
 }
 
+/// Closes the counter account, consuming it without creating a new one
 pub async fn close_counter(
     payer: &Keypair,
     rpc: &mut LightProgramTest,
@@ -335,6 +344,7 @@ pub async fn close_counter(
         CounterAccount::deserialize(&mut compressed_account.data.as_ref().unwrap().data.as_slice())
             .unwrap();
 
+    // Use CompressedAccountMetaClose since we're not creating a new output account
     let meta_close = CompressedAccountMetaClose {
         tree_info: packed_accounts.packed_tree_infos[0],
         address: compressed_account.address.unwrap(),

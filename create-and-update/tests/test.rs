@@ -18,6 +18,7 @@ use solana_sdk::{
     signature::{Keypair, Signature, Signer},
 };
 
+/// Tests basic compressed account creation functionality
 #[tokio::test]
 async fn test_create_compressed_account() {
     let config = ProgramTestConfig::new(
@@ -29,6 +30,7 @@ async fn test_create_compressed_account() {
 
     let address_tree_info = rpc.get_address_tree_v1();
 
+    // Derive deterministic address using seed and owner pubkey
     let (address, _) = derive_address(
         &[FIRST_SEED, payer.pubkey().as_ref()],
         &address_tree_info.tree,
@@ -46,7 +48,7 @@ async fn test_create_compressed_account() {
     .await
     .unwrap();
 
-    // Check that it was created correctly
+    // Verify account creation and data integrity
     let compressed_account = rpc
         .get_compressed_account(address, None)
         .await
@@ -60,6 +62,8 @@ async fn test_create_compressed_account() {
     assert_eq!(account_data.message, "Hello, World!");
 }
 
+/// Tests composite operations: creating a new account while updating an existing one,
+/// followed by updating both accounts simultaneously
 #[tokio::test]
 async fn test_create_and_update() {
     let config = ProgramTestConfig::new(
@@ -95,7 +99,7 @@ async fn test_create_and_update() {
         .unwrap()
         .value;
 
-    // Create and update in one instruction
+    // Execute atomic create-and-update operation
     create_and_update_accounts(
         &mut rpc,
         &payer,
@@ -107,7 +111,7 @@ async fn test_create_and_update() {
     .await
     .unwrap();
 
-    // Check the new account was created
+    // Verify new account creation with SECOND_SEED
     let (new_address, _) = derive_address(
         &[SECOND_SEED, payer.pubkey().as_ref()],
         &address_tree_info.tree,
@@ -125,7 +129,7 @@ async fn test_create_and_update() {
     assert_eq!(new_account_data.owner, payer.pubkey());
     assert_eq!(new_account_data.message, "New account message");
 
-    // Check the existing account was updated
+    // Verify existing account was updated
     let updated_compressed_account = rpc
         .get_compressed_account(initial_address, None)
         .await
@@ -137,7 +141,7 @@ async fn test_create_and_update() {
     assert_eq!(updated_account_data.owner, payer.pubkey());
     assert_eq!(updated_account_data.message, "Updated message");
 
-    // Now test updating both existing accounts with the third instruction
+    // Test batch update of both existing accounts
     update_two_accounts(
         &mut rpc,
         &payer,
@@ -151,7 +155,7 @@ async fn test_create_and_update() {
     .await
     .unwrap();
 
-    // Check both accounts were updated correctly
+    // Verify both accounts were updated correctly
     let final_first_account = rpc
         .get_compressed_account(initial_address, None)
         .await
@@ -179,6 +183,7 @@ async fn test_create_and_update() {
     );
 }
 
+/// Creates a new compressed account at the specified address with the given message
 async fn create_compressed_account<R>(
     rpc: &mut R,
     payer: &Keypair,
@@ -193,6 +198,7 @@ where
     let config = SystemAccountMetaConfig::new(create_and_update::ID);
     remaining_accounts.add_system_accounts(config);
 
+    // Get validity proof for address creation (no existing accounts to prove)
     let rpc_result = rpc
         .get_validity_proof(
             vec![],
@@ -205,6 +211,7 @@ where
         .await?
         .value;
 
+    // Pack tree accounts for CPI and get output state tree for new account
     let packed_address_tree_accounts = rpc_result
         .pack_tree_infos(&mut remaining_accounts)
         .address_trees;
@@ -237,6 +244,7 @@ where
         .await
 }
 
+/// Atomically creates a new compressed account and updates an existing one in a single transaction
 async fn create_and_update_accounts<R>(
     rpc: &mut R,
     payer: &Keypair,
@@ -256,6 +264,7 @@ where
 
     let address_tree_info = rpc.get_address_tree_v1();
 
+    // Derive address for the new account using SECOND_SEED
     let (new_address, _) = derive_address(
         &[SECOND_SEED, payer.pubkey().as_ref()],
         &address_tree_info.tree,
@@ -264,6 +273,7 @@ where
 
     let address_tree_info = rpc.get_address_tree_v1();
 
+    // Get validity proof: existing account hash to prove it exists, new address to prove it doesn't
     let rpc_result = rpc
         .get_validity_proof(
             vec![hash],
@@ -279,6 +289,8 @@ where
     let packed_tree_accounts = rpc_result.pack_tree_infos(&mut remaining_accounts);
     let packed_state_tree_accounts = packed_tree_accounts.state_trees.unwrap();
     let packed_address_tree_accounts = packed_tree_accounts.address_trees;
+
+    // Create metadata for the existing account being updated
     let account_meta = CompressedAccountMeta {
         tree_info: packed_state_tree_accounts.packed_tree_infos[0],
         address: existing_account.address.unwrap(),
@@ -316,6 +328,7 @@ where
         .await
 }
 
+/// Updates two existing compressed accounts in a single atomic transaction
 #[allow(clippy::too_many_arguments)]
 async fn update_two_accounts<R>(
     rpc: &mut R,
@@ -337,6 +350,7 @@ where
     let first_hash = first_account.hash;
     let second_hash = second_account.hash;
 
+    // Get validity proof for both existing accounts (no new addresses needed)
     let rpc_result = rpc
         .get_validity_proof(vec![first_hash, second_hash], vec![], None)
         .await?
@@ -345,6 +359,7 @@ where
     let packed_tree_accounts = rpc_result.pack_tree_infos(&mut remaining_accounts);
     let packed_state_tree_accounts = packed_tree_accounts.state_trees.unwrap();
 
+    // Create metadata for both accounts being updated
     let first_account_meta = CompressedAccountMeta {
         tree_info: packed_state_tree_accounts.packed_tree_infos[0],
         address: first_account.address.unwrap(),
