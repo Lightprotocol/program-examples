@@ -2,19 +2,6 @@
 
 Examples for building with ZK compression by Light Protocol.
 
-## Light Protocol Libraries Used
-
-### Rust Crates
-- `light-sdk` - Core SDK for compressed accounts in native and anchor programs
-- `light-sdk-pinocchio` Core SDK for compressed accounts in pinocchio programs
-- `light-hasher` - Hashing utilities for ZK compression
-- `light-client` - RPC client and indexer for interacting with compressed accounts
-- `light-program-test` - Testing utilities for compressed programs.
-
-### TypeScript/JavaScript Packages
-- `@lightprotocol/stateless.js` - Client library for interacting with compressed accounts
-- `@lightprotocol/zk-compression-cli` - Command-line tools for ZK compression development
-
 ## Examples
 
 ### Counter Program
@@ -31,6 +18,20 @@ The counter program implements a compressed account lifecycle (create, increment
 ### Solana vs compressed accounts comparison Program
 
 - **[account-comparison](./account-comparison/)** - Compare compressed vs regular Solana accounts.
+
+
+## Light Protocol Libraries Used
+
+### Rust Crates
+- `light-sdk` - Core SDK for compressed accounts in native and anchor programs
+- `light-sdk-pinocchio` Core SDK for compressed accounts in pinocchio programs
+- `light-hasher` - Hashing utilities for ZK compression
+- `light-client` - RPC client and indexer for interacting with compressed accounts
+- `light-program-test` - Testing utilities for compressed programs.
+
+### TypeScript/JavaScript Packages
+- `@lightprotocol/stateless.js` - Client library for interacting with compressed accounts
+- `@lightprotocol/zk-compression-cli` - Command-line tools for ZK compression development
 
 ## Prerequisites
 
