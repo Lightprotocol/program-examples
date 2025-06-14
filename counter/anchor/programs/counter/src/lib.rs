@@ -91,6 +91,7 @@ pub mod counter {
             },
         )
         .map_err(ProgramError::from)?;
+
         msg!("counter {}", counter.value);
         msg!("counter {:?}", counter);
 
@@ -127,10 +128,6 @@ pub mod counter {
             },
         )
         .map_err(ProgramError::from)?;
-
-        if counter.owner != ctx.accounts.signer.key() {
-            return err!(CustomError::Unauthorized);
-        }
 
         counter.value = counter.value.checked_sub(1).ok_or(CustomError::Underflow)?;
 

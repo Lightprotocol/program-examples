@@ -246,10 +246,6 @@ pub fn decrement_counter(
     )
     .map_err(ProgramError::from)?;
 
-    if counter.owner != *signer.key() {
-        return Err(CounterError::Unauthorized.into());
-    }
-
     counter.value = counter
         .value
         .checked_sub(1)
