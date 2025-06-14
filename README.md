@@ -5,11 +5,11 @@ Examples for building with ZK compression by Light Protocol.
 ## Examples
 
 ### Counter Program
-The counter program implements a compressed account lifecycle (create, increment, decrement, reset, close) in three different ways:
+The counter program implements a compressed account lifecycle (create, increment, decrement, reset, close):
 
-- **[counter/anchor](./counter/anchor/)** - Anchor framework implementation with Rust and TypeScript tests
-- **[counter/native](./counter/native/)** - Native Solana program implementation using Light SDK
-- **[counter/pinocchio](./counter/pinocchio/)** - Pinocchio SDK implementation for streamlined development
+- **[counter/anchor](./counter/anchor/)** - Anchor program with Rust and TypeScript tests
+- **[counter/native](./counter/native/)** - Native Solana program with light-sdk and Rust tests.
+- **[counter/pinocchio](./counter/pinocchio/)** - Pinocchio program with light-sdk-pinocchio and Rust tests.
 
 ### Create and Update Program
 
@@ -53,7 +53,7 @@ sh -c "$(curl -sSfL https://release.solana.com/v2.2.15/install)"
 
 Install Anchor CLI:
 ```bash
-cargo install --git https://github.com/coral-xyz/anchor avm --locked --force
+cargo install --git https://github.com/coral-xyz/anchor avm --force
 avm install latest
 avm use latest
 ```
