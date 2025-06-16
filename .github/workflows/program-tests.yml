@@ -17,13 +17,25 @@ jobs:
     strategy:
       matrix:
         include:
-          - program: all-examples
+          - program: create-and-update
             sub-tests: '[
-              "cargo test-sbf -p create-and-update",
+              "cargo test-sbf -p create-and-update"
+              ]'
+          - program: counter-anchor
+            sub-tests: '[
               "cargo test-sbf -p counter --manifest-path counter/anchor/Cargo.toml",
-              "cd counter/anchor && npm install && npm test",
-              "cargo test-sbf -p counter --manifest-path counter/native/Cargo.toml",
-              "cargo test-sbf -p counter --manifest-path counter/pinocchio/Cargo.toml",
+              "cd counter/anchor && npm install && npm test"
+              ]'
+          - program: counter-native
+            sub-tests: '[
+              "cargo test-sbf -p counter --manifest-path counter/native/Cargo.toml"
+              ]'
+          - program: counter-pinocchio
+            sub-tests: '[
+              "cargo test-sbf -p counter --manifest-path counter/pinocchio/Cargo.toml"
+              ]'
+          - program: account-comparison
+            sub-tests: '[
               "cargo test-sbf -p account-comparison --manifest-path account-comparison/Cargo.toml"
               ]'
 
