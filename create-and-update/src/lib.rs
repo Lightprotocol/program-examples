@@ -208,6 +208,84 @@ pub mod create_and_update {
 
         Ok(())
     }
+
+    /// Creates two new compressed accounts with different addresses in a single instruction
+    pub fn create_two_accounts<'info>(
+        ctx: Context<'_, '_, '_, 'info, GenericAnchorAccounts<'info>>,
+        proof: ValidityProof,
+        address_tree_info: PackedAddressTreeInfo,
+        output_state_tree_index: u8,
+        byte_data: [u8; 31],
+        message: String,
+    ) -> Result<()> {
+        let light_cpi_accounts = CpiAccounts::new(
+            ctx.accounts.signer.as_ref(),
+            ctx.remaining_accounts,
+            crate::LIGHT_CPI_SIGNER,
+        );
+
+        // Create first compressed account
+        let (first_address, first_address_seed) = derive_address(
+            &[FIRST_SEED, ctx.accounts.signer.key().as_ref()],
+            &address_tree_info
+                .get_tree_pubkey(&light_cpi_accounts)
+                .map_err(|_| ErrorCode::AccountNotEnoughKeys)?,
+            &crate::ID,
+        );
+
+        let mut first_data_account = LightAccount::<'_, ByteDataAccount>::new_init(
+            &crate::ID,
+            Some(first_address),
+            output_state_tree_index,
+        );
+        first_data_account.owner = ctx.accounts.signer.key();
+        first_data_account.data = byte_data;
+
+        // Create second compressed account
+        let (second_address, second_address_seed) = derive_address(
+            &[SECOND_SEED, ctx.accounts.signer.key().as_ref()],
+            &address_tree_info
+                .get_tree_pubkey(&light_cpi_accounts)
+                .map_err(|_| ErrorCode::AccountNotEnoughKeys)?,
+            &crate::ID,
+        );
+
+        let mut second_data_account = LightAccount::<'_, DataAccount>::new_init(
+            &crate::ID,
+            Some(second_address),
+            output_state_tree_index,
+        );
+        second_data_account.owner = ctx.accounts.signer.key();
+        second_data_account.message = message.clone();
+
+        let cpi_inputs = CpiInputs::new_with_address(
+            proof,
+            vec![
+                first_data_account
+                    .to_account_info()
+                    .map_err(ProgramError::from)?,
+                second_data_account
+                    .to_account_info()
+                    .map_err(ProgramError::from)?,
+            ],
+            vec![
+                address_tree_info.into_new_address_params_packed(first_address_seed),
+                address_tree_info.into_new_address_params_packed(second_address_seed),
+            ],
+        );
+
+        cpi_inputs
+            .invoke_light_system_program(light_cpi_accounts)
+            .map_err(ProgramError::from)?;
+
+        msg!(
+            "Created byte account with data: {:?} and string account with message: '{}'",
+            byte_data,
+            message
+        );
+
+        Ok(())
+    }
 }
 
 #[derive(Accounts)]
@@ -226,6 +304,15 @@ pub struct DataAccount {
     pub message: String,
 }
 
+#[derive(
+    Clone, Debug, Default, BorshSerialize, BorshDeserialize, LightDiscriminator, LightHasher,
+)]
+pub struct ByteDataAccount {
+    #[hash]
+    pub owner: Pubkey,
+    pub data: [u8; 31],
+}
+
 #[derive(Clone, Debug, AnchorSerialize, AnchorDeserialize)]
 pub struct ExistingCompressedAccountIxData {
     pub account_meta: CompressedAccountMeta,
@@ -237,11 +324,4 @@ pub struct ExistingCompressedAccountIxData {
 pub struct NewCompressedAccountIxData {
     pub address_tree_info: PackedAddressTreeInfo,
     pub message: String,
-}
-
-
-#[error_code]
-pub enum CustomError {
-    #[msg("No authority to perform this action")]
-    Unauthorized,
 }
