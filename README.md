@@ -39,6 +39,7 @@ Required versions:
 - **Rust**: 1.86.0 or later
 - **Solana CLI**: 2.2.15
 - **Anchor CLI**: 0.31.1
+- **Zk compression CLI**: 0.27.0
 - **Node.js**: 23.5.0 or later
 
 Install the Light CLI:

@@ -2786,9 +2786,9 @@ dependencies = [
 
 [[package]]
 name = "light-program-test"
-version = "0.13.0"
+version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5ac9e17794077a33bca5fb8386e1768833df91d63badbd4482d972ad911faa7f"
+checksum = "d7a67d5fb23437ab8e4f08597e43dada8e1fd01bede8781cce4ff9f471bc9ef5"
 dependencies = [
  "account-compression",
  "anchor-lang",

@@ -6,10 +6,7 @@ use light_program_test::{
 };
 use light_sdk::{
     address::v1::derive_address,
-    instruction::{
-        account_meta::CompressedAccountMeta, accounts::SystemAccountMetaConfig,
-        pack_accounts::PackedAccounts,
-    },
+    instruction::{account_meta::CompressedAccountMeta, PackedAccounts, SystemAccountMetaConfig},
 };
 use solana_sdk::{
     instruction::Instruction,
@@ -98,8 +95,8 @@ where
         .value;
 
     let output_tree_index = rpc
-        .get_random_state_tree_info()
-        .get_output_tree_index(&mut remaining_accounts)?;
+        .get_random_state_tree_info()?
+        .pack_output_tree_index(&mut remaining_accounts)?;
     let address_tree_info = rpc_result
         .pack_tree_infos(&mut remaining_accounts)
         .address_trees[0];
@@ -151,10 +148,7 @@ where
         .await?
         .value;
 
-    let packed_tree_infos = rpc_result
-        .pack_tree_infos(&mut remaining_accounts)
-        .account_trees
-        .unwrap();
+    let packed_tree_infos = rpc_result.pack_tree_infos(&mut remaining_accounts);
 
     let compressed_account_data = CompressedAccountData::deserialize(
         &mut compressed_account.data.as_ref().unwrap().data.as_slice(),
@@ -162,9 +156,17 @@ where
     .unwrap();
 
     let account_meta = CompressedAccountMeta {
-        tree_info: packed_tree_infos.packed_tree_infos[0],
+        tree_info: packed_tree_infos
+            .state_trees
+            .as_ref()
+            .unwrap()
+            .packed_tree_infos[0],
         address: compressed_account.address.unwrap(),
-        output_tree_index: packed_tree_infos.output_tree_index,
+        output_state_tree_index: packed_tree_infos
+            .state_trees
+            .as_ref()
+            .unwrap()
+            .output_tree_index,
     };
 
     let instruction_data = account_comparison::instruction::UpdateCompressedAccount {
