@@ -39,23 +39,5 @@ jobs:
             ${{ runner.os }}-cargo-lint-
             ${{ runner.os }}-cargo-
 
-      - name: Check formatting
-        run: cargo fmt --all --check
-
-      - name: Run clippy
-        run: cargo clippy --all-targets --all-features -- -D warnings
-
-      - name: Run clippy (create-and-update)
-        run: cargo clippy --manifest-path create-and-update/Cargo.toml --all-targets --all-features -- -D warnings
-
-      - name: Run clippy (counter/anchor)
-        run: cargo clippy --manifest-path counter/anchor/Cargo.toml --all-targets --all-features -- -D warnings
-
-      - name: Run clippy (counter/native) 
-        run: cargo clippy --manifest-path counter/native/Cargo.toml --all-targets --all-features -- -D warnings
-
-      - name: Run clippy (counter/pinocchio)
-        run: cargo clippy --manifest-path counter/pinocchio/Cargo.toml --all-targets --all-features -- -D warnings
-
-      - name: Run clippy (account-comparison)
-        run: cargo clippy --manifest-path account-comparison/Cargo.toml --all-targets --all-features -- -D warnings
+      - name: Run lint script
+        run: ./scripts/lint.sh

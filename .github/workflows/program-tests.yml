@@ -54,7 +54,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "23.5.0"
-          cache: "npm"
 
       - name: Cache Rust dependencies
         uses: actions/cache@v4
@@ -69,34 +68,24 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-
 
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libudev-dev pkg-config
-
       - name: Install Solana CLI
         run: |
-          sh -c "$(curl -sSfL https://release.solana.com/v2.2.15/install)"
-          echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
-
-      - name: Install Anchor CLI
-        run: |
-          cargo install --git https://github.com/coral-xyz/anchor avm --locked --force
-          avm install latest
-          avm use latest
+          curl --proto '=https' --tlsv1.2 -sSfL https://solana-install.solana.workers.dev | bash
+          export PATH="/home/runner/.local/share/solana/install/active_release/bin:$PATH"
+          solana-keygen new --no-bip39-passphrase
 
       - name: Install Light CLI
         run: |
           npm install -g @lightprotocol/zk-compression-cli
 
-      - name: Generate Solana keypair
+      - name: Install Photon Indexer
         run: |
-          solana-keygen new --no-bip39-passphrase
+          cargo install --git https://github.com/lightprotocol/photon.git --rev 129fe6518021ad3c2e90fc7de1e1abc7dcb32250 --locked
 
       - name: Start Light test validator
         run: |
-          light test-validator &
-          sleep 30
+          export PATH="/home/runner/.local/share/solana/install/active_release/bin:$PATH"
+          light test-validator
 
       - name: Run tests
         run: |
