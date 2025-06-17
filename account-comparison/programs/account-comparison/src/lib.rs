@@ -2,9 +2,10 @@ use anchor_lang::prelude::*;
 use light_sdk::{
     account::LightAccount,
     address::v1::derive_address,
-    cpi::{CpiAccounts, CpiInputs},
-    instruction::{account_meta::CompressedAccountMeta, tree_info::PackedAddressTreeInfo},
-    LightDiscriminator, LightHasher, ValidityProof,
+    cpi::{CpiAccounts, CpiInputs, CpiSigner},
+    derive_light_cpi_signer,
+    instruction::{account_meta::CompressedAccountMeta, PackedAddressTreeInfo, ValidityProof},
+    LightDiscriminator, LightHasher,
 };
 
 #[error_code]
@@ -15,8 +16,13 @@ pub enum CustomError {
 
 declare_id!("FYX4GmKJYzSiycc7XZKf12NGXNE9siSx1cJubYJniHcv");
 
+const CPI_SIGNER: CpiSigner =
+    derive_light_cpi_signer!("FYX4GmKJYzSiycc7XZKf12NGXNE9siSx1cJubYJniHcv");
+
 #[program]
 pub mod account_comparison {
+    use light_sdk::error::LightSdkError;
+
     use super::*;
 
     pub fn create_account(ctx: Context<CreateAccount>, name: String) -> Result<()> {
@@ -41,19 +47,17 @@ pub mod account_comparison {
         address_tree_info: PackedAddressTreeInfo,
         output_tree_index: u8,
     ) -> Result<()> {
-        let program_id = crate::ID.into();
         let light_cpi_accounts = CpiAccounts::new(
             ctx.accounts.user.as_ref(),
             ctx.remaining_accounts,
-            crate::ID,
-        )
-        .map_err(ProgramError::from)?;
+            CPI_SIGNER,
+        );
 
         let (address, address_seed) = derive_address(
             &[b"account", ctx.accounts.user.key().as_ref()],
-            &light_cpi_accounts.tree_accounts()
-                [address_tree_info.address_merkle_tree_pubkey_index as usize]
-                .key(),
+            &address_tree_info
+                .get_tree_pubkey(&light_cpi_accounts)
+                .map_err(|err| ProgramError::from(LightSdkError::from(err)))?,
             &crate::ID,
         );
 
@@ -63,7 +67,7 @@ pub mod account_comparison {
         // and created with invoke_light_system_program by invoking the light-system-program.
         // The hashing scheme is the account structure derived with LightHasher.
         let mut compressed_account = LightAccount::<'_, CompressedAccountData>::new_init(
-            &program_id,
+            &crate::ID,
             Some(address),
             output_tree_index,
         );
@@ -95,9 +99,8 @@ pub mod account_comparison {
         proof: ValidityProof,
         account_meta: CompressedAccountMeta,
     ) -> Result<()> {
-        let program_id = crate::ID.into();
         let mut compressed_account = LightAccount::<'_, CompressedAccountData>::new_mut(
-            &program_id,
+            &crate::ID,
             &account_meta,
             CompressedAccountData {
                 user: ctx.accounts.user.key(),
@@ -116,9 +119,8 @@ pub mod account_comparison {
         let light_cpi_accounts = CpiAccounts::new(
             ctx.accounts.user.as_ref(),
             ctx.remaining_accounts,
-            crate::ID,
-        )
-        .map_err(ProgramError::from)?;
+            CPI_SIGNER,
+        );
 
         let cpi_inputs = CpiInputs::new(
             proof,

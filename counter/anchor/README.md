@@ -20,7 +20,7 @@ anchor build
 
 #### Rust Tests
 ```bash
-anchor test
+cargo build-sbf
 ```
 
 #### TypeScript Tests
