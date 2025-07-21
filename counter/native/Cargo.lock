@@ -2451,9 +2451,9 @@ dependencies = [
 
 [[package]]
 name = "light-client"
-version = "0.13.1"
+version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6eb0f8475817e370378c612daad3c84dec722cb7c82bb8a841c1e0ad36b515fe"
+checksum = "62345edfabd8ee46f62977105cc319213a8615e61325a18f82c8f25978dfe04d"
 dependencies = [
  "async-trait",
  "base64 0.13.1",
@@ -2687,9 +2687,9 @@ dependencies = [
 
 [[package]]
 name = "light-program-test"
-version = "0.13.2"
+version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "02f9d09105536140625b3c577dce93d7d472421918f9e1d9a382350b509f6acb"
+checksum = "0294c42c34db697214f3e6f3eadb4fe0ced41a0f5df9059ec16a32fa31eda6a6"
 dependencies = [
  "account-compression",
  "anchor-lang",

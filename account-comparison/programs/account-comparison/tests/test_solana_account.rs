@@ -30,7 +30,7 @@ fn test_solana_account() {
 
     let account = svm.get_account(&account_pda).unwrap();
     let data_account = AccountData::deserialize(&mut &account.data[8..]).unwrap();
-    println!("data_account {:?}", data_account);
+    println!("data_account {data_account:?}",);
     assert_eq!(data_account.name, "Heinrich".to_string());
     assert_eq!(data_account.data, [1u8; 128]);
 
@@ -38,7 +38,7 @@ fn test_solana_account() {
 
     let account = svm.get_account(&account_pda).unwrap();
     let data_account = AccountData::deserialize(&mut &account.data[8..]).unwrap();
-    println!("data_account {:?}", data_account);
+    println!("data_account {data_account:?}",);
     assert_eq!(data_account.name, "Heinrich".to_string());
     assert_eq!(data_account.data, [2u8; 128]);
 }

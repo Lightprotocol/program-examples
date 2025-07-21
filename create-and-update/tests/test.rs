@@ -275,7 +275,7 @@ where
         )
         .await?
         .value;
-    println!("rpc_result {:?}", rpc_result);
+
     let packed_tree_accounts = rpc_result.pack_tree_infos(&mut remaining_accounts);
     let packed_state_tree_accounts = packed_tree_accounts.state_trees.unwrap();
     let packed_address_tree_accounts = packed_tree_accounts.address_trees;
