@@ -1,7 +1,6 @@
 #![cfg(feature = "test-sbf")]
 
 use anchor_lang::{InstructionData, ToAccountMetas};
-use lowlevel::FIRST_SEED;
 use light_program_test::{
     program_test::LightProgramTest, AddressWithTree, Indexer, ProgramTestConfig, Rpc, RpcError,
 };
@@ -9,6 +8,7 @@ use light_sdk::{
     address::v1::derive_address,
     instruction::{PackedAccounts, SystemAccountMetaConfig},
 };
+use lowlevel::FIRST_SEED;
 use solana_sdk::{
     instruction::Instruction,
     signature::{Keypair, Signature, Signer},
@@ -16,10 +16,7 @@ use solana_sdk::{
 
 #[tokio::test]
 async fn test_create_address_and_output_without_address() {
-    let config = ProgramTestConfig::new(
-        true,
-        Some(vec![("lowlevel", lowlevel::ID)]),
-    );
+    let config = ProgramTestConfig::new(true, Some(vec![("lowlevel", lowlevel::ID)]));
     let mut rpc = LightProgramTest::new(config).await.unwrap();
     let payer = rpc.get_payer().insecure_clone();
 
@@ -32,9 +29,9 @@ async fn test_create_address_and_output_without_address() {
     );
 
     // Test data for the low-level instruction
-    let encrypted_utxo = vec![1, 2, 3, 4, 5]; // Example encrypted UTXO data
-    let output_utxo_hash = [42u8; 32]; // Example hash
-
+    let encrypted_utxo = vec![1; 256]; // Example encrypted UTXO data
+    let mut output_utxo_hash = [42u8; 32]; // Example hash
+    output_utxo_hash[0] = 0;
     // Create the low-level account
     create_address_and_output_without_address(
         &mut rpc,
