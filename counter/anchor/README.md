@@ -51,7 +51,7 @@ cargo test-sbf
    npm test
    ```
 
-The TypeScript tests demonstate client-side interaction compressed accounts using `@lightprotocol/stateless.js` and `@lightprotocol/zk-compression-cli`.
+The TypeScript tests demonstrate client-side interaction with compressed accounts using `@lightprotocol/stateless.js` and `@lightprotocol/zk-compression-cli`.
 
 `$ light test-validator` spawns the following background processes:
 
