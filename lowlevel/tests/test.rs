@@ -129,17 +129,22 @@ where
     let output_state_tree_index = rpc
         .get_random_state_tree_info()?
         .pack_output_tree_index(&mut remaining_accounts)?;
+    
+    let input_state_tree_info = rpc.get_random_state_tree_info()?;
+    let input_root_index = 0u16;
 
     let instruction_data = lowlevel::instruction::CreateAddressAndOutputWithoutAddress {
         proof: rpc_result.proof,
         address_tree_info: packed_address_tree_accounts[0],
         output_state_tree_index,
+        input_root_index,
         encrypted_utxo,
         output_utxo_hash,
     };
 
     let accounts = lowlevel::accounts::GenericAnchorAccounts {
         signer: payer.pubkey(),
+        input_merkle_tree: input_state_tree_info.tree,
     };
 
     let instruction = Instruction {

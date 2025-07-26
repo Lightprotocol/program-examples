@@ -1,5 +1,6 @@
 #![allow(unexpected_cfgs)]
 
+use account_compression::{state_merkle_tree_from_bytes_zero_copy, StateMerkleTreeAccount};
 use anchor_lang::{prelude::*, AnchorDeserialize, AnchorSerialize};
 use light_compressed_account::instruction_data::with_account_info::{
     CompressedAccountInfo, OutAccountInfo,
@@ -29,6 +30,7 @@ pub mod lowlevel {
         proof: ValidityProof, // Required for the address create, it proves that the address does not exist yet in the light address tree.
         address_tree_info: PackedAddressTreeInfo,
         output_state_tree_index: u8,
+        input_root_index: u16,
         encrypted_utxo: Vec<u8>,    // must be checked by your zkp
         output_utxo_hash: [u8; 32], // must be checked by your zkp
     ) -> Result<()> {
@@ -51,6 +53,9 @@ pub mod lowlevel {
             &address_pubkey,
             &crate::ID,
         );
+        // get root for input Merkle tree
+        let input_root = read_merkle_tree_root(&ctx.accounts.input_merkle_tree, input_root_index)?;
+        msg!("Input merkle tree root: {:?}", input_root);
 
         let output_account = CompressedAccountInfo {
             address: None,
@@ -71,7 +76,7 @@ pub mod lowlevel {
             vec![output_account],
             vec![address_tree_info.into_new_address_params_packed(address_seed)],
         );
-        msg!("cpi_inputs {:?}", cpi_inputs);
+
         cpi_inputs
             .invoke_light_system_program(light_cpi_accounts)
             .map_err(ProgramError::from)?;
@@ -84,4 +89,23 @@ pub mod lowlevel {
 pub struct GenericAnchorAccounts<'info> {
     #[account(mut)]
     pub signer: Signer<'info>,
+    pub input_merkle_tree: AccountLoader<'info, StateMerkleTreeAccount>,
+}
+
+/// Reads a root from the concurrent state merkle tree by index
+pub fn read_merkle_tree_root(
+    input_merkle_tree: &AccountLoader<StateMerkleTreeAccount>,
+    root_index: u16,
+) -> Result<[u8; 32]> {
+    let account_info = input_merkle_tree.to_account_info();
+    let account_data = account_info.try_borrow_data()?;
+
+    let merkle_tree = state_merkle_tree_from_bytes_zero_copy(&account_data)
+        .map_err(|_| ProgramError::InvalidAccountData)?;
+
+    if root_index as usize >= merkle_tree.roots.len() {
+        return Err(ProgramError::InvalidArgument.into());
+    }
+
+    Ok(merkle_tree.roots[root_index as usize])
 }
