@@ -5,6 +5,7 @@ Examples for building with ZK compression by Light Protocol.
 ## Examples
 
 ### Counter Program
+
 The counter program implements a compressed account lifecycle (create, increment, decrement, reset, close):
 
 - **[counter/anchor](./counter/anchor/)** - Anchor program with Rust and TypeScript tests
@@ -19,10 +20,10 @@ The counter program implements a compressed account lifecycle (create, increment
 
 - **[account-comparison](./account-comparison/)** - Compare compressed vs regular Solana accounts.
 
-
 ## Light Protocol Libraries Used
 
 ### Rust Crates
+
 - `light-sdk` - Core SDK for compressed accounts in native and anchor programs
 - `light-sdk-pinocchio` Core SDK for compressed accounts in pinocchio programs
 - `light-hasher` - Hashing utilities for ZK compression
@@ -30,29 +31,34 @@ The counter program implements a compressed account lifecycle (create, increment
 - `light-program-test` - Testing utilities for compressed programs.
 
 ### TypeScript/JavaScript Packages
+
 - `@lightprotocol/stateless.js` - Client library for interacting with compressed accounts
 - `@lightprotocol/zk-compression-cli` - Command-line tools for ZK compression development
 
 ## Prerequisites
 
 Required versions:
+
 - **Rust**: 1.86.0 or later
 - **Solana CLI**: 2.2.15
 - **Anchor CLI**: 0.31.1
-- **Zk compression CLI**: 0.27.0
+- **Zk compression CLI**: 0.27.0 or later
 - **Node.js**: 23.5.0 or later
 
 Install the Light CLI:
+
 ```bash
 $ npm -g i @lightprotocol/zk-compression-cli
 ```
 
 Install Solana CLI:
+
 ```bash
 sh -c "$(curl -sSfL https://release.solana.com/v2.2.15/install)"
 ```
 
 Install Anchor CLI:
+
 ```bash
 cargo install --git https://github.com/coral-xyz/anchor avm --force
 avm install latest
@@ -62,10 +68,13 @@ avm use latest
 ## Getting Started with your own Program
 
 1. install the light cli
+
 ```bash
 $ npm -g i @lightprotocol/zk-compression-cli
 ```
+
 2. instantiate a template Solana program with compressed accounts
+
 ```bash
 $ light init <project-name>
 ```

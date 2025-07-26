@@ -13,10 +13,9 @@ use light_sdk::{
     LightDiscriminator, LightHasher,
 };
 
-declare_id!("By66vD26AMBcbKyin1qTPjbGpp3fAYYHhC3owYy6ChWp");
+declare_id!("your_program_id");
 
-pub const LIGHT_CPI_SIGNER: CpiSigner =
-    derive_light_cpi_signer!("By66vD26AMBcbKyin1qTPjbGpp3fAYYHhC3owYy6ChWp");
+pub const LIGHT_CPI_SIGNER: CpiSigner = derive_light_cpi_signer!("your_program_id");
 
 #[program]
 pub mod counter {
