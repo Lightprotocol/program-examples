@@ -14,11 +14,13 @@ test-sbf = []
 [dependencies]
 anchor-lang = "0.31.1"
 borsh = "0.10.4"
-light-sdk = "0.13.0"
+light-sdk = { version = "0.13.0", features = ["anchor"] }
 light-hasher = { version = "3.1.0", features = ["solana"] }
 light-sdk-types = "0.13.0"
 light-compressed-account = "0.3.0"
-
+light-concurrent-merkle-tree = "2"
+# use cpi feature to avoid custom allocator conflict issues
+account-compression = { version = "2", features = ["cpi"] }
 
 [dev-dependencies]
 light-program-test = "0.14.0"

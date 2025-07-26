@@ -2960,10 +2960,12 @@ checksum = "13dc2df351e3202783a1fe0d44375f7295ffb4049267b0f3018346dc122a1d94"
 name = "lowlevel"
 version = "0.1.0"
 dependencies = [
+ "account-compression",
  "anchor-lang",
  "borsh 0.10.4",
  "light-client",
  "light-compressed-account",
+ "light-concurrent-merkle-tree",
  "light-hasher",
  "light-program-test",
  "light-sdk",
