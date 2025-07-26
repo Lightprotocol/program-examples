@@ -1,6 +1,10 @@
-#![cfg(feature = "test-sbf")]
+// #![cfg(feature = "test-sbf")]
 
 use anchor_lang::{InstructionData, ToAccountMetas};
+use light_compressed_account::{
+    compressed_account::hash_with_hashed_values, hash_to_bn254_field_size_be,
+};
+use light_hasher::{Hasher, Poseidon};
 use light_program_test::{
     program_test::LightProgramTest, AddressWithTree, Indexer, ProgramTestConfig, Rpc, RpcError,
 };
@@ -43,6 +47,53 @@ async fn test_create_address_and_output_without_address() {
     )
     .await
     .unwrap();
+
+    let program_compressed_accounts = rpc
+        .get_compressed_accounts_by_owner(&lowlevel::ID, None, None)
+        .await
+        .unwrap();
+    let compressed_account = program_compressed_accounts.value.items[0].clone();
+    println!("{:?}", compressed_account);
+    let data_hash = compressed_account.data.as_ref().unwrap().data_hash;
+    println!("data hash {:?}", data_hash);
+    let discriminator = compressed_account.data.as_ref().unwrap().discriminator;
+    println!("discriminator {:?}", discriminator);
+    let hashed_owner = hash_to_bn254_field_size_be(compressed_account.owner.as_ref());
+    println!(
+        "hashed owner {:?}",
+        hash_to_bn254_field_size_be(compressed_account.owner.as_ref())
+    );
+    let hashed_merkle_tree =
+        hash_to_bn254_field_size_be(compressed_account.tree_info.tree.as_ref());
+    println!("hashed merkle_tree {:?}", hashed_merkle_tree);
+    let leaf_index = compressed_account.leaf_index;
+    println!("leaf index le {}", compressed_account.leaf_index);
+    let mut discriminator_bytes = [0u8; 32];
+    discriminator_bytes[24..].copy_from_slice(discriminator.as_slice());
+    discriminator_bytes[23] = 2; // Domain separator for discriminator.
+    let compressed_account_hash = Poseidon::hashv(&[
+        hashed_owner.as_slice(),
+        leaf_index.to_le_bytes().as_slice(), // this is a footgun, we serialize leaf_index le but Poseidon::hashv expects be bytes.
+        // Ts poseidon hashers expect le input, to be consistent you need to provide the be number to the ts hasher.
+        // It is a mistake in our hashing, not dangerous because we just use it to make the hash unique which holds true since it is consistent, but difficult to change, we fixed it in V2 trees.
+        // For the circuit this means that you need to pass leaf index twice once in be and use it to compute the light leaf hash, once le to verify the merkle proof.
+        hashed_merkle_tree.as_slice(),
+        discriminator_bytes.as_slice(),
+        data_hash.as_slice(),
+    ])
+    .unwrap();
+    assert_eq!(compressed_account_hash, compressed_account.hash);
+    let compressed_account_hash = hash_with_hashed_values(
+        &0,
+        None,
+        Some((discriminator.as_slice(), data_hash.as_slice())),
+        &hashed_owner,
+        &hashed_merkle_tree,
+        &leaf_index,
+        false,
+    )
+    .unwrap();
+    assert_eq!(compressed_account_hash, compressed_account.hash);
 }
 
 async fn create_address_and_output_without_address<R>(
