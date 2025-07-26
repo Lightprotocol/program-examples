@@ -30,7 +30,7 @@ cargo test-sbf
 1. Start the test validator
 
    ```bash
-   light test-validator --sbf-program "your_program_id" ./target/deploy/counter.so
+   light test-validator --sbf-program "GRLu2hKaAiMbxpkAM1HeXzks9YeGuz18SEgXEizVvPqX" ./target/deploy/counter.so
    ```
 
 2. Install dependencies and run tests:
@@ -42,7 +42,7 @@ cargo test-sbf
    npm test
    ```
 
-The TypeScript tests demonstate client-side interaction compressed accounts using `@lightprotocol/stateless.js` and `@lightprotocol/zk-compression-cli`.
+The TypeScript tests demonstrate client-side interaction with compressed accounts using `@lightprotocol/stateless.js` and `@lightprotocol/zk-compression-cli`.
 
 `$ light test-validator` spawns the following background processes:
 
