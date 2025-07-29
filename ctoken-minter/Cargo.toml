@@ -1,0 +1,62 @@
+[workspace]
+resolver = "2"
+members = ["."]
+
+[package]
+name = "ctoken-minter"
+version = "0.1.0"
+description = "Example program for creating and minting compressed tokens"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "ctoken_minter"
+
+[features]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+cpi = ["no-entrypoint"]
+default = []
+test-sbf = []
+
+[dependencies]
+anchor-lang = "0.31.1"
+light-compressed-account = { path = "/Users/ananas/dev/light-protocol/program-libs/compressed-account", features = [
+    "anchor",
+] }
+light-ctoken-types = { path = "/Users/ananas/dev/light-protocol/program-libs/ctoken-types", features = [
+    "anchor",
+] }
+light-sdk = { path = "/Users/ananas/dev/light-protocol/sdk-libs/sdk", features = [
+    "anchor",
+    "v2",
+] }
+light-compressed-token-sdk = { path = "/Users/ananas/dev/light-protocol/sdk-libs/compressed-token-sdk", features = [
+    "anchor",
+] }
+light-compressed-token-types = { path = "/Users/ananas/dev/light-protocol/sdk-libs/compressed-token-types" }
+
+[dev-dependencies]
+anchor-lang = { version = "0.31.1", features = ["init-if-needed"] }
+light-client = { path = "/Users/ananas/dev/light-protocol/sdk-libs/client", features = [
+    "v2",
+] }
+light-program-test = { path = "/Users/ananas/dev/light-protocol/sdk-libs/program-test", features = [
+    "v2",
+] }
+light-token-client = { path = "/Users/ananas/dev/light-protocol/sdk-libs/token-client" }
+light-compressed-token-sdk = { path = "/Users/ananas/dev/light-protocol/sdk-libs/compressed-token-sdk" }
+solana-sdk = "2.2"
+solana-keypair = "2.2"
+solana-pubkey = { version = "2.2", features = ["curve25519", "sha2"] }
+solana-signer = "2.2"
+solana-transaction = "2.2"
+tokio = { version = "1.43.0", features = ["full"] }
+
+[lints.rust.unexpected_cfgs]
+level = "allow"
+check-cfg = [
+    'cfg(target_os, values("solana"))',
+    'cfg(feature, values("frozen-abi", "no-entrypoint"))',
+]
