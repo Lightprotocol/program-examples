@@ -1,0 +1,37 @@
+[package]
+name = "counter"
+version = "0.0.11"
+description = "Created with Anchor"
+edition = "2021"
+license = "Apache-2.0"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "counter"
+
+[features]
+no-entrypoint = []
+no-idl = []
+cpi = ["no-entrypoint"]
+default = ["idl-build"]
+test-sbf = []
+idl-build = ["anchor-lang/idl-build", "light-sdk/idl-build"]
+
+[dependencies]
+anchor-lang = "0.31.1"
+light-hasher = { git = "https://github.com/Lightprotocol/light-protocol", branch = "jorrit/feat-opt-ctoken-mint-pinocchio", features = ["solana"] }
+light-sdk = { git = "https://github.com/Lightprotocol/light-protocol", branch = "jorrit/feat-opt-ctoken-mint-pinocchio", features = ["anchor"] }
+light-compressed-account = { git = "https://github.com/Lightprotocol/light-protocol", branch = "jorrit/feat-opt-ctoken-mint-pinocchio", features = ["anchor"] }
+light-batched-merkle-tree = { git = "https://github.com/Lightprotocol/light-protocol", branch = "jorrit/feat-opt-ctoken-mint-pinocchio", features = ["solana"] }
+light-sdk-types = { git = "https://github.com/Lightprotocol/light-protocol", branch = "jorrit/feat-opt-ctoken-mint-pinocchio", features = ["anchor"] }
+
+[dev-dependencies]
+light-client = { git = "https://github.com/Lightprotocol/light-protocol", branch = "jorrit/feat-opt-ctoken-mint-pinocchio" }
+solana-keypair = "2.2"
+solana-message = "2.2"
+solana-pubkey = { version = "2.2", features = ["curve25519", "sha2"] }
+solana-signer = "2.2"
+solana-transaction = "2.2"
+light-program-test = { git = "https://github.com/Lightprotocol/light-protocol", branch = "jorrit/feat-opt-ctoken-mint-pinocchio", features = ["v2"] }
+tokio = "1.43.0"
+solana-sdk = "2.2"
