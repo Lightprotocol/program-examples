@@ -27,19 +27,26 @@ cargo test-sbf
 
 #### TypeScript Tests
 
-1. Start the test validator
+1. Build the program and sync the program ID:
+
+   ```bash
+   anchor build && anchor keys sync && anchor build
+   ```
+
+2. Start the test validator
 
    ```bash
    light test-validator --sbf-program "GRLu2hKaAiMbxpkAM1HeXzks9YeGuz18SEgXEizVvPqX" ./target/deploy/counter.so
    ```
+   
+NOTE: Replace the program ID above with the one generated in your `Anchor.toml` file.
 
-2. Install dependencies and run tests:
+3. Install dependencies and run tests:
 
    ```bash
    npm install
 
-   anchor test
-   npm test
+   anchor test --skip-local-validator --skip-build --skip-deploy
    ```
 
 The TypeScript tests demonstrate client-side interaction with compressed accounts using `@lightprotocol/stateless.js` and `@lightprotocol/zk-compression-cli`.
