@@ -1,15 +1,22 @@
+// suppress target_os = "solana" cfg warnings
 #![allow(unexpected_cfgs)]
+// anchor program macro uses deprecated resize
+#![allow(deprecated)]
 
 use anchor_lang::{prelude::*, AnchorDeserialize, Discriminator};
+use light_batched_merkle_tree::queue::BatchedQueueAccount;
+use light_compressed_account::instruction_data::with_readonly::InstructionDataInvokeCpiWithReadOnly;
+use light_sdk::address::v2::derive_address;
+use light_sdk::cpi::{InvokeLightSystemProgram, WithLightAccount};
 use light_sdk::{
     account::LightAccount,
     cpi::{CpiAccounts, CpiInputs, CpiSigner},
     derive_light_cpi_signer,
-    instruction::{
-        account_meta::{CompressedAccountMeta, CompressedAccountMetaClose},
-        PackedAddressTreeInfo, ValidityProof,
-    },
+    instruction::{account_meta::CompressedAccountMeta, PackedAddressTreeInfo, ValidityProof},
     LightDiscriminator, LightHasher,
+};
+use light_sdk_types::{
+    cpi_context_write::CpiContextWriteAccounts, CpiAccountsConfig, CpiAccountsSmall,
 };
 
 declare_id!("GRLu2hKaAiMbxpkAM1HeXzks9YeGuz18SEgXEizVvPqX");
@@ -20,28 +27,8 @@ pub const LIGHT_CPI_SIGNER: CpiSigner =
 #[program]
 pub mod counter {
 
-    use light_batched_merkle_tree::queue::BatchedQueueAccount;
-    use light_compressed_account::{
-        address::derive_address,
-        compressed_account::{CompressedAccount, CompressedAccountData},
-        instruction_data::{
-            cpi_context::CompressedCpiContext,
-            data::OutputCompressedAccountWithPackedContext,
-            with_readonly::{InAccount, InstructionDataInvokeCpiWithReadOnly},
-        },
-    };
-    use light_hasher::{
-        hash_to_field_size::hashv_to_bn254_field_size_be_const_array, DataHasher, Poseidon,
-    };
-    use light_sdk::{
-        cpi::invoke_light_system_program, instruction::PackedMerkleContext,
-        light_account_checks::AccountInfoTrait,
-    };
-    use light_sdk_types::{
-        cpi_context_write::CpiContextWriteAccounts, CpiAccountsConfig, LIGHT_SYSTEM_PROGRAM_ID,
-    };
-
     use super::*;
+    use light_sdk::light_account_checks::AccountInfoTrait;
 
     pub fn create_counter<'info>(
         ctx: Context<'_, '_, '_, 'info, GenericAnchorAccounts<'info>>,
@@ -60,31 +47,14 @@ pub mod counter {
             crate::LIGHT_CPI_SIGNER,
         );
 
-        let seed = hashv_to_bn254_field_size_be_const_array::<3>(&[
-            b"counter".as_slice(),
-            ctx.accounts.signer.pubkey().as_ref(),
-        ])
-        .unwrap();
-        msg!("seed {:?}", seed);
-        msg!(
-            "cpi_accounts.tree_pubkeys().unwrap()
-            [address_tree_info.address_merkle_tree_pubkey_index as usize]
-            .to_bytes() {:?}",
-            cpi_accounts.tree_pubkeys().unwrap()
-                [address_tree_info.address_merkle_tree_pubkey_index as usize]
-                .to_bytes()
-        );
-        let address = derive_address(
-            &seed,
+        let (address, seed) = derive_address(
+            &[b"counter".as_slice(), ctx.accounts.signer.pubkey().as_ref()],
             &cpi_accounts.tree_pubkeys().unwrap()
-                [address_tree_info.address_merkle_tree_pubkey_index as usize]
-                .to_bytes(),
-            &crate::ID.to_bytes(),
+                [address_tree_info.address_merkle_tree_pubkey_index as usize],
+            &crate::ID,
         );
-        msg!("address {:?}", address);
 
         let new_address_params = address_tree_info.into_new_address_params_packed(seed);
-        msg!("new_address_params {:?}", new_address_params);
 
         let mut counter = LightAccount::<'_, CounterAccount>::new_init(
             &crate::ID,
@@ -106,14 +76,14 @@ pub mod counter {
         Ok(())
     }
 
-    pub fn increment_counter<'info>(
+    pub fn change_owner_with_cpi_context<'info>(
         ctx: Context<'_, '_, '_, 'info, GenericAnchorAccounts<'info>>,
         proof: ValidityProof,
         counter_value: u64,
         account_meta: CompressedAccountMeta,
     ) -> Result<()> {
         let mut account_meta = account_meta;
-        let light_cpi_accounts = CpiAccounts::new_with_config(
+        let light_cpi_accounts = CpiAccountsSmall::new_with_config(
             ctx.accounts.signer.as_ref(),
             ctx.remaining_accounts,
             CpiAccountsConfig {
@@ -123,104 +93,39 @@ pub mod counter {
                 sol_pool_pda: false,
             },
         );
-        // LightAccount::new_mut will create an account with input state and output state.
-        // The input state is hashed immediately when calling new_mut().
-        // Modifying the account will modify the output state that when converted to_account_info()
-        // is hashed with poseidon hashes, serialized with borsh
-        // and created with invoke_light_system_program by invoking the light-system-program.
-        // The hashing scheme is the account structure derived with LightHasher.
 
         {
-            let counter = CounterAccount {
-                owner: ctx.accounts.signer.key(),
-                value: counter_value,
-            };
+            let cpi_context_accounts =
+                CpiContextWriteAccounts::<AccountInfo>::try_from(&light_cpi_accounts).unwrap();
 
-            msg!("invoke");
-            let cpi_context_accounts = CpiContextWriteAccounts {
-                fee_payer: light_cpi_accounts.fee_payer(),
-                authority: light_cpi_accounts.authority().unwrap(),
-                cpi_context: light_cpi_accounts.cpi_context().unwrap(),
-                cpi_signer: LIGHT_CPI_SIGNER,
-            };
-            let data_hash = counter.hash::<Poseidon>().map_err(ProgramError::from)?;
-            let instruction = InstructionDataInvokeCpiWithReadOnly {
-                mode: 1u8,
-                bump: LIGHT_CPI_SIGNER.bump,
-                invoking_program_id: LIGHT_CPI_SIGNER.program_id.into(),
-                compress_or_decompress_lamports: 0,
-                is_compress: false,
-                with_cpi_context: true,
-                with_transaction_hash: false,
-                cpi_context: CompressedCpiContext {
-                    set_context: false,
-                    first_set_context: true,
-                    ..Default::default()
+            let counter = LightAccount::<'_, CounterAccount>::new_mut(
+                &crate::ID,
+                &account_meta,
+                CounterAccount {
+                    owner: ctx.accounts.signer.key(),
+                    value: counter_value,
                 },
-                proof: None,
-                new_address_params: vec![],
-                input_compressed_accounts: vec![InAccount {
-                    address: Some(account_meta.address),
-                    discriminator: CounterAccount::discriminator(),
-                    data_hash,
-                    merkle_context: PackedMerkleContext {
-                        merkle_tree_pubkey_index: account_meta.tree_info.merkle_tree_pubkey_index,
-                        queue_pubkey_index: account_meta.tree_info.queue_pubkey_index,
-                        prove_by_index: account_meta.tree_info.prove_by_index,
-                        leaf_index: account_meta.tree_info.leaf_index,
-                    },
-                    root_index: account_meta.tree_info.root_index,
-                    lamports: 0,
-                }],
-                output_compressed_accounts: vec![OutputCompressedAccountWithPackedContext {
-                    compressed_account: CompressedAccount {
-                        owner: LIGHT_CPI_SIGNER.program_id.into(),
-                        lamports: 0,
-                        address: Some(account_meta.address),
-                        data: Some(CompressedAccountData {
-                            data: vec![],
-                            data_hash,
-                            discriminator: CounterAccount::discriminator(),
-                        }),
-                    },
-                    merkle_tree_index: account_meta.output_state_tree_index,
-                }],
-                read_only_addresses: vec![],
-                read_only_accounts: vec![],
-            };
-            let inputs = instruction.try_to_vec().unwrap();
-            let mut data = Vec::with_capacity(8 + inputs.len());
-            data.extend_from_slice(
-                &light_compressed_account::discriminators::DISCRIMINATOR_INVOKE_CPI_WITH_READ_ONLY,
-            );
-            data.extend(inputs);
-            let instruction = anchor_lang::solana_program::instruction::Instruction {
-                program_id: LIGHT_SYSTEM_PROGRAM_ID.into(),
-                accounts: vec![
-                    AccountMeta {
-                        pubkey: light_cpi_accounts.fee_payer().pubkey(),
-                        is_writable: light_cpi_accounts.fee_payer().is_writable,
-                        is_signer: true,
-                    },
-                    AccountMeta {
-                        pubkey: light_cpi_accounts.authority().unwrap().pubkey(),
-                        is_writable: light_cpi_accounts.authority().unwrap().is_writable,
-                        is_signer: true,
-                    },
-                    AccountMeta {
-                        pubkey: light_cpi_accounts.cpi_context().unwrap().pubkey(),
-                        is_writable: true,
-                        is_signer: false,
-                    },
-                ],
-                data,
-            };
-            invoke_light_system_program(
-                &cpi_context_accounts.to_account_infos(),
-                instruction,
-                LIGHT_CPI_SIGNER.bump,
             )
             .map_err(ProgramError::from)?;
+
+            let in_account = counter
+                .to_in_account()
+                .ok_or(ProgramError::InvalidAccountData)?;
+            let out_account = counter
+                .to_output_compressed_account_with_packed_context(Some(
+                    LIGHT_CPI_SIGNER.program_id.into(),
+                ))
+                .map_err(ProgramError::from)?
+                .ok_or(ProgramError::InvalidAccountData)?;
+            InstructionDataInvokeCpiWithReadOnly::new(
+                LIGHT_CPI_SIGNER.program_id.into(),
+                LIGHT_CPI_SIGNER.bump,
+                None,
+            )
+            .mode_v2()
+            .with_input_compressed_accounts(vec![in_account])
+            .with_output_compressed_accounts(vec![out_account])
+            .invoke_write_to_cpi_context_first(&cpi_context_accounts.to_account_infos())?;
         }
         msg!(
             "tree pubkeys {:?} ",
@@ -241,129 +146,15 @@ pub mod counter {
         )
         .map_err(ProgramError::from)?;
 
-        let cpi_inputs = CpiInputs {
-            proof,
-            account_infos: Some(vec![counter
-                .to_account_info()
-                .map_err(ProgramError::from)?]),
-            new_assigned_addresses: None,
-            cpi_context: Some(CompressedCpiContext {
-                set_context: false,
-                first_set_context: false,
-                cpi_context_account_index: 0,
-            }),
-            ..Default::default()
-        };
-        cpi_inputs
-            .invoke_light_system_program(light_cpi_accounts)
-            .map_err(ProgramError::from)?;
-        Ok(())
-    }
-
-    pub fn decrement_counter<'info>(
-        ctx: Context<'_, '_, '_, 'info, GenericAnchorAccounts<'info>>,
-        proof: ValidityProof,
-        counter_value: u64,
-        account_meta: CompressedAccountMeta,
-    ) -> Result<()> {
-        let mut counter = LightAccount::<'_, CounterAccount>::new_mut(
-            &crate::ID,
-            &account_meta,
-            CounterAccount {
-                owner: ctx.accounts.signer.key(),
-                value: counter_value,
-            },
+        InstructionDataInvokeCpiWithReadOnly::new(
+            LIGHT_CPI_SIGNER.program_id.into(),
+            LIGHT_CPI_SIGNER.bump,
+            proof.into(),
         )
-        .map_err(ProgramError::from)?;
-
-        counter.value = counter.value.checked_sub(1).ok_or(CustomError::Underflow)?;
-
-        let light_cpi_accounts = CpiAccounts::new(
-            ctx.accounts.signer.as_ref(),
-            ctx.remaining_accounts,
-            crate::LIGHT_CPI_SIGNER,
-        );
-
-        let cpi_inputs = CpiInputs::new(
-            proof,
-            vec![counter.to_account_info().map_err(ProgramError::from)?],
-        );
-
-        cpi_inputs
-            .invoke_light_system_program(light_cpi_accounts)
-            .map_err(ProgramError::from)?;
-
-        Ok(())
-    }
-
-    pub fn reset_counter<'info>(
-        ctx: Context<'_, '_, '_, 'info, GenericAnchorAccounts<'info>>,
-        proof: ValidityProof,
-        counter_value: u64,
-        account_meta: CompressedAccountMeta,
-    ) -> Result<()> {
-        let mut counter = LightAccount::<'_, CounterAccount>::new_mut(
-            &crate::ID,
-            &account_meta,
-            CounterAccount {
-                owner: ctx.accounts.signer.key(),
-                value: counter_value,
-            },
-        )
-        .map_err(ProgramError::from)?;
-
-        counter.value = 0;
-
-        let light_cpi_accounts = CpiAccounts::new(
-            ctx.accounts.signer.as_ref(),
-            ctx.remaining_accounts,
-            crate::LIGHT_CPI_SIGNER,
-        );
-        let cpi_inputs = CpiInputs::new(
-            proof,
-            vec![counter.to_account_info().map_err(ProgramError::from)?],
-        );
-
-        cpi_inputs
-            .invoke_light_system_program(light_cpi_accounts)
-            .map_err(ProgramError::from)?;
-
-        Ok(())
-    }
-
-    pub fn close_counter<'info>(
-        ctx: Context<'_, '_, '_, 'info, GenericAnchorAccounts<'info>>,
-        proof: ValidityProof,
-        counter_value: u64,
-        account_meta: CompressedAccountMetaClose,
-    ) -> Result<()> {
-        // LightAccount::new_close() will create an account with only input state and no output state.
-        // By providing no output state the account is closed after the instruction.
-        // The address of a closed account cannot be reused.
-        let counter = LightAccount::<'_, CounterAccount>::new_close(
-            &crate::ID,
-            &account_meta,
-            CounterAccount {
-                owner: ctx.accounts.signer.key(),
-                value: counter_value,
-            },
-        )
-        .map_err(ProgramError::from)?;
-
-        let light_cpi_accounts = CpiAccounts::new(
-            ctx.accounts.signer.as_ref(),
-            ctx.remaining_accounts,
-            crate::LIGHT_CPI_SIGNER,
-        );
-
-        let cpi_inputs = CpiInputs::new(
-            proof,
-            vec![counter.to_account_info().map_err(ProgramError::from)?],
-        );
-
-        cpi_inputs
-            .invoke_light_system_program(light_cpi_accounts)
-            .map_err(ProgramError::from)?;
+        .mode_v2()
+        .with_light_account(counter)
+        .map_err(ProgramError::from)?
+        .invoke_execute_cpi_context(&light_cpi_accounts.to_account_infos())?;
         Ok(())
     }
 }
