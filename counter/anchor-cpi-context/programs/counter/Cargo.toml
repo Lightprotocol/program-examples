@@ -19,19 +19,19 @@ idl-build = ["anchor-lang/idl-build", "light-sdk/idl-build"]
 
 [dependencies]
 anchor-lang = "0.31.1"
-light-hasher = { git = "https://github.com/Lightprotocol/light-protocol", branch = "jorrit/feat-opt-ctoken-mint-pinocchio", features = ["solana"] }
-light-sdk = { git = "https://github.com/Lightprotocol/light-protocol", branch = "jorrit/feat-opt-ctoken-mint-pinocchio", features = ["anchor"] }
-light-compressed-account = { git = "https://github.com/Lightprotocol/light-protocol", branch = "jorrit/feat-opt-ctoken-mint-pinocchio", features = ["anchor"] }
-light-batched-merkle-tree = { git = "https://github.com/Lightprotocol/light-protocol", branch = "jorrit/feat-opt-ctoken-mint-pinocchio", features = ["solana"] }
-light-sdk-types = { git = "https://github.com/Lightprotocol/light-protocol", branch = "jorrit/feat-opt-ctoken-mint-pinocchio", features = ["anchor"] }
+light-hasher = { path = "/Users/ananas/dev/light-protocol/program-libs/hasher", features = ["solana"] }
+light-sdk = { path = "/Users/ananas/dev/light-protocol/sdk-libs/sdk", features = ["anchor", "v2"] }
+light-compressed-account = { path = "/Users/ananas/dev/light-protocol/program-libs/compressed-account", features = ["anchor"] }
+light-batched-merkle-tree = { path = "/Users/ananas/dev/light-protocol/program-libs/batched-merkle-tree",features = ["solana"] }
+light-sdk-types = { path = "/Users/ananas/dev/light-protocol/sdk-libs/sdk-types", features = ["anchor"] }
 
 [dev-dependencies]
-light-client = { git = "https://github.com/Lightprotocol/light-protocol", branch = "jorrit/feat-opt-ctoken-mint-pinocchio" }
+light-client = {  path = "/Users/ananas/dev/light-protocol/sdk-libs/client" }
 solana-keypair = "2.2"
 solana-message = "2.2"
 solana-pubkey = { version = "2.2", features = ["curve25519", "sha2"] }
 solana-signer = "2.2"
 solana-transaction = "2.2"
-light-program-test = { git = "https://github.com/Lightprotocol/light-protocol", branch = "jorrit/feat-opt-ctoken-mint-pinocchio", features = ["v2"] }
+light-program-test = { path = "/Users/ananas/dev/light-protocol/sdk-libs/program-test", features = ["v2"] }
 tokio = "1.43.0"
 solana-sdk = "2.2"
