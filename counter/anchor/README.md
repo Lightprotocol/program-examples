@@ -54,8 +54,8 @@ The TypeScript tests demonstrate client-side interaction with compressed account
 `$ light test-validator` spawns the following background processes:
 
 1. solana test validator `http://127.0.0.1:8899`
-2. prover server `http://127.0.0.1:8784`
-3. photon indexer `http://127.0.0.1:3001`
+2. prover server `http://127.0.0.1:3001`
+3. photon indexer `http://127.0.0.1:8784`
 
 You can kill these background processes with `lsof -i:<port>` and `kill <pid>`.
 
