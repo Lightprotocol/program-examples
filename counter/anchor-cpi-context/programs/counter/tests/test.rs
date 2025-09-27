@@ -65,7 +65,7 @@ where
 {
     let mut remaining_accounts = PackedAccounts::default();
     let config = SystemAccountMetaConfig::new(counter::ID);
-    remaining_accounts.add_system_accounts(config).unwrap();
+    remaining_accounts.add_system_accounts_v2(config).unwrap();
 
     let rpc_result = rpc
         .get_validity_proof(
@@ -134,9 +134,7 @@ where
         .unwrap();
     let mut config = SystemAccountMetaConfig::new(counter::ID);
     config.cpi_context = rpc_result.accounts[0].tree_info.cpi_context;
-    remaining_accounts
-        .add_system_accounts_small(config)
-        .unwrap();
+    remaining_accounts.add_system_accounts_v2(config).unwrap();
 
     let counter_account =
         CounterAccount::deserialize(&mut compressed_account.data.as_ref().unwrap().data.as_slice())
