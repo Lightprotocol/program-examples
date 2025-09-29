@@ -41,7 +41,8 @@ async fn test_create_compressed_account() {
         .get_compressed_account(address, None)
         .await
         .unwrap()
-        .value;
+        .value
+        .unwrap();
     let data_account = CompressedAccountData::deserialize(
         &mut compressed_account.data.as_ref().unwrap().data.as_slice(),
     )
@@ -58,7 +59,8 @@ async fn test_create_compressed_account() {
         .get_compressed_account(address, None)
         .await
         .unwrap()
-        .value;
+        .value
+        .unwrap();
     let data_account = CompressedAccountData::deserialize(
         &mut compressed_account.data.as_ref().unwrap().data.as_slice(),
     )
@@ -80,7 +82,7 @@ where
 {
     let mut remaining_accounts = PackedAccounts::default();
     let config = SystemAccountMetaConfig::new(account_comparison::ID);
-    remaining_accounts.add_system_accounts(config);
+    remaining_accounts.add_system_accounts(config)?;
 
     let rpc_result = rpc
         .get_validity_proof(
@@ -139,7 +141,7 @@ where
 {
     let mut remaining_accounts = PackedAccounts::default();
     let config = SystemAccountMetaConfig::new(account_comparison::ID);
-    remaining_accounts.add_system_accounts(config);
+    remaining_accounts.add_system_accounts(config)?;
 
     let hash = compressed_account.hash;
 

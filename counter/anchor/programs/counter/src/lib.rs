@@ -1,15 +1,13 @@
 #![allow(unexpected_cfgs)]
+#![allow(deprecated)]
 
 use anchor_lang::{prelude::*, AnchorDeserialize, Discriminator};
 use light_sdk::{
     account::LightAccount,
     address::v1::derive_address,
-    cpi::{CpiAccounts, CpiInputs, CpiSigner},
+    cpi::{CpiAccounts, CpiSigner},
     derive_light_cpi_signer,
-    instruction::{
-        account_meta::{CompressedAccountMeta, CompressedAccountMetaClose},
-        PackedAddressTreeInfo, ValidityProof,
-    },
+    instruction::{account_meta::CompressedAccountMeta, PackedAddressTreeInfo, ValidityProof},
     LightDiscriminator, LightHasher,
 };
 
@@ -22,6 +20,7 @@ pub const LIGHT_CPI_SIGNER: CpiSigner =
 pub mod counter {
 
     use super::*;
+    use light_sdk::cpi::{InvokeLightSystemProgram, LightCpiInstruction, LightSystemProgramCpiV1};
 
     pub fn create_counter<'info>(
         ctx: Context<'_, '_, '_, 'info, GenericAnchorAccounts<'info>>,
@@ -59,13 +58,10 @@ pub mod counter {
         counter.owner = ctx.accounts.signer.key();
         counter.value = 0;
 
-        let cpi = CpiInputs::new_with_address(
-            proof,
-            vec![counter.to_account_info().map_err(ProgramError::from)?],
-            vec![new_address_params],
-        );
-        cpi.invoke_light_system_program(light_cpi_accounts)
-            .map_err(ProgramError::from)?;
+        LightSystemProgramCpiV1::new_cpi(LIGHT_CPI_SIGNER, proof)
+            .with_light_account(counter)?
+            .with_new_addresses(&[new_address_params])
+            .invoke(light_cpi_accounts)?;
 
         Ok(())
     }
@@ -89,11 +85,9 @@ pub mod counter {
                 owner: ctx.accounts.signer.key(),
                 value: counter_value,
             },
-        )
-        .map_err(ProgramError::from)?;
+        )?;
 
         msg!("counter {}", counter.value);
-        msg!("counter {:?}", counter);
 
         counter.value = counter.value.checked_add(1).ok_or(CustomError::Overflow)?;
 
@@ -103,13 +97,9 @@ pub mod counter {
             crate::LIGHT_CPI_SIGNER,
         );
 
-        let cpi_inputs = CpiInputs::new(
-            proof,
-            vec![counter.to_account_info().map_err(ProgramError::from)?],
-        );
-        cpi_inputs
-            .invoke_light_system_program(light_cpi_accounts)
-            .map_err(ProgramError::from)?;
+        LightSystemProgramCpiV1::new_cpi(LIGHT_CPI_SIGNER, proof)
+            .with_light_account(counter)?
+            .invoke(light_cpi_accounts)?;
         Ok(())
     }
 
@@ -126,8 +116,7 @@ pub mod counter {
                 owner: ctx.accounts.signer.key(),
                 value: counter_value,
             },
-        )
-        .map_err(ProgramError::from)?;
+        )?;
 
         counter.value = counter.value.checked_sub(1).ok_or(CustomError::Underflow)?;
 
@@ -137,14 +126,9 @@ pub mod counter {
             crate::LIGHT_CPI_SIGNER,
         );
 
-        let cpi_inputs = CpiInputs::new(
-            proof,
-            vec![counter.to_account_info().map_err(ProgramError::from)?],
-        );
-
-        cpi_inputs
-            .invoke_light_system_program(light_cpi_accounts)
-            .map_err(ProgramError::from)?;
+        LightSystemProgramCpiV1::new_cpi(LIGHT_CPI_SIGNER, proof)
+            .with_light_account(counter)?
+            .invoke(light_cpi_accounts)?;
 
         Ok(())
     }
@@ -162,8 +146,7 @@ pub mod counter {
                 owner: ctx.accounts.signer.key(),
                 value: counter_value,
             },
-        )
-        .map_err(ProgramError::from)?;
+        )?;
 
         counter.value = 0;
 
@@ -172,14 +155,9 @@ pub mod counter {
             ctx.remaining_accounts,
             crate::LIGHT_CPI_SIGNER,
         );
-        let cpi_inputs = CpiInputs::new(
-            proof,
-            vec![counter.to_account_info().map_err(ProgramError::from)?],
-        );
-
-        cpi_inputs
-            .invoke_light_system_program(light_cpi_accounts)
-            .map_err(ProgramError::from)?;
+        LightSystemProgramCpiV1::new_cpi(LIGHT_CPI_SIGNER, proof)
+            .with_light_account(counter)?
+            .invoke(light_cpi_accounts)?;
 
         Ok(())
     }
@@ -188,7 +166,7 @@ pub mod counter {
         ctx: Context<'_, '_, '_, 'info, GenericAnchorAccounts<'info>>,
         proof: ValidityProof,
         counter_value: u64,
-        account_meta: CompressedAccountMetaClose,
+        account_meta: CompressedAccountMeta,
     ) -> Result<()> {
         // LightAccount::new_close() will create an account with only input state and no output state.
         // By providing no output state the account is closed after the instruction.
@@ -200,8 +178,7 @@ pub mod counter {
                 owner: ctx.accounts.signer.key(),
                 value: counter_value,
             },
-        )
-        .map_err(ProgramError::from)?;
+        )?;
 
         let light_cpi_accounts = CpiAccounts::new(
             ctx.accounts.signer.as_ref(),
@@ -209,14 +186,9 @@ pub mod counter {
             crate::LIGHT_CPI_SIGNER,
         );
 
-        let cpi_inputs = CpiInputs::new(
-            proof,
-            vec![counter.to_account_info().map_err(ProgramError::from)?],
-        );
-
-        cpi_inputs
-            .invoke_light_system_program(light_cpi_accounts)
-            .map_err(ProgramError::from)?;
+        LightSystemProgramCpiV1::new_cpi(LIGHT_CPI_SIGNER, proof)
+            .with_light_account(counter)?
+            .invoke(light_cpi_accounts)?;
         Ok(())
     }
 }
