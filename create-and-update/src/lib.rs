@@ -18,12 +18,13 @@ pub const LIGHT_CPI_SIGNER: CpiSigner =
 
 pub const FIRST_SEED: &[u8] = b"first";
 pub const SECOND_SEED: &[u8] = b"second";
+pub const ALLOWED_ADDRESS_TREE: Pubkey = pubkey!("amt2kaJA14v3urZbZvnc5v2np8jqvc4Z8zDep5wbtzx");
 
 #[program]
 pub mod create_and_update {
 
     use super::*;
-    use light_sdk::cpi::{LightSystemProgramCpi, LightCpiInstruction, InvokeLightSystemProgram};
+    use light_sdk::cpi::{InvokeLightSystemProgram, LightCpiInstruction, LightSystemProgramCpi};
 
     /// Creates a new compressed account with initial data
     pub fn create_compressed_account<'info>(
@@ -38,11 +39,16 @@ pub mod create_and_update {
             ctx.remaining_accounts,
             crate::LIGHT_CPI_SIGNER,
         );
+        let address_tree = light_cpi_accounts.tree_pubkeys().unwrap()
+            [address_tree_info.address_merkle_tree_pubkey_index as usize];
+
+        if address_tree != ALLOWED_ADDRESS_TREE {
+            return Err(ProgramError::InvalidAccountData.into());
+        }
 
         let (address, address_seed) = derive_address(
             &[FIRST_SEED, ctx.accounts.signer.key().as_ref()],
-            &light_cpi_accounts.tree_pubkeys().unwrap()
-                [address_tree_info.address_merkle_tree_pubkey_index as usize],
+            &address_tree,
             &crate::ID,
         );
 
@@ -83,12 +89,18 @@ pub mod create_and_update {
             ctx.remaining_accounts,
             crate::LIGHT_CPI_SIGNER,
         );
+        let address_tree = light_cpi_accounts.tree_pubkeys().unwrap()[new_account
+            .address_tree_info
+            .address_merkle_tree_pubkey_index
+            as usize];
 
+        if address_tree != ALLOWED_ADDRESS_TREE {
+            return Err(ProgramError::InvalidAccountData.into());
+        }
         // Create new compressed account
         let (new_address, new_address_seed) = derive_address(
             &[SECOND_SEED, ctx.accounts.signer.key().as_ref()],
-            &light_cpi_accounts.tree_pubkeys().unwrap()
-                [new_account.address_tree_info.address_merkle_tree_pubkey_index as usize],
+            &address_tree,
             &crate::ID,
         );
 
@@ -201,13 +213,16 @@ pub mod create_and_update {
             crate::LIGHT_CPI_SIGNER,
         );
 
-        let tree_pubkey = &light_cpi_accounts.tree_pubkeys().unwrap()
+        let address_tree = light_cpi_accounts.tree_pubkeys().unwrap()
             [address_tree_info.address_merkle_tree_pubkey_index as usize];
 
+        if address_tree != ALLOWED_ADDRESS_TREE {
+            return Err(ProgramError::InvalidAccountData.into());
+        }
         // Create first compressed account
         let (first_address, first_address_seed) = derive_address(
             &[FIRST_SEED, ctx.accounts.signer.key().as_ref()],
-            tree_pubkey,
+            &address_tree,
             &crate::ID,
         );
 
@@ -222,7 +237,7 @@ pub mod create_and_update {
         // Create second compressed account
         let (second_address, second_address_seed) = derive_address(
             &[SECOND_SEED, ctx.accounts.signer.key().as_ref()],
-            tree_pubkey,
+            &address_tree,
             &crate::ID,
         );
 
@@ -234,10 +249,10 @@ pub mod create_and_update {
         second_data_account.owner = ctx.accounts.signer.key();
         second_data_account.message = message.clone();
 
-        let first_address_params =
-            address_tree_info.into_new_address_params_assigned_packed(first_address_seed.into(), Some(0));
-        let second_address_params =
-            address_tree_info.into_new_address_params_assigned_packed(second_address_seed.into(), Some(1));
+        let first_address_params = address_tree_info
+            .into_new_address_params_assigned_packed(first_address_seed.into(), Some(0));
+        let second_address_params = address_tree_info
+            .into_new_address_params_assigned_packed(second_address_seed.into(), Some(1));
 
         LightSystemProgramCpi::new_cpi(crate::LIGHT_CPI_SIGNER, proof)
             .mode_v2()

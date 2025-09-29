@@ -5,7 +5,7 @@ use light_program_test::{
     program_test::LightProgramTest, AddressWithTree, Indexer, ProgramTestConfig, Rpc, RpcError,
 };
 use light_sdk::{
-    address::v1::derive_address,
+    address::v2::derive_address,
     instruction::{account_meta::CompressedAccountMeta, PackedAccounts, SystemAccountMetaConfig},
 };
 use solana_sdk::{
@@ -17,14 +17,14 @@ use solana_sdk::{
 async fn test_create_compressed_account() {
     let name = "Heinrich".to_string();
 
-    let config = ProgramTestConfig::new(
+    let config = ProgramTestConfig::new_v2(
         false, // TODO: enable once cli with new prover server is released
         Some(vec![("account_comparison", account_comparison::ID)]),
     );
     let mut rpc = LightProgramTest::new(config).await.unwrap();
     let user = rpc.get_payer().insecure_clone();
 
-    let address_tree_info = rpc.get_address_tree_v1();
+    let address_tree_info = rpc.get_address_tree_v2();
 
     let (address, _) = derive_address(
         &[b"account", user.pubkey().as_ref()],
@@ -41,7 +41,8 @@ async fn test_create_compressed_account() {
         .get_compressed_account(address, None)
         .await
         .unwrap()
-        .value;
+        .value
+        .unwrap();
     let data_account = CompressedAccountData::deserialize(
         &mut compressed_account.data.as_ref().unwrap().data.as_slice(),
     )
@@ -58,7 +59,8 @@ async fn test_create_compressed_account() {
         .get_compressed_account(address, None)
         .await
         .unwrap()
-        .value;
+        .value
+        .unwrap();
     let data_account = CompressedAccountData::deserialize(
         &mut compressed_account.data.as_ref().unwrap().data.as_slice(),
     )
@@ -80,7 +82,7 @@ where
 {
     let mut remaining_accounts = PackedAccounts::default();
     let config = SystemAccountMetaConfig::new(account_comparison::ID);
-    remaining_accounts.add_system_accounts(config);
+    remaining_accounts.add_system_accounts_v2(config)?;
 
     let rpc_result = rpc
         .get_validity_proof(
@@ -139,7 +141,7 @@ where
 {
     let mut remaining_accounts = PackedAccounts::default();
     let config = SystemAccountMetaConfig::new(account_comparison::ID);
-    remaining_accounts.add_system_accounts(config);
+    remaining_accounts.add_system_accounts_v2(config)?;
 
     let hash = compressed_account.hash;
 

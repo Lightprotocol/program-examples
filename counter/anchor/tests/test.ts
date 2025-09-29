@@ -13,11 +13,17 @@ import {
   LightSystemProgram,
   Rpc,
   sleep,
+  featureFlags,
+  batchMerkleTree,
+  batchQueue,
 } from "@lightprotocol/stateless.js";
-
+import { keccak_256 } from "@noble/hashes/sha3";
 const path = require("path");
 const os = require("os");
 require("dotenv").config();
+
+// Set Light Protocol to V2
+// process.env.LIGHT_PROTOCOL_VERSION = "V2";
 
 const anchorWalletPath = path.join(os.homedir(), ".config/solana/id.json");
 process.env.ANCHOR_WALLET = anchorWalletPath;
@@ -36,20 +42,40 @@ describe("test-anchor", () => {
         commitment: "confirmed",
       }
     );
+
+    // Check if V2 is enabled
+    console.log("V2 enabled:", featureFlags.isV2());
+    console.log("Feature flags version:", featureFlags.version);
+
+    // Get existing tree infos to check what's available
+    const existingTreeInfos = await rpc.getStateTreeInfos();
+    console.log("Available tree infos:");
+    existingTreeInfos.forEach((info) => {
+      console.log(`  Tree: ${info.tree.toBase58()}, Type: ${info.treeType}`);
+    });
+
     let lamports = web3.LAMPORTS_PER_SOL;
     await rpc.requestAirdrop(signer.publicKey, lamports);
     await sleep(2000);
 
-    const outputMerkleTree = defaultTestStateTreeAccounts().merkleTree;
-    const addressTree = defaultTestStateTreeAccounts().addressTree;
-    const addressQueue = defaultTestStateTreeAccounts().addressQueue;
+    const outputQueue = new web3.PublicKey(batchQueue);
+    const outputMerkleTree = new web3.PublicKey(batchMerkleTree);
+    const addressTree = new web3.PublicKey(
+      "EzKE84aVTkCUhDHLELqyJaq1Y7UVVmqxXqZjVHwHY3rK"
+    );
+    const addressQueue = new web3.PublicKey(
+      "EzKE84aVTkCUhDHLELqyJaq1Y7UVVmqxXqZjVHwHY3rK"
+    );
 
     const counterSeed = new TextEncoder().encode("counter");
-    const seed = deriveAddressSeed(
-      [counterSeed, signer.publicKey.toBytes()],
+    const seed = deriveAddressSeedV2([counterSeed, signer.publicKey.toBytes()]);
+    console.log("seed ", Array.from(seed));
+    const address = deriveAddressV2(
+      seed,
+      addressTree,
       new web3.PublicKey(program.idl.address)
     );
-    const address = deriveAddress(seed, addressTree);
+    console.log("address ", Array.from(address.toBytes()));
     // Create counter compressed account.
     await CreateCounterCompressedAccount(
       rpc,
@@ -57,7 +83,7 @@ describe("test-anchor", () => {
       addressQueue,
       address,
       program,
-      outputMerkleTree,
+      outputQueue,
       signer
     );
     // Wait for indexer to catch up.
@@ -77,7 +103,7 @@ describe("test-anchor", () => {
       counter.value,
       counterAccount,
       program,
-      outputMerkleTree,
+      outputQueue,
       signer
     );
 
@@ -85,10 +111,7 @@ describe("test-anchor", () => {
     await sleep(2000);
 
     counterAccount = await rpc.getCompressedAccount(bn(address.toBytes()));
-    counter = coder.types.decode(
-      "CounterAccount",
-      counterAccount.data.data
-    );
+    counter = coder.types.decode("CounterAccount", counterAccount.data.data);
     console.log("counter account ", counterAccount);
     console.log("des counter ", counter);
 
@@ -97,7 +120,7 @@ describe("test-anchor", () => {
       counter.value,
       counterAccount,
       program,
-      outputMerkleTree,
+      outputQueue,
       signer
     );
 
@@ -204,7 +227,7 @@ async function incrementCounterCompressedAccount(
     const compressedAccountMeta = {
       treeInfo: {
         rootIndex: proofRpcResult.rootIndices[0],
-        proveByIndex: false,
+        proveByIndex: proofRpcResult.proveByIndices[0],
         merkleTreePubkeyIndex,
         queuePubkeyIndex,
         leafIndex: counterAccount.leafIndex,
@@ -272,12 +295,13 @@ async function deleteCounterCompressedAccount(
     const compressedAccountMeta = {
       treeInfo: {
         rootIndex: proofRpcResult.rootIndices[0],
-        proveByIndex: false,
+        proveByIndex: proofRpcResult.proveByIndices[0],
         merkleTreePubkeyIndex,
         queuePubkeyIndex,
         leafIndex: counterAccount.leafIndex,
       },
       address: counterAccount.address,
+      outputStateTreeIndex: outputMerkleTreeIndex,
     };
 
     let proof = {
@@ -304,6 +328,7 @@ async function deleteCounterCompressedAccount(
   }
 }
 
+// TODO: import
 class PackedAccounts {
   private preAccounts: web3.AccountMeta[] = [];
   private systemAccounts: web3.AccountMeta[] = [];
@@ -331,7 +356,7 @@ class PackedAccounts {
   }
 
   addSystemAccounts(config: SystemAccountMetaConfig): void {
-    this.systemAccounts.push(...getLightSystemAccountMetas(config));
+    this.systemAccounts.push(...getLightSystemAccountMetasV2(config));
   }
 
   insertOrGet(pubkey: web3.PublicKey): number {
@@ -388,6 +413,7 @@ class PackedAccounts {
   }
 }
 
+// TODO: import
 class SystemAccountMetaConfig {
   selfProgram: web3.PublicKey;
   cpiContext?: web3.PublicKey;
@@ -418,7 +444,8 @@ class SystemAccountMetaConfig {
   }
 }
 
-function getLightSystemAccountMetas(
+// TODO: import
+function getLightSystemAccountMetasV2(
   config: SystemAccountMetaConfig
 ): web3.AccountMeta[] {
   let signerSeed = new TextEncoder().encode("cpi_authority");
@@ -435,7 +462,6 @@ function getLightSystemAccountMetas(
       isSigner: false,
       isWritable: false,
     },
-    { pubkey: defaults.noopProgram, isSigner: false, isWritable: false },
     {
       pubkey: defaults.accountCompressionAuthority,
       isSigner: false,
@@ -446,7 +472,6 @@ function getLightSystemAccountMetas(
       isSigner: false,
       isWritable: false,
     },
-    { pubkey: config.selfProgram, isSigner: false, isWritable: false },
   ];
   if (config.solPoolPda) {
     metas.push({
@@ -477,13 +502,13 @@ function getLightSystemAccountMetas(
   return metas;
 }
 
+// TODO: import
 class SystemAccountPubkeys {
   lightSystemProgram: web3.PublicKey;
   systemProgram: web3.PublicKey;
   accountCompressionProgram: web3.PublicKey;
   accountCompressionAuthority: web3.PublicKey;
   registeredProgramPda: web3.PublicKey;
-  noopProgram: web3.PublicKey;
   solPoolPda: web3.PublicKey;
 
   private constructor(
@@ -492,7 +517,6 @@ class SystemAccountPubkeys {
     accountCompressionProgram: web3.PublicKey,
     accountCompressionAuthority: web3.PublicKey,
     registeredProgramPda: web3.PublicKey,
-    noopProgram: web3.PublicKey,
     solPoolPda: web3.PublicKey
   ) {
     this.lightSystemProgram = lightSystemProgram;
@@ -500,7 +524,6 @@ class SystemAccountPubkeys {
     this.accountCompressionProgram = accountCompressionProgram;
     this.accountCompressionAuthority = accountCompressionAuthority;
     this.registeredProgramPda = registeredProgramPda;
-    this.noopProgram = noopProgram;
     this.solPoolPda = solPoolPda;
   }
 
@@ -511,8 +534,55 @@ class SystemAccountPubkeys {
       defaultStaticAccountsStruct().accountCompressionProgram,
       defaultStaticAccountsStruct().accountCompressionAuthority,
       defaultStaticAccountsStruct().registeredProgramPda,
-      defaultStaticAccountsStruct().noopProgram,
       web3.PublicKey.default
     );
   }
+}
+// TODO: import
+function deriveAddressSeedV2(seeds: Uint8Array[]): Uint8Array {
+  const combinedSeeds: Uint8Array[] = seeds.map((seed) =>
+    Uint8Array.from(seed)
+  );
+  const hash = hashvToBn254FieldSizeBeU8Array(combinedSeeds);
+  return hash;
+}
+
+/**
+ * Derives an address from a seed using the v2 method (matching Rust's derive_address_from_seed)
+ *
+ * @param addressSeed              The address seed (32 bytes)
+ * @param addressMerkleTreePubkey  Merkle tree public key
+ * @param programId                Program ID
+ * @returns                        Derived address
+ */
+// TODO: import
+function deriveAddressV2(
+  addressSeed: Uint8Array,
+  addressMerkleTreePubkey: web3.PublicKey,
+  programId: web3.PublicKey
+): web3.PublicKey {
+  if (addressSeed.length != 32) {
+    throw new Error("Address seed length is not 32 bytes.");
+  }
+  const merkleTreeBytes = addressMerkleTreePubkey.toBytes();
+  const programIdBytes = programId.toBytes();
+  // Match Rust implementation: hash [seed, merkle_tree_pubkey, program_id]
+  const combined = [
+    Uint8Array.from(addressSeed),
+    Uint8Array.from(merkleTreeBytes),
+    Uint8Array.from(programIdBytes),
+  ];
+  const hash = hashvToBn254FieldSizeBeU8Array(combined);
+  return new web3.PublicKey(hash);
+}
+// TODO: import
+function hashvToBn254FieldSizeBeU8Array(bytes: Uint8Array[]): Uint8Array {
+  const hasher = keccak_256.create();
+  for (const input of bytes) {
+    hasher.update(input);
+  }
+  hasher.update(Uint8Array.from([255]));
+  const hash = hasher.digest();
+  hash[0] = 0;
+  return hash;
 }

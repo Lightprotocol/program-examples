@@ -1,8 +1,8 @@
 use anchor_lang::prelude::*;
 use light_sdk::{
     account::LightAccount,
-    address::v1::derive_address,
-    cpi::{CpiAccounts, CpiInputs, CpiSigner},
+    address::v2::derive_address,
+    cpi::{CpiAccountsV2, CpiSigner},
     derive_light_cpi_signer,
     instruction::{account_meta::CompressedAccountMeta, PackedAddressTreeInfo, ValidityProof},
     LightDiscriminator, LightHasher,
@@ -16,14 +16,14 @@ pub enum CustomError {
 
 declare_id!("FYX4GmKJYzSiycc7XZKf12NGXNE9siSx1cJubYJniHcv");
 
-const CPI_SIGNER: CpiSigner =
+const LIGHT_CPI_SIGNER: CpiSigner =
     derive_light_cpi_signer!("FYX4GmKJYzSiycc7XZKf12NGXNE9siSx1cJubYJniHcv");
+pub const ALLOWED_ADDRESS_TREE: Pubkey = pubkey!("amt2kaJA14v3urZbZvnc5v2np8jqvc4Z8zDep5wbtzx");
 
 #[program]
 pub mod account_comparison {
-    use light_sdk::error::LightSdkError;
-
     use super::*;
+    use light_sdk::cpi::{InvokeLightSystemProgram, LightCpiInstruction, LightSystemProgramCpi};
 
     pub fn create_account(ctx: Context<CreateAccount>, name: String) -> Result<()> {
         let account = &mut ctx.accounts.account;
@@ -47,17 +47,19 @@ pub mod account_comparison {
         address_tree_info: PackedAddressTreeInfo,
         output_tree_index: u8,
     ) -> Result<()> {
-        let light_cpi_accounts = CpiAccounts::new(
+        let light_cpi_accounts = CpiAccountsV2::new(
             ctx.accounts.user.as_ref(),
             ctx.remaining_accounts,
-            CPI_SIGNER,
+            LIGHT_CPI_SIGNER,
         );
-
+        let address_tree = light_cpi_accounts.tree_pubkeys().unwrap()
+            [address_tree_info.address_merkle_tree_pubkey_index as usize];
+        if address_tree != ALLOWED_ADDRESS_TREE {
+            return Err(ProgramError::InvalidAccountData.into());
+        }
         let (address, address_seed) = derive_address(
             &[b"account", ctx.accounts.user.key().as_ref()],
-            &address_tree_info
-                .get_tree_pubkey(&light_cpi_accounts)
-                .map_err(|err| ProgramError::from(LightSdkError::from(err)))?,
+            &address_tree,
             &crate::ID,
         );
 
@@ -76,17 +78,14 @@ pub mod account_comparison {
         compressed_account.name = name;
         compressed_account.data = [1u8; 128];
 
-        let new_address_params = address_tree_info.into_new_address_params_packed(address_seed);
+        let new_address_params =
+            address_tree_info.into_new_address_params_assigned_packed(address_seed.into(), Some(0));
 
-        let cpi = CpiInputs::new_with_address(
-            proof,
-            vec![compressed_account
-                .to_account_info()
-                .map_err(ProgramError::from)?],
-            vec![new_address_params],
-        );
-        cpi.invoke_light_system_program(light_cpi_accounts)
-            .map_err(ProgramError::from)?;
+        LightSystemProgramCpi::new_cpi(LIGHT_CPI_SIGNER, proof)
+            .mode_v2()
+            .with_light_account(compressed_account)?
+            .with_new_addresses(&[new_address_params])
+            .invoke(light_cpi_accounts)?;
 
         Ok(())
     }
@@ -107,8 +106,7 @@ pub mod account_comparison {
                 data: existing_data,
                 name,
             },
-        )
-        .map_err(ProgramError::from)?;
+        )?;
 
         if compressed_account.user != ctx.accounts.user.key() {
             return err!(CustomError::Unauthorized);
@@ -116,22 +114,16 @@ pub mod account_comparison {
 
         compressed_account.data = new_data;
 
-        let light_cpi_accounts = CpiAccounts::new(
+        let light_cpi_accounts = CpiAccountsV2::new(
             ctx.accounts.user.as_ref(),
             ctx.remaining_accounts,
-            CPI_SIGNER,
+            LIGHT_CPI_SIGNER,
         );
 
-        let cpi_inputs = CpiInputs::new(
-            proof,
-            vec![compressed_account
-                .to_account_info()
-                .map_err(ProgramError::from)?],
-        );
-
-        cpi_inputs
-            .invoke_light_system_program(light_cpi_accounts)
-            .map_err(ProgramError::from)?;
+        LightSystemProgramCpi::new_cpi(LIGHT_CPI_SIGNER, proof)
+            .mode_v2()
+            .with_light_account(compressed_account)?
+            .invoke(light_cpi_accounts)?;
 
         Ok(())
     }
