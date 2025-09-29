@@ -42,7 +42,8 @@ async fn test_counter() {
         .get_compressed_account(address, None)
         .await
         .unwrap()
-        .value;
+        .value
+        .unwrap();
     assert_eq!(compressed_account.leaf_index, 0);
     let counter = &compressed_account.data.as_ref().unwrap().data;
     let counter = CounterAccount::deserialize(&mut &counter[..]).unwrap();
@@ -65,7 +66,7 @@ where
 {
     let mut remaining_accounts = PackedAccounts::default();
     let config = SystemAccountMetaConfig::new(counter::ID);
-    remaining_accounts.add_system_accounts_v2(config).unwrap();
+    remaining_accounts.add_system_accounts_v2(config)?;
 
     let rpc_result = rpc
         .get_validity_proof(

@@ -26,7 +26,7 @@ pub const LIGHT_CPI_SIGNER: CpiSigner =
 pub mod counter {
 
     use super::*;
-    use light_sdk::light_account_checks::AccountInfoTrait;
+    use light_sdk::{cpi::LightSystemProgramCpi, light_account_checks::AccountInfoTrait};
 
     pub fn create_counter<'info>(
         ctx: Context<'_, '_, '_, 'info, GenericAnchorAccounts<'info>>,
@@ -64,7 +64,7 @@ pub mod counter {
         counter.owner = ctx.accounts.signer.key();
         counter.value = 0;
 
-        InstructionDataInvokeCpiWithReadOnly::new_cpi(LIGHT_CPI_SIGNER, proof)
+        LightSystemProgramCpi::new_cpi(LIGHT_CPI_SIGNER, proof)
             .mode_v2()
             .with_light_account(counter)?
             .with_new_addresses(&[new_address_params])
@@ -136,7 +136,7 @@ pub mod counter {
             },
         )?;
 
-        InstructionDataInvokeCpiWithReadOnly::new(
+        LightSystemProgramCpi::new(
             LIGHT_CPI_SIGNER.program_id.into(),
             LIGHT_CPI_SIGNER.bump,
             proof.into(),
