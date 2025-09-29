@@ -7,7 +7,7 @@ use light_program_test::{
     program_test::LightProgramTest, AddressWithTree, Indexer, ProgramTestConfig, Rpc, RpcError,
 };
 use light_sdk::{
-    address::v1::derive_address,
+    address::v2::derive_address,
     instruction::{PackedAccounts, SystemAccountMetaConfig},
 };
 use solana_sdk::{
@@ -17,14 +17,14 @@ use solana_sdk::{
 
 #[tokio::test]
 async fn test_create_two_accounts() {
-    let config = ProgramTestConfig::new(
+    let config = ProgramTestConfig::new_v2(
         true,
         Some(vec![("create_and_update", create_and_update::ID)]),
     );
     let mut rpc = LightProgramTest::new(config).await.unwrap();
     let payer = rpc.get_payer().insecure_clone();
 
-    let address_tree_info = rpc.get_address_tree_v1();
+    let address_tree_info = rpc.get_address_tree_v2();
 
     let (first_address, _) = derive_address(
         &[FIRST_SEED, payer.pubkey().as_ref()],
@@ -59,7 +59,8 @@ async fn test_create_two_accounts() {
         .get_compressed_account(first_address, None)
         .await
         .unwrap()
-        .value;
+        .value
+        .unwrap();
 
     let first_data = &first_compressed_account.data.as_ref().unwrap().data;
     let first_account_data = ByteDataAccount::deserialize(&mut &first_data[..]).unwrap();
@@ -71,7 +72,8 @@ async fn test_create_two_accounts() {
         .get_compressed_account(second_address, None)
         .await
         .unwrap()
-        .value;
+        .value
+        .unwrap();
 
     let second_data = &second_compressed_account.data.as_ref().unwrap().data;
     let second_account_data = DataAccount::deserialize(&mut &second_data[..]).unwrap();
@@ -94,7 +96,7 @@ where
 {
     let mut remaining_accounts = PackedAccounts::default();
     let config = SystemAccountMetaConfig::new(create_and_update::ID);
-    remaining_accounts.add_system_accounts(config);
+    remaining_accounts.add_system_accounts_v2(config)?;
 
     let rpc_result = rpc
         .get_validity_proof(
