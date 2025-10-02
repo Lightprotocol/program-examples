@@ -80,7 +80,7 @@ pub mod read_only {
         Ok(())
     }
 
-    /// Creates a new compressed account and updates an existing one in a single instruction
+    /// Reads a compressed account and validates via `invoke_light_system_program`
     pub fn read<'info>(
         ctx: Context<'_, '_, '_, 'info, GenericAnchorAccounts<'info>>,
         proof: ValidityProof,
