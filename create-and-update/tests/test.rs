@@ -218,7 +218,6 @@ where
         output_state_tree_index,
         message,
     };
-
     let accounts = create_and_update::accounts::GenericAnchorAccounts {
         signer: payer.pubkey(),
     };
