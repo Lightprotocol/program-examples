@@ -7,11 +7,9 @@ This program demonstrates how to create and then read a compressed account on-ch
 ### 1. `create_compressed_account`
 Creates a new compressed account with initial data (owner and message).
 
-### 2. `create_and_update`
-Demonstrates atomic operations in a single instruction:
-- Creates a new compressed account with a "second" seed
-- Updates an existing compressed account (created with "first" seed)
-- Uses a single validity proof to prove inclusion of the existing account and create the new address
+### 2. `read`
+Demonstrates reading an existing compressed account on-chain:
+- Uses a single validity proof to prove inclusion of the existing account
 
 ## Data Structure
 
