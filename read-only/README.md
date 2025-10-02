@@ -31,12 +31,3 @@ cargo build-sbf
 # Run tests
 cargo test-sbf
 ```
-
-## Key Concepts Demonstrated
-
-- **Compressed Account Creation**: Using `LightAccount::new_init()` to create new compressed accounts
-- **Compressed Account Updates**: Using `LightAccount::new_mut()` to update existing compressed accounts
-- **Address Derivation**: Using deterministic seeds (`FIRST_SEED`, `SECOND_SEED`) for address generation
-- **Atomic Operations**: Performing multiple compressed account operations in a single instruction
-- **Authorization**: Verifying ownership before allowing updates
-- **Single Validity Proof**: Using one proof to handle both input (existing account) and output (new account) operations
