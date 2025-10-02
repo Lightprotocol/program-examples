@@ -4,7 +4,7 @@ use anchor_lang::prelude::*;
 use light_sdk::{
     account::LightAccount,
     address::v1::derive_address,
-    cpi::{CpiAccounts, CpiSigner},
+    cpi::{v1::CpiAccounts, CpiSigner},
     derive_light_cpi_signer,
     instruction::{account_meta::CompressedAccountMeta, PackedAddressTreeInfo, ValidityProof},
     LightDiscriminator, LightHasher,
@@ -23,7 +23,9 @@ const CPI_SIGNER: CpiSigner =
 
 #[program]
 pub mod account_comparison {
-    use light_sdk::cpi::{InvokeLightSystemProgram, LightCpiInstruction, LightSystemProgramCpiV1};
+    use light_sdk::cpi::{
+        v1::LightSystemProgramCpi, InvokeLightSystemProgram, LightCpiInstruction,
+    };
     use light_sdk::error::LightSdkError;
 
     use super::*;
@@ -81,7 +83,7 @@ pub mod account_comparison {
 
         let new_address_params = address_tree_info.into_new_address_params_packed(address_seed);
 
-        LightSystemProgramCpiV1::new_cpi(CPI_SIGNER, proof)
+        LightSystemProgramCpi::new_cpi(CPI_SIGNER, proof)
             .with_light_account(compressed_account)?
             .with_new_addresses(&[new_address_params])
             .invoke(light_cpi_accounts)?;
@@ -119,7 +121,7 @@ pub mod account_comparison {
             CPI_SIGNER,
         );
 
-        LightSystemProgramCpiV1::new_cpi(CPI_SIGNER, proof)
+        LightSystemProgramCpi::new_cpi(CPI_SIGNER, proof)
             .with_light_account(compressed_account)?
             .invoke(light_cpi_accounts)?;
 

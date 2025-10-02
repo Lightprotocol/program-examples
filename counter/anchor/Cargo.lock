@@ -15,7 +15,7 @@ dependencies = [
 [[package]]
 name = "account-compression"
 version = "2.0.0"
-source = "git+https://github.com/Lightprotocol/light-protocol?rev=88a6bba7735c4a54db32351655cb4379a412684a#88a6bba7735c4a54db32351655cb4379a412684a"
+source = "git+https://github.com/Lightprotocol/light-protocol?rev=a3497b138860f56311bab8230f9953de786162fe#a3497b138860f56311bab8230f9953de786162fe"
 dependencies = [
  "aligned-sized",
  "anchor-lang",
@@ -159,7 +159,7 @@ dependencies = [
 [[package]]
 name = "aligned-sized"
 version = "1.1.0"
-source = "git+https://github.com/Lightprotocol/light-protocol?rev=88a6bba7735c4a54db32351655cb4379a412684a#88a6bba7735c4a54db32351655cb4379a412684a"
+source = "git+https://github.com/Lightprotocol/light-protocol?rev=a3497b138860f56311bab8230f9953de786162fe#a3497b138860f56311bab8230f9953de786162fe"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2517,7 +2517,7 @@ dependencies = [
 [[package]]
 name = "light-account-checks"
 version = "0.3.0"
-source = "git+https://github.com/Lightprotocol/light-protocol?rev=88a6bba7735c4a54db32351655cb4379a412684a#88a6bba7735c4a54db32351655cb4379a412684a"
+source = "git+https://github.com/Lightprotocol/light-protocol?rev=a3497b138860f56311bab8230f9953de786162fe#a3497b138860f56311bab8230f9953de786162fe"
 dependencies = [
  "solana-account-info",
  "solana-msg",
@@ -2530,7 +2530,7 @@ dependencies = [
 [[package]]
 name = "light-batched-merkle-tree"
 version = "0.3.0"
-source = "git+https://github.com/Lightprotocol/light-protocol?rev=88a6bba7735c4a54db32351655cb4379a412684a#88a6bba7735c4a54db32351655cb4379a412684a"
+source = "git+https://github.com/Lightprotocol/light-protocol?rev=a3497b138860f56311bab8230f9953de786162fe#a3497b138860f56311bab8230f9953de786162fe"
 dependencies = [
  "aligned-sized",
  "borsh 0.10.4",
@@ -2554,7 +2554,7 @@ dependencies = [
 [[package]]
 name = "light-bloom-filter"
 version = "0.3.0"
-source = "git+https://github.com/Lightprotocol/light-protocol?rev=88a6bba7735c4a54db32351655cb4379a412684a#88a6bba7735c4a54db32351655cb4379a412684a"
+source = "git+https://github.com/Lightprotocol/light-protocol?rev=a3497b138860f56311bab8230f9953de786162fe#a3497b138860f56311bab8230f9953de786162fe"
 dependencies = [
  "bitvec",
  "num-bigint 0.4.6",
@@ -2578,7 +2578,7 @@ dependencies = [
 [[package]]
 name = "light-client"
 version = "0.13.1"
-source = "git+https://github.com/Lightprotocol/light-protocol?rev=88a6bba7735c4a54db32351655cb4379a412684a#88a6bba7735c4a54db32351655cb4379a412684a"
+source = "git+https://github.com/Lightprotocol/light-protocol?rev=a3497b138860f56311bab8230f9953de786162fe#a3497b138860f56311bab8230f9953de786162fe"
 dependencies = [
  "async-trait",
  "base64 0.13.1",
@@ -2625,7 +2625,7 @@ dependencies = [
 [[package]]
 name = "light-compressed-account"
 version = "0.3.0"
-source = "git+https://github.com/Lightprotocol/light-protocol?rev=88a6bba7735c4a54db32351655cb4379a412684a#88a6bba7735c4a54db32351655cb4379a412684a"
+source = "git+https://github.com/Lightprotocol/light-protocol?rev=a3497b138860f56311bab8230f9953de786162fe#a3497b138860f56311bab8230f9953de786162fe"
 dependencies = [
  "anchor-lang",
  "borsh 0.10.4",
@@ -2644,7 +2644,7 @@ dependencies = [
 [[package]]
 name = "light-compressed-token"
 version = "2.0.0"
-source = "git+https://github.com/Lightprotocol/light-protocol?rev=88a6bba7735c4a54db32351655cb4379a412684a#88a6bba7735c4a54db32351655cb4379a412684a"
+source = "git+https://github.com/Lightprotocol/light-protocol?rev=a3497b138860f56311bab8230f9953de786162fe#a3497b138860f56311bab8230f9953de786162fe"
 dependencies = [
  "account-compression",
  "anchor-lang",
@@ -2664,7 +2664,7 @@ dependencies = [
 [[package]]
 name = "light-concurrent-merkle-tree"
 version = "2.1.0"
-source = "git+https://github.com/Lightprotocol/light-protocol?rev=88a6bba7735c4a54db32351655cb4379a412684a#88a6bba7735c4a54db32351655cb4379a412684a"
+source = "git+https://github.com/Lightprotocol/light-protocol?rev=a3497b138860f56311bab8230f9953de786162fe#a3497b138860f56311bab8230f9953de786162fe"
 dependencies = [
  "borsh 0.10.4",
  "light-bounded-vec",
@@ -2677,7 +2677,7 @@ dependencies = [
 [[package]]
 name = "light-hash-set"
 version = "2.1.0"
-source = "git+https://github.com/Lightprotocol/light-protocol?rev=88a6bba7735c4a54db32351655cb4379a412684a#88a6bba7735c4a54db32351655cb4379a412684a"
+source = "git+https://github.com/Lightprotocol/light-protocol?rev=a3497b138860f56311bab8230f9953de786162fe#a3497b138860f56311bab8230f9953de786162fe"
 dependencies = [
  "light-hasher",
  "num-bigint 0.4.6",
@@ -2689,7 +2689,7 @@ dependencies = [
 [[package]]
 name = "light-hasher"
 version = "3.1.0"
-source = "git+https://github.com/Lightprotocol/light-protocol?rev=88a6bba7735c4a54db32351655cb4379a412684a#88a6bba7735c4a54db32351655cb4379a412684a"
+source = "git+https://github.com/Lightprotocol/light-protocol?rev=a3497b138860f56311bab8230f9953de786162fe#a3497b138860f56311bab8230f9953de786162fe"
 dependencies = [
  "ark-bn254 0.5.0",
  "ark-ff 0.5.0",
@@ -2708,7 +2708,7 @@ dependencies = [
 [[package]]
 name = "light-heap"
 version = "2.0.0"
-source = "git+https://github.com/Lightprotocol/light-protocol?rev=88a6bba7735c4a54db32351655cb4379a412684a#88a6bba7735c4a54db32351655cb4379a412684a"
+source = "git+https://github.com/Lightprotocol/light-protocol?rev=a3497b138860f56311bab8230f9953de786162fe#a3497b138860f56311bab8230f9953de786162fe"
 dependencies = [
  "anchor-lang",
 ]
@@ -2716,7 +2716,7 @@ dependencies = [
 [[package]]
 name = "light-indexed-array"
 version = "0.1.0"
-source = "git+https://github.com/Lightprotocol/light-protocol?rev=88a6bba7735c4a54db32351655cb4379a412684a#88a6bba7735c4a54db32351655cb4379a412684a"
+source = "git+https://github.com/Lightprotocol/light-protocol?rev=a3497b138860f56311bab8230f9953de786162fe#a3497b138860f56311bab8230f9953de786162fe"
 dependencies = [
  "light-hasher",
  "num-bigint 0.4.6",
@@ -2727,7 +2727,7 @@ dependencies = [
 [[package]]
 name = "light-indexed-merkle-tree"
 version = "2.1.0"
-source = "git+https://github.com/Lightprotocol/light-protocol?rev=88a6bba7735c4a54db32351655cb4379a412684a#88a6bba7735c4a54db32351655cb4379a412684a"
+source = "git+https://github.com/Lightprotocol/light-protocol?rev=a3497b138860f56311bab8230f9953de786162fe#a3497b138860f56311bab8230f9953de786162fe"
 dependencies = [
  "light-bounded-vec",
  "light-concurrent-merkle-tree",
@@ -2742,7 +2742,7 @@ dependencies = [
 [[package]]
 name = "light-macros"
 version = "2.1.0"
-source = "git+https://github.com/Lightprotocol/light-protocol?rev=88a6bba7735c4a54db32351655cb4379a412684a#88a6bba7735c4a54db32351655cb4379a412684a"
+source = "git+https://github.com/Lightprotocol/light-protocol?rev=a3497b138860f56311bab8230f9953de786162fe#a3497b138860f56311bab8230f9953de786162fe"
 dependencies = [
  "bs58",
  "proc-macro2",
@@ -2753,7 +2753,7 @@ dependencies = [
 [[package]]
 name = "light-merkle-tree-metadata"
 version = "0.3.0"
-source = "git+https://github.com/Lightprotocol/light-protocol?rev=88a6bba7735c4a54db32351655cb4379a412684a#88a6bba7735c4a54db32351655cb4379a412684a"
+source = "git+https://github.com/Lightprotocol/light-protocol?rev=a3497b138860f56311bab8230f9953de786162fe#a3497b138860f56311bab8230f9953de786162fe"
 dependencies = [
  "anchor-lang",
  "borsh 0.10.4",
@@ -2769,7 +2769,7 @@ dependencies = [
 [[package]]
 name = "light-merkle-tree-reference"
 version = "2.0.0"
-source = "git+https://github.com/Lightprotocol/light-protocol?rev=88a6bba7735c4a54db32351655cb4379a412684a#88a6bba7735c4a54db32351655cb4379a412684a"
+source = "git+https://github.com/Lightprotocol/light-protocol?rev=a3497b138860f56311bab8230f9953de786162fe#a3497b138860f56311bab8230f9953de786162fe"
 dependencies = [
  "light-hasher",
  "light-indexed-array",
@@ -2823,7 +2823,7 @@ dependencies = [
 [[package]]
 name = "light-program-test"
 version = "0.13.2"
-source = "git+https://github.com/Lightprotocol/light-protocol?rev=88a6bba7735c4a54db32351655cb4379a412684a#88a6bba7735c4a54db32351655cb4379a412684a"
+source = "git+https://github.com/Lightprotocol/light-protocol?rev=a3497b138860f56311bab8230f9953de786162fe#a3497b138860f56311bab8230f9953de786162fe"
 dependencies = [
  "account-compression",
  "anchor-lang",
@@ -2872,7 +2872,7 @@ dependencies = [
 [[package]]
 name = "light-prover-client"
 version = "2.0.0"
-source = "git+https://github.com/Lightprotocol/light-protocol?rev=88a6bba7735c4a54db32351655cb4379a412684a#88a6bba7735c4a54db32351655cb4379a412684a"
+source = "git+https://github.com/Lightprotocol/light-protocol?rev=a3497b138860f56311bab8230f9953de786162fe#a3497b138860f56311bab8230f9953de786162fe"
 dependencies = [
  "ark-bn254 0.5.0",
  "ark-serialize 0.5.0",
@@ -2894,7 +2894,7 @@ dependencies = [
 [[package]]
 name = "light-registry"
 version = "2.0.0"
-source = "git+https://github.com/Lightprotocol/light-protocol?rev=88a6bba7735c4a54db32351655cb4379a412684a#88a6bba7735c4a54db32351655cb4379a412684a"
+source = "git+https://github.com/Lightprotocol/light-protocol?rev=a3497b138860f56311bab8230f9953de786162fe#a3497b138860f56311bab8230f9953de786162fe"
 dependencies = [
  "account-compression",
  "aligned-sized",
@@ -2909,7 +2909,7 @@ dependencies = [
 [[package]]
 name = "light-sdk"
 version = "0.13.0"
-source = "git+https://github.com/Lightprotocol/light-protocol?rev=88a6bba7735c4a54db32351655cb4379a412684a#88a6bba7735c4a54db32351655cb4379a412684a"
+source = "git+https://github.com/Lightprotocol/light-protocol?rev=a3497b138860f56311bab8230f9953de786162fe#a3497b138860f56311bab8230f9953de786162fe"
 dependencies = [
  "anchor-lang",
  "borsh 0.10.4",
@@ -2933,7 +2933,7 @@ dependencies = [
 [[package]]
 name = "light-sdk-macros"
 version = "0.13.0"
-source = "git+https://github.com/Lightprotocol/light-protocol?rev=88a6bba7735c4a54db32351655cb4379a412684a#88a6bba7735c4a54db32351655cb4379a412684a"
+source = "git+https://github.com/Lightprotocol/light-protocol?rev=a3497b138860f56311bab8230f9953de786162fe#a3497b138860f56311bab8230f9953de786162fe"
 dependencies = [
  "light-hasher",
  "light-poseidon 0.3.0",
@@ -2946,7 +2946,7 @@ dependencies = [
 [[package]]
 name = "light-sdk-types"
 version = "0.13.0"
-source = "git+https://github.com/Lightprotocol/light-protocol?rev=88a6bba7735c4a54db32351655cb4379a412684a#88a6bba7735c4a54db32351655cb4379a412684a"
+source = "git+https://github.com/Lightprotocol/light-protocol?rev=a3497b138860f56311bab8230f9953de786162fe#a3497b138860f56311bab8230f9953de786162fe"
 dependencies = [
  "anchor-lang",
  "borsh 0.10.4",
@@ -2962,7 +2962,7 @@ dependencies = [
 [[package]]
 name = "light-sparse-merkle-tree"
 version = "0.1.0"
-source = "git+https://github.com/Lightprotocol/light-protocol?rev=88a6bba7735c4a54db32351655cb4379a412684a#88a6bba7735c4a54db32351655cb4379a412684a"
+source = "git+https://github.com/Lightprotocol/light-protocol?rev=a3497b138860f56311bab8230f9953de786162fe#a3497b138860f56311bab8230f9953de786162fe"
 dependencies = [
  "light-hasher",
  "light-indexed-array",
@@ -2974,7 +2974,7 @@ dependencies = [
 [[package]]
 name = "light-system-program-anchor"
 version = "2.0.0"
-source = "git+https://github.com/Lightprotocol/light-protocol?rev=88a6bba7735c4a54db32351655cb4379a412684a#88a6bba7735c4a54db32351655cb4379a412684a"
+source = "git+https://github.com/Lightprotocol/light-protocol?rev=a3497b138860f56311bab8230f9953de786162fe#a3497b138860f56311bab8230f9953de786162fe"
 dependencies = [
  "account-compression",
  "aligned-sized",
@@ -2987,7 +2987,7 @@ dependencies = [
 [[package]]
 name = "light-verifier"
 version = "2.1.0"
-source = "git+https://github.com/Lightprotocol/light-protocol?rev=88a6bba7735c4a54db32351655cb4379a412684a#88a6bba7735c4a54db32351655cb4379a412684a"
+source = "git+https://github.com/Lightprotocol/light-protocol?rev=a3497b138860f56311bab8230f9953de786162fe#a3497b138860f56311bab8230f9953de786162fe"
 dependencies = [
  "groth16-solana",
  "light-compressed-account",
@@ -2997,7 +2997,7 @@ dependencies = [
 [[package]]
 name = "light-zero-copy"
 version = "0.2.0"
-source = "git+https://github.com/Lightprotocol/light-protocol?rev=88a6bba7735c4a54db32351655cb4379a412684a#88a6bba7735c4a54db32351655cb4379a412684a"
+source = "git+https://github.com/Lightprotocol/light-protocol?rev=a3497b138860f56311bab8230f9953de786162fe#a3497b138860f56311bab8230f9953de786162fe"
 dependencies = [
  "light-zero-copy-derive",
  "solana-program-error",
@@ -3007,7 +3007,7 @@ dependencies = [
 [[package]]
 name = "light-zero-copy-derive"
 version = "0.1.0"
-source = "git+https://github.com/Lightprotocol/light-protocol?rev=88a6bba7735c4a54db32351655cb4379a412684a#88a6bba7735c4a54db32351655cb4379a412684a"
+source = "git+https://github.com/Lightprotocol/light-protocol?rev=a3497b138860f56311bab8230f9953de786162fe#a3497b138860f56311bab8230f9953de786162fe"
 dependencies = [
  "lazy_static",
  "proc-macro2",
@@ -3494,7 +3494,7 @@ dependencies = [
 [[package]]
 name = "photon-api"
 version = "0.51.0"
-source = "git+https://github.com/Lightprotocol/light-protocol?rev=88a6bba7735c4a54db32351655cb4379a412684a#88a6bba7735c4a54db32351655cb4379a412684a"
+source = "git+https://github.com/Lightprotocol/light-protocol?rev=a3497b138860f56311bab8230f9953de786162fe#a3497b138860f56311bab8230f9953de786162fe"
 dependencies = [
  "reqwest 0.12.23",
  "serde",

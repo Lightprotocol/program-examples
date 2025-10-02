@@ -6,8 +6,8 @@ use light_sdk::{
     account::LightAccount,
     address::v1::derive_address,
     cpi::{
-        CpiAccounts, CpiSigner, InvokeLightSystemProgram, LightCpiInstruction,
-        LightSystemProgramCpiV1,
+        v1::{CpiAccounts, LightSystemProgramCpi},
+        CpiSigner, InvokeLightSystemProgram, LightCpiInstruction,
     },
     derive_light_cpi_signer,
     error::LightSdkError,
@@ -186,7 +186,7 @@ pub fn create_counter(
     counter.owner = *signer.key;
     counter.value = 0;
 
-    LightSystemProgramCpiV1::new_cpi(LIGHT_CPI_SIGNER, instuction_data.proof)
+    LightSystemProgramCpi::new_cpi(LIGHT_CPI_SIGNER, instuction_data.proof)
         .with_light_account(counter)?
         .with_new_addresses(&[new_address_params])
         .invoke(light_cpi_accounts)?;
@@ -213,7 +213,7 @@ pub fn increment_counter(
 
     let light_cpi_accounts = CpiAccounts::new(signer, &accounts[1..], LIGHT_CPI_SIGNER);
 
-    LightSystemProgramCpiV1::new_cpi(LIGHT_CPI_SIGNER, instuction_data.proof)
+    LightSystemProgramCpi::new_cpi(LIGHT_CPI_SIGNER, instuction_data.proof)
         .with_light_account(counter)?
         .invoke(light_cpi_accounts)?;
 
@@ -242,7 +242,7 @@ pub fn decrement_counter(
 
     let light_cpi_accounts = CpiAccounts::new(signer, &accounts[1..], LIGHT_CPI_SIGNER);
 
-    LightSystemProgramCpiV1::new_cpi(LIGHT_CPI_SIGNER, instuction_data.proof)
+    LightSystemProgramCpi::new_cpi(LIGHT_CPI_SIGNER, instuction_data.proof)
         .with_light_account(counter)?
         .invoke(light_cpi_accounts)?;
 
@@ -267,7 +267,7 @@ pub fn reset_counter(
     counter.value = 0;
 
     let light_cpi_accounts = CpiAccounts::new(signer, &accounts[1..], LIGHT_CPI_SIGNER);
-    LightSystemProgramCpiV1::new_cpi(LIGHT_CPI_SIGNER, instuction_data.proof)
+    LightSystemProgramCpi::new_cpi(LIGHT_CPI_SIGNER, instuction_data.proof)
         .with_light_account(counter)?
         .invoke(light_cpi_accounts)?;
 
@@ -291,7 +291,7 @@ pub fn close_counter(
 
     let light_cpi_accounts = CpiAccounts::new(signer, &accounts[1..], LIGHT_CPI_SIGNER);
 
-    LightSystemProgramCpiV1::new_cpi(LIGHT_CPI_SIGNER, instuction_data.proof)
+    LightSystemProgramCpi::new_cpi(LIGHT_CPI_SIGNER, instuction_data.proof)
         .with_light_account(counter)?
         .invoke(light_cpi_accounts)?;
 

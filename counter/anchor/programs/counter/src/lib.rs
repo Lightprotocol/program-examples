@@ -5,7 +5,7 @@ use anchor_lang::{prelude::*, AnchorDeserialize, Discriminator};
 use light_sdk::{
     account::LightAccount,
     address::v1::derive_address,
-    cpi::{CpiAccounts, CpiSigner},
+    cpi::{v1::CpiAccounts, CpiSigner},
     derive_light_cpi_signer,
     instruction::{account_meta::CompressedAccountMeta, PackedAddressTreeInfo, ValidityProof},
     LightDiscriminator, LightHasher,
@@ -20,7 +20,9 @@ pub const LIGHT_CPI_SIGNER: CpiSigner =
 pub mod counter {
 
     use super::*;
-    use light_sdk::cpi::{InvokeLightSystemProgram, LightCpiInstruction, LightSystemProgramCpiV1};
+    use light_sdk::cpi::{
+        v1::LightSystemProgramCpi, InvokeLightSystemProgram, LightCpiInstruction,
+    };
 
     pub fn create_counter<'info>(
         ctx: Context<'_, '_, '_, 'info, GenericAnchorAccounts<'info>>,
@@ -58,7 +60,7 @@ pub mod counter {
         counter.owner = ctx.accounts.signer.key();
         counter.value = 0;
 
-        LightSystemProgramCpiV1::new_cpi(LIGHT_CPI_SIGNER, proof)
+        LightSystemProgramCpi::new_cpi(LIGHT_CPI_SIGNER, proof)
             .with_light_account(counter)?
             .with_new_addresses(&[new_address_params])
             .invoke(light_cpi_accounts)?;
@@ -97,7 +99,7 @@ pub mod counter {
             crate::LIGHT_CPI_SIGNER,
         );
 
-        LightSystemProgramCpiV1::new_cpi(LIGHT_CPI_SIGNER, proof)
+        LightSystemProgramCpi::new_cpi(LIGHT_CPI_SIGNER, proof)
             .with_light_account(counter)?
             .invoke(light_cpi_accounts)?;
         Ok(())
@@ -126,7 +128,7 @@ pub mod counter {
             crate::LIGHT_CPI_SIGNER,
         );
 
-        LightSystemProgramCpiV1::new_cpi(LIGHT_CPI_SIGNER, proof)
+        LightSystemProgramCpi::new_cpi(LIGHT_CPI_SIGNER, proof)
             .with_light_account(counter)?
             .invoke(light_cpi_accounts)?;
 
@@ -155,7 +157,7 @@ pub mod counter {
             ctx.remaining_accounts,
             crate::LIGHT_CPI_SIGNER,
         );
-        LightSystemProgramCpiV1::new_cpi(LIGHT_CPI_SIGNER, proof)
+        LightSystemProgramCpi::new_cpi(LIGHT_CPI_SIGNER, proof)
             .with_light_account(counter)?
             .invoke(light_cpi_accounts)?;
 
@@ -186,7 +188,7 @@ pub mod counter {
             crate::LIGHT_CPI_SIGNER,
         );
 
-        LightSystemProgramCpiV1::new_cpi(LIGHT_CPI_SIGNER, proof)
+        LightSystemProgramCpi::new_cpi(LIGHT_CPI_SIGNER, proof)
             .with_light_account(counter)?
             .invoke(light_cpi_accounts)?;
         Ok(())

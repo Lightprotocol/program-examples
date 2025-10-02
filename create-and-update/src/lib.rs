@@ -6,7 +6,7 @@ use borsh::{BorshDeserialize, BorshSerialize};
 use light_sdk::{
     account::LightAccount,
     address::v1::derive_address,
-    cpi::{CpiAccounts, CpiSigner},
+    cpi::{v1::CpiAccounts, CpiSigner},
     derive_light_cpi_signer,
     instruction::{account_meta::CompressedAccountMeta, PackedAddressTreeInfo, ValidityProof},
     LightDiscriminator, LightHasher,
@@ -24,7 +24,9 @@ pub const SECOND_SEED: &[u8] = b"second";
 pub mod create_and_update {
 
     use super::*;
-    use light_sdk::cpi::{InvokeLightSystemProgram, LightCpiInstruction, LightSystemProgramCpiV1};
+    use light_sdk::cpi::{
+        v1::LightSystemProgramCpi, InvokeLightSystemProgram, LightCpiInstruction,
+    };
 
     /// Creates a new compressed account with initial data
     pub fn create_compressed_account<'info>(
@@ -60,7 +62,7 @@ pub mod create_and_update {
             "Created compressed account with message: {}",
             data_account.message
         );
-        LightSystemProgramCpiV1::new_cpi(LIGHT_CPI_SIGNER, proof)
+        LightSystemProgramCpi::new_cpi(LIGHT_CPI_SIGNER, proof)
             .with_light_account(data_account)?
             .with_new_addresses(&[address_tree_info.into_new_address_params_packed(address_seed)])
             .invoke(light_cpi_accounts)?;
@@ -111,7 +113,7 @@ pub mod create_and_update {
         // Update the message
         updated_data_account.message = existing_account.update_message.clone();
 
-        LightSystemProgramCpiV1::new_cpi(LIGHT_CPI_SIGNER, proof)
+        LightSystemProgramCpi::new_cpi(LIGHT_CPI_SIGNER, proof)
             .with_light_account(new_data_account)?
             .with_light_account(updated_data_account)?
             .with_new_addresses(&[new_account
@@ -167,7 +169,7 @@ pub mod create_and_update {
         // Update the message of the second account
         updated_second_account.message = second_account.update_message.clone();
 
-        LightSystemProgramCpiV1::new_cpi(LIGHT_CPI_SIGNER, proof)
+        LightSystemProgramCpi::new_cpi(LIGHT_CPI_SIGNER, proof)
             .with_light_account(updated_first_account)?
             .with_light_account(updated_second_account)?
             .invoke(light_cpi_accounts)?;
@@ -230,7 +232,7 @@ pub mod create_and_update {
         second_data_account.owner = ctx.accounts.signer.key();
         second_data_account.message = message.clone();
 
-        LightSystemProgramCpiV1::new_cpi(LIGHT_CPI_SIGNER, proof)
+        LightSystemProgramCpi::new_cpi(LIGHT_CPI_SIGNER, proof)
             .with_light_account(first_data_account)?
             .with_light_account(second_data_account)?
             .with_new_addresses(&[
