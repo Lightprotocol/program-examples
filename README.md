@@ -6,21 +6,28 @@ Examples for building with ZK compression by Light Protocol.
 
 ### Counter Program
 
-The counter program implements a compressed account lifecycle (create, increment, decrement, reset, close):
+full compressed account lifecycle (create, increment, decrement, reset, close):
 
 - **[counter/anchor](./counter/anchor/)** - Anchor program with Rust and TypeScript tests
 - **[counter/native](./counter/native/)** - Native Solana program with light-sdk and Rust tests.
 - **[counter/pinocchio](./counter/pinocchio/)** - Pinocchio program with light-sdk-pinocchio and Rust tests.
 
-### Create and Update Program
+
+### Create-and-update Program
 
 - **[create-and-update](./create-and-update/)** - Create a new compressed account and update an existing compressed account with a single validity proof in one instruction.
 
-### Solana vs compressed accounts comparison Program
+### Create-and-read Program
+
+- **[read-only](./read-only)** - Create a new compressed account and read it onchain.
+
+
+### Compare uncompressed vs compressed accounts Program
 
 - **[account-comparison](./account-comparison/)** - Compare compressed vs regular Solana accounts.
 
-## Light Protocol Libraries Used
+  
+## Light Protocol dependencies
 
 ### Rust Crates
 
