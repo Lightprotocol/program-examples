@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use light_sdk::{
     account::LightAccount,
     address::v2::derive_address,
-    cpi::{CpiAccountsV2, CpiSigner},
+    cpi::{v2::CpiAccounts, CpiSigner},
     derive_light_cpi_signer,
     instruction::{account_meta::CompressedAccountMeta, PackedAddressTreeInfo, ValidityProof},
     LightDiscriminator, LightHasher,
@@ -23,7 +23,9 @@ pub const ALLOWED_ADDRESS_TREE: Pubkey = pubkey!("amt2kaJA14v3urZbZvnc5v2np8jqvc
 #[program]
 pub mod account_comparison {
     use super::*;
-    use light_sdk::cpi::{InvokeLightSystemProgram, LightCpiInstruction, LightSystemProgramCpi};
+    use light_sdk::cpi::{
+        v2::LightSystemProgramCpi, InvokeLightSystemProgram, LightCpiInstruction,
+    };
 
     pub fn create_account(ctx: Context<CreateAccount>, name: String) -> Result<()> {
         let account = &mut ctx.accounts.account;
@@ -47,7 +49,7 @@ pub mod account_comparison {
         address_tree_info: PackedAddressTreeInfo,
         output_tree_index: u8,
     ) -> Result<()> {
-        let light_cpi_accounts = CpiAccountsV2::new(
+        let light_cpi_accounts = CpiAccounts::new(
             ctx.accounts.user.as_ref(),
             ctx.remaining_accounts,
             LIGHT_CPI_SIGNER,
@@ -82,7 +84,6 @@ pub mod account_comparison {
             address_tree_info.into_new_address_params_assigned_packed(address_seed.into(), Some(0));
 
         LightSystemProgramCpi::new_cpi(LIGHT_CPI_SIGNER, proof)
-            .mode_v2()
             .with_light_account(compressed_account)?
             .with_new_addresses(&[new_address_params])
             .invoke(light_cpi_accounts)?;
@@ -114,14 +115,13 @@ pub mod account_comparison {
 
         compressed_account.data = new_data;
 
-        let light_cpi_accounts = CpiAccountsV2::new(
+        let light_cpi_accounts = CpiAccounts::new(
             ctx.accounts.user.as_ref(),
             ctx.remaining_accounts,
             LIGHT_CPI_SIGNER,
         );
 
         LightSystemProgramCpi::new_cpi(LIGHT_CPI_SIGNER, proof)
-            .mode_v2()
             .with_light_account(compressed_account)?
             .invoke(light_cpi_accounts)?;
 

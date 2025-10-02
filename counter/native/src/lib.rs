@@ -6,8 +6,8 @@ use light_sdk::{
     account::LightAccount,
     address::v2::derive_address,
     cpi::{
-        CpiAccountsV2, CpiSigner, InvokeLightSystemProgram, LightCpiInstruction,
-        LightSystemProgramCpi,
+        v2::CpiAccounts, v2::LightSystemProgramCpi, CpiSigner, InvokeLightSystemProgram,
+        LightCpiInstruction,
     },
     derive_light_cpi_signer,
     error::LightSdkError,
@@ -164,7 +164,7 @@ pub fn create_counter(
 ) -> Result<(), ProgramError> {
     let signer = accounts.first().ok_or(ProgramError::NotEnoughAccountKeys)?;
 
-    let light_cpi_accounts = CpiAccountsV2::new(signer, &accounts[1..], LIGHT_CPI_SIGNER);
+    let light_cpi_accounts = CpiAccounts::new(signer, &accounts[1..], LIGHT_CPI_SIGNER);
 
     let address_tree = light_cpi_accounts.tree_pubkeys().unwrap()[instuction_data
         .address_tree_info
@@ -189,7 +189,6 @@ pub fn create_counter(
     counter.value = 0;
 
     LightSystemProgramCpi::new_cpi(LIGHT_CPI_SIGNER, instuction_data.proof)
-        .mode_v2()
         .with_light_account(counter)?
         .with_new_addresses(&[new_address_params])
         .invoke(light_cpi_accounts)?;
@@ -214,10 +213,9 @@ pub fn increment_counter(
 
     counter.value = counter.value.checked_add(1).ok_or(CounterError::Overflow)?;
 
-    let light_cpi_accounts = CpiAccountsV2::new(signer, &accounts[1..], LIGHT_CPI_SIGNER);
+    let light_cpi_accounts = CpiAccounts::new(signer, &accounts[1..], LIGHT_CPI_SIGNER);
 
     LightSystemProgramCpi::new_cpi(LIGHT_CPI_SIGNER, instuction_data.proof)
-        .mode_v2()
         .with_light_account(counter)?
         .invoke(light_cpi_accounts)?;
 
@@ -244,10 +242,9 @@ pub fn decrement_counter(
         .checked_sub(1)
         .ok_or(CounterError::Underflow)?;
 
-    let light_cpi_accounts = CpiAccountsV2::new(signer, &accounts[1..], LIGHT_CPI_SIGNER);
+    let light_cpi_accounts = CpiAccounts::new(signer, &accounts[1..], LIGHT_CPI_SIGNER);
 
     LightSystemProgramCpi::new_cpi(LIGHT_CPI_SIGNER, instuction_data.proof)
-        .mode_v2()
         .with_light_account(counter)?
         .invoke(light_cpi_accounts)?;
 
@@ -271,10 +268,9 @@ pub fn reset_counter(
 
     counter.value = 0;
 
-    let light_cpi_accounts = CpiAccountsV2::new(signer, &accounts[1..], LIGHT_CPI_SIGNER);
+    let light_cpi_accounts = CpiAccounts::new(signer, &accounts[1..], LIGHT_CPI_SIGNER);
 
     LightSystemProgramCpi::new_cpi(LIGHT_CPI_SIGNER, instuction_data.proof)
-        .mode_v2()
         .with_light_account(counter)?
         .invoke(light_cpi_accounts)?;
 
@@ -296,10 +292,9 @@ pub fn close_counter(
         },
     )?;
 
-    let light_cpi_accounts = CpiAccountsV2::new(signer, &accounts[1..], LIGHT_CPI_SIGNER);
+    let light_cpi_accounts = CpiAccounts::new(signer, &accounts[1..], LIGHT_CPI_SIGNER);
 
     LightSystemProgramCpi::new_cpi(LIGHT_CPI_SIGNER, instuction_data.proof)
-        .mode_v2()
         .with_light_account(counter)?
         .invoke(light_cpi_accounts)?;
 

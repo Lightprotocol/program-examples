@@ -8,9 +8,9 @@ This guide helps you migrate Light Protocol examples from the old SDK API to the
 - [ ] Run `cargo update` after changing dependencies
 - [ ] Change imports from `address::v1` to `address::v2`
 - [ ] Move CPI trait imports inside `#[program]` module
-- [ ] Replace `CpiAccounts` with `CpiAccountsV2`
+- [ ] Replace `CpiAccounts` with `CpiAccounts`
 - [ ] Replace `CpiInputs` pattern with `LightSystemProgramCpi::new_cpi()`
-- [ ] Add `.mode_v2()` to all instruction builders
+- [ ] Add `` to all instruction builders
 - [ ] Update address params: `into_new_address_params_packed()` → `into_new_address_params_assigned_packed(seed.into(), Some(index))`
 - [ ] Update test configuration: `ProgramTestConfig::new()` → `ProgramTestConfig::new_v2()`
 - [ ] Update test methods: `add_system_accounts()` → `add_system_accounts_v2()`
@@ -21,7 +21,7 @@ This guide helps you migrate Light Protocol examples from the old SDK API to the
 ## Overview of Changes
 
 The Light SDK v2 introduces a cleaner, more intuitive API with the following key changes:
-- Unified CPI account management with `CpiAccountsV2`
+- Unified CPI account management with `CpiAccounts`
 - Standardized instruction builder pattern with `LightSystemProgramCpi`
 - Simplified error handling and method chaining
 - Direct account passing without intermediate conversions
@@ -52,7 +52,7 @@ use light_sdk_types::{
 use light_sdk::address::v2::derive_address; // Note: v2, not v1
 use light_sdk::{
     account::LightAccount,
-    cpi::{CpiAccountsV2, CpiSigner},
+    cpi::{CpiAccounts, CpiSigner},
     derive_light_cpi_signer,
     instruction::{account_meta::CompressedAccountMeta, PackedAddressTreeInfo, ValidityProof},
     LightDiscriminator, LightHasher,
@@ -89,14 +89,14 @@ let light_cpi_accounts = CpiAccountsSmall::new_with_config(
 #### After
 ```rust
 // Standard setup
-let cpi_accounts = CpiAccountsV2::new(
+let cpi_accounts = CpiAccounts::new(
     signer.as_ref(),
     remaining_accounts,
     cpi_signer,
 );
 
 // With configuration
-let light_cpi_accounts = CpiAccountsV2::new_with_config(
+let light_cpi_accounts = CpiAccounts::new_with_config(
     &fee_payer,
     remaining_accounts,
     CpiAccountsConfig {
@@ -125,7 +125,7 @@ cpi.invoke_light_system_program(cpi_accounts)
 ```rust
 // ✅ Use new_cpi() constructor, NOT new()
 LightSystemProgramCpi::new_cpi(LIGHT_CPI_SIGNER, proof)
-    .mode_v2()  // Required for v2
+      // Required for v2
     .with_light_account(counter)?
     .with_new_addresses(&[new_address_params])
     .invoke(cpi_accounts)?;
@@ -157,7 +157,7 @@ InstructionDataInvokeCpiWithReadOnly::new(
     cpi_signer.bump,
     None,
 )
-.mode_v2()
+
 .with_input_compressed_accounts(vec![in_account])
 .with_output_compressed_accounts(vec![out_account])
 .invoke_write_to_cpi_context_first(&cpi_context_accounts.to_account_infos())?;
@@ -166,7 +166,7 @@ InstructionDataInvokeCpiWithReadOnly::new(
 #### After
 ```rust
 InstructionDataInvokeCpiWithReadOnly::new_cpi(LIGHT_CPI_SIGNER, None.into())
-    .mode_v2()
+
     .with_input_compressed_accounts(&[in_account])
     .with_output_compressed_accounts(&[out_account])
     .invoke_write_to_cpi_context_first(cpi_context_accounts)?;
@@ -181,7 +181,7 @@ InstructionDataInvokeCpiWithReadOnly::new(
     cpi_signer.bump,
     proof.into(),
 )
-.mode_v2()
+
 .with_light_account(counter)
 .map_err(ProgramError::from)?
 .invoke_execute_cpi_context(&light_cpi_accounts.to_account_infos())?;
@@ -194,7 +194,7 @@ LightSystemProgramCpi::new(
     LIGHT_CPI_SIGNER.bump,
     proof.into(),
 )
-.mode_v2()
+
 .with_light_account(counter)?
 .invoke_execute_cpi_context(light_cpi_accounts)?;
 ```
@@ -234,7 +234,7 @@ invoke_function(&cpi_accounts.to_account_infos())?;
 
 #### After
 ```rust
-// Direct passing of CpiAccountsV2
+// Direct passing of CpiAccounts
 invoke_function(cpi_accounts)?;
 ```
 
@@ -347,18 +347,18 @@ let instruction = Instruction {
 let signature = rpc.process_transaction(&[instruction]).await?;
 ```
 
-### Important: Always Use `.mode_v2()`
+### Important: Always Use ``
 
-**Every instruction builder must include `.mode_v2()` to use v2 accounts:**
+**Every instruction builder must include `` to use v2 accounts:**
 
 ```rust
-// ✅ Correct - always include .mode_v2()
+// ✅ Correct - always include
 LightSystemProgramCpi::new_cpi(LIGHT_CPI_SIGNER, proof)
-    .mode_v2()  // Required for v2 accounts
+      // Required for v2 accounts
     .with_light_account(counter)?
     .invoke(cpi_accounts)?;
 
-// ❌ Wrong - missing .mode_v2()
+// ❌ Wrong - missing
 LightSystemProgramCpi::new_cpi(LIGHT_CPI_SIGNER, proof)
     .with_light_account(counter)?  // Will use v1 accounts
     .invoke(cpi_accounts)?;
@@ -408,7 +408,7 @@ pub fn create_account<'info>(
     proof: ValidityProof,
     address_tree_info: PackedAddressTreeInfo,
 ) -> Result<()> {
-    let cpi_accounts = CpiAccountsV2::new(
+    let cpi_accounts = CpiAccounts::new(
         ctx.accounts.signer.as_ref(),
         ctx.remaining_accounts,
         CPI_SIGNER,
@@ -424,7 +424,7 @@ pub fn create_account<'info>(
     );
 
     LightSystemProgramCpi::new_cpi(CPI_SIGNER, proof)
-        .mode_v2()
+
         .with_light_account(account)?
         .with_new_addresses(&[new_address_params])
         .invoke(cpi_accounts)?;
@@ -440,20 +440,20 @@ Update your dependencies to use the v2 SDK with the specific git commit:
 ```toml
 [dependencies]
 anchor-lang = "0.31.1"
-light-hasher = { git = "https://github.com/Lightprotocol/light-protocol", rev = "70a725b6dd44ce5b5c6e3b2ffc9ee53928027b8f", features = ["solana"] }
-light-sdk = { git = "https://github.com/Lightprotocol/light-protocol", rev = "70a725b6dd44ce5b5c6e3b2ffc9ee53928027b8f", features = ["anchor", "v2"] }
-light-compressed-account = { git = "https://github.com/Lightprotocol/light-protocol", rev = "70a725b6dd44ce5b5c6e3b2ffc9ee53928027b8f", features = ["anchor"] }
-light-batched-merkle-tree = { git = "https://github.com/Lightprotocol/light-protocol", rev = "70a725b6dd44ce5b5c6e3b2ffc9ee53928027b8f", features = ["solana"] }
-light-sdk-types = { git = "https://github.com/Lightprotocol/light-protocol", rev = "70a725b6dd44ce5b5c6e3b2ffc9ee53928027b8f", features = ["anchor"] }
+light-hasher = { git = "https://github.com/Lightprotocol/light-protocol", rev = "a3497b138860f56311bab8230f9953de786162fe", features = ["solana"] }
+light-sdk = { git = "https://github.com/Lightprotocol/light-protocol", rev = "a3497b138860f56311bab8230f9953de786162fe", features = ["anchor", "v2"] }
+light-compressed-account = { git = "https://github.com/Lightprotocol/light-protocol", rev = "a3497b138860f56311bab8230f9953de786162fe", features = ["anchor"] }
+light-batched-merkle-tree = { git = "https://github.com/Lightprotocol/light-protocol", rev = "a3497b138860f56311bab8230f9953de786162fe", features = ["solana"] }
+light-sdk-types = { git = "https://github.com/Lightprotocol/light-protocol", rev = "a3497b138860f56311bab8230f9953de786162fe", features = ["anchor"] }
 
 [dev-dependencies]
-light-client = { git = "https://github.com/Lightprotocol/light-protocol", rev = "70a725b6dd44ce5b5c6e3b2ffc9ee53928027b8f" }
-light-program-test = { git = "https://github.com/Lightprotocol/light-protocol", rev = "70a725b6dd44ce5b5c6e3b2ffc9ee53928027b8f", features = ["v2"] }
+light-client = { git = "https://github.com/Lightprotocol/light-protocol", rev = "a3497b138860f56311bab8230f9953de786162fe" }
+light-program-test = { git = "https://github.com/Lightprotocol/light-protocol", rev = "a3497b138860f56311bab8230f9953de786162fe", features = ["v2"] }
 tokio = "1.43.0"
 solana-sdk = "2.2"
 ```
 
-**Important**: Use the specific commit hash (`rev = "70a725b6dd44ce5b5c6e3b2ffc9ee53928027b8f"`) to ensure compatibility. The `main` branch may have breaking changes.
+**Important**: Use the specific commit hash (`rev = "a3497b138860f56311bab8230f9953de786162fe"`) to ensure compatibility. The `main` branch may have breaking changes.
 
 ## Test Configuration for v2
 
@@ -476,7 +476,7 @@ let address_tree_info = rpc.get_address_tree_v2();
 light-sdk = { git = "...", branch = "main", features = ["anchor", "v2"] }
 
 # ✅ Correct - use specific commit for stability
-light-sdk = { git = "...", rev = "70a725b6dd44ce5b5c6e3b2ffc9ee53928027b8f", features = ["anchor", "v2"] }
+light-sdk = { git = "...", rev = "a3497b138860f56311bab8230f9953de786162fe", features = ["anchor", "v2"] }
 ```
 **Solution**: After updating Cargo.toml, run `cargo update` to resolve conflicts.
 
@@ -544,7 +544,7 @@ let instruction = Instruction {
 
 ## Common Pitfalls
 
-1. **Always include `.mode_v2()`** in instruction builders - this is REQUIRED for v2 accounts
+1. **Always include ``** in instruction builders - this is REQUIRED for v2 accounts
 2. **Use specific commit hash** in Cargo.toml dependencies, not `branch = "main"`
 3. **Import traits inside program module** - `LightSystemProgramCpi`, `LightCpiInstruction`, `InvokeLightSystemProgram`
 4. **Run `cargo update`** after changing dependencies to resolve version conflicts

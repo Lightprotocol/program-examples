@@ -5,7 +5,7 @@ use borsh::{BorshDeserialize, BorshSerialize};
 use light_sdk::address::v2::derive_address;
 use light_sdk::{
     account::LightAccount,
-    cpi::{CpiAccountsV2, CpiSigner},
+    cpi::{v2::CpiAccounts, CpiSigner},
     derive_light_cpi_signer,
     instruction::{account_meta::CompressedAccountMeta, PackedAddressTreeInfo, ValidityProof},
     LightDiscriminator, LightHasher,
@@ -24,7 +24,9 @@ pub const ALLOWED_ADDRESS_TREE: Pubkey = pubkey!("amt2kaJA14v3urZbZvnc5v2np8jqvc
 pub mod create_and_update {
 
     use super::*;
-    use light_sdk::cpi::{InvokeLightSystemProgram, LightCpiInstruction, LightSystemProgramCpi};
+    use light_sdk::cpi::{
+        v2::LightSystemProgramCpi, InvokeLightSystemProgram, LightCpiInstruction,
+    };
 
     /// Creates a new compressed account with initial data
     pub fn create_compressed_account<'info>(
@@ -34,7 +36,7 @@ pub mod create_and_update {
         output_state_tree_index: u8,
         message: String,
     ) -> Result<()> {
-        let light_cpi_accounts = CpiAccountsV2::new(
+        let light_cpi_accounts = CpiAccounts::new(
             ctx.accounts.signer.as_ref(),
             ctx.remaining_accounts,
             crate::LIGHT_CPI_SIGNER,
@@ -69,7 +71,6 @@ pub mod create_and_update {
             address_tree_info.into_new_address_params_assigned_packed(address_seed.into(), Some(0));
 
         LightSystemProgramCpi::new_cpi(crate::LIGHT_CPI_SIGNER, proof)
-            .mode_v2()
             .with_light_account(data_account)?
             .with_new_addresses(&[new_address_params])
             .invoke(light_cpi_accounts)?;
@@ -84,7 +85,7 @@ pub mod create_and_update {
         existing_account: ExistingCompressedAccountIxData,
         new_account: NewCompressedAccountIxData,
     ) -> Result<()> {
-        let light_cpi_accounts = CpiAccountsV2::new(
+        let light_cpi_accounts = CpiAccounts::new(
             ctx.accounts.signer.as_ref(),
             ctx.remaining_accounts,
             crate::LIGHT_CPI_SIGNER,
@@ -129,7 +130,6 @@ pub mod create_and_update {
             .into_new_address_params_assigned_packed(new_address_seed.into(), Some(0));
 
         LightSystemProgramCpi::new_cpi(crate::LIGHT_CPI_SIGNER, proof)
-            .mode_v2()
             .with_light_account(new_data_account)?
             .with_light_account(updated_data_account)?
             .with_new_addresses(&[new_address_params])
@@ -151,7 +151,7 @@ pub mod create_and_update {
         first_account: ExistingCompressedAccountIxData,
         second_account: ExistingCompressedAccountIxData,
     ) -> Result<()> {
-        let light_cpi_accounts = CpiAccountsV2::new(
+        let light_cpi_accounts = CpiAccounts::new(
             ctx.accounts.signer.as_ref(),
             ctx.remaining_accounts,
             crate::LIGHT_CPI_SIGNER,
@@ -184,7 +184,6 @@ pub mod create_and_update {
         updated_second_account.message = second_account.update_message.clone();
 
         LightSystemProgramCpi::new_cpi(crate::LIGHT_CPI_SIGNER, proof)
-            .mode_v2()
             .with_light_account(updated_first_account)?
             .with_light_account(updated_second_account)?
             .invoke(light_cpi_accounts)?;
@@ -207,7 +206,7 @@ pub mod create_and_update {
         byte_data: [u8; 31],
         message: String,
     ) -> Result<()> {
-        let light_cpi_accounts = CpiAccountsV2::new(
+        let light_cpi_accounts = CpiAccounts::new(
             ctx.accounts.signer.as_ref(),
             ctx.remaining_accounts,
             crate::LIGHT_CPI_SIGNER,
@@ -255,7 +254,6 @@ pub mod create_and_update {
             .into_new_address_params_assigned_packed(second_address_seed.into(), Some(1));
 
         LightSystemProgramCpi::new_cpi(crate::LIGHT_CPI_SIGNER, proof)
-            .mode_v2()
             .with_light_account(first_data_account)?
             .with_light_account(second_data_account)?
             .with_new_addresses(&[first_address_params, second_address_params])

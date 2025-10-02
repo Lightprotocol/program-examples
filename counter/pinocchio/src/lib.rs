@@ -4,15 +4,15 @@ use borsh::{BorshDeserialize, BorshSerialize};
 use light_macros::pubkey_array;
 use light_sdk_pinocchio::{
     account::LightAccount,
-    address::v1::derive_address,
-    cpi::{CpiAccounts, CpiInputs, CpiSigner},
+    address::v2::derive_address,
+    cpi::{
+        v2::{CpiAccounts, LightSystemProgramCpi},
+        InvokeLightSystemProgram, LightCpiInstruction,
+    },
     derive_light_cpi_signer,
     error::LightSdkError,
-    instruction::{
-        account_meta::{CompressedAccountMeta, CompressedAccountMetaClose},
-        PackedAddressTreeInfo,
-    },
-    LightDiscriminator, LightHasher, ValidityProof,
+    instruction::{account_meta::CompressedAccountMeta, PackedAddressTreeInfo},
+    CpiSigner, LightDiscriminator, LightHasher, ValidityProof,
 };
 use pinocchio::{
     account_info::AccountInfo, entrypoint, program_error::ProgramError, pubkey::Pubkey,
@@ -21,6 +21,8 @@ use pinocchio::{
 pub const ID: Pubkey = pubkey_array!("GRLu2hKaAiMbxpkAM1HeXzks9YeGuz18SEgXEizVvPqX");
 pub const LIGHT_CPI_SIGNER: CpiSigner =
     derive_light_cpi_signer!("GRLu2hKaAiMbxpkAM1HeXzks9YeGuz18SEgXEizVvPqX");
+pub const ALLOWED_ADDRESS_TREE: Pubkey =
+    pubkey_array!("amt2kaJA14v3urZbZvnc5v2np8jqvc4Z8zDep5wbtzx");
 
 entrypoint!(process_instruction);
 
@@ -89,7 +91,7 @@ pub struct ResetCounterInstructionData {
 pub struct CloseCounterInstructionData {
     pub proof: ValidityProof,
     pub counter_value: u64,
-    pub account_meta: CompressedAccountMetaClose,
+    pub account_meta: CompressedAccountMeta,
 }
 
 #[derive(Debug, Clone)]
@@ -166,18 +168,19 @@ pub fn create_counter(
 
     let light_cpi_accounts = CpiAccounts::new(signer, &accounts[1..], LIGHT_CPI_SIGNER);
 
-    let (address, address_seed) = derive_address(
-        &[b"counter", signer.key().as_ref()],
-        &instruction_data
-            .address_tree_info
-            .get_tree_pubkey(&light_cpi_accounts)
-            .map_err(|_| ProgramError::NotEnoughAccountKeys)?,
-        &ID,
-    );
+    let address_tree = light_cpi_accounts.tree_pubkeys().unwrap()[instruction_data
+        .address_tree_info
+        .address_merkle_tree_pubkey_index
+        as usize];
+    if address_tree != ALLOWED_ADDRESS_TREE {
+        return Err(ProgramError::InvalidAccountData.into());
+    }
+    let (address, address_seed) =
+        derive_address(&[b"counter", signer.key().as_ref()], &address_tree, &ID);
 
     let new_address_params = instruction_data
         .address_tree_info
-        .into_new_address_params_packed(address_seed);
+        .into_new_address_params_assigned_packed(address_seed.into(), Some(0));
 
     let mut counter = LightAccount::<'_, CounterAccount>::new_init(
         &ID,
@@ -188,13 +191,10 @@ pub fn create_counter(
     counter.owner = *signer.key();
     counter.value = 0;
 
-    let cpi = CpiInputs::new_with_address(
-        instruction_data.proof,
-        vec![counter.to_account_info().map_err(ProgramError::from)?],
-        vec![new_address_params],
-    );
-    cpi.invoke_light_system_program(light_cpi_accounts)
-        .map_err(ProgramError::from)?;
+    LightSystemProgramCpi::new_cpi(LIGHT_CPI_SIGNER, instruction_data.proof)
+        .with_light_account(counter)?
+        .with_new_addresses(&[new_address_params])
+        .invoke(light_cpi_accounts)?;
 
     Ok(())
 }
@@ -212,20 +212,15 @@ pub fn increment_counter(
             owner: *signer.key(),
             value: instruction_data.counter_value,
         },
-    )
-    .map_err(ProgramError::from)?;
+    )?;
 
     counter.value = counter.value.checked_add(1).ok_or(CounterError::Overflow)?;
 
     let light_cpi_accounts = CpiAccounts::new(signer, &accounts[1..], LIGHT_CPI_SIGNER);
 
-    let cpi_inputs = CpiInputs::new(
-        instruction_data.proof,
-        vec![counter.to_account_info().map_err(ProgramError::from)?],
-    );
-    cpi_inputs
-        .invoke_light_system_program(light_cpi_accounts)
-        .map_err(ProgramError::from)?;
+    LightSystemProgramCpi::new_cpi(LIGHT_CPI_SIGNER, instruction_data.proof)
+        .with_light_account(counter)?
+        .invoke(light_cpi_accounts)?;
 
     Ok(())
 }
@@ -243,8 +238,7 @@ pub fn decrement_counter(
             owner: *signer.key(),
             value: instruction_data.counter_value,
         },
-    )
-    .map_err(ProgramError::from)?;
+    )?;
 
     counter.value = counter
         .value
@@ -253,14 +247,9 @@ pub fn decrement_counter(
 
     let light_cpi_accounts = CpiAccounts::new(signer, &accounts[1..], LIGHT_CPI_SIGNER);
 
-    let cpi_inputs = CpiInputs::new(
-        instruction_data.proof,
-        vec![counter.to_account_info().map_err(ProgramError::from)?],
-    );
-
-    cpi_inputs
-        .invoke_light_system_program(light_cpi_accounts)
-        .map_err(ProgramError::from)?;
+    LightSystemProgramCpi::new_cpi(LIGHT_CPI_SIGNER, instruction_data.proof)
+        .with_light_account(counter)?
+        .invoke(light_cpi_accounts)?;
 
     Ok(())
 }
@@ -278,20 +267,15 @@ pub fn reset_counter(
             owner: *signer.key(),
             value: instruction_data.counter_value,
         },
-    )
-    .map_err(ProgramError::from)?;
+    )?;
 
     counter.value = 0;
 
     let light_cpi_accounts = CpiAccounts::new(signer, &accounts[1..], LIGHT_CPI_SIGNER);
-    let cpi_inputs = CpiInputs::new(
-        instruction_data.proof,
-        vec![counter.to_account_info().map_err(ProgramError::from)?],
-    );
 
-    cpi_inputs
-        .invoke_light_system_program(light_cpi_accounts)
-        .map_err(ProgramError::from)?;
+    LightSystemProgramCpi::new_cpi(LIGHT_CPI_SIGNER, instruction_data.proof)
+        .with_light_account(counter)?
+        .invoke(light_cpi_accounts)?;
 
     Ok(())
 }
@@ -309,19 +293,13 @@ pub fn close_counter(
             owner: *signer.key(),
             value: instruction_data.counter_value,
         },
-    )
-    .map_err(ProgramError::from)?;
+    )?;
 
     let light_cpi_accounts = CpiAccounts::new(signer, &accounts[1..], LIGHT_CPI_SIGNER);
 
-    let cpi_inputs = CpiInputs::new(
-        instruction_data.proof,
-        vec![counter.to_account_info().map_err(ProgramError::from)?],
-    );
-
-    cpi_inputs
-        .invoke_light_system_program(light_cpi_accounts)
-        .map_err(ProgramError::from)?;
+    LightSystemProgramCpi::new_cpi(LIGHT_CPI_SIGNER, instruction_data.proof)
+        .with_light_account(counter)?
+        .invoke(light_cpi_accounts)?;
 
     Ok(())
 }
