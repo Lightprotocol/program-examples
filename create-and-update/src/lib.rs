@@ -1,11 +1,12 @@
 #![allow(unexpected_cfgs)]
+#![allow(deprecated)]
 
 use anchor_lang::{prelude::*, AnchorDeserialize, AnchorSerialize};
 use borsh::{BorshDeserialize, BorshSerialize};
 use light_sdk::{
     account::LightAccount,
     address::v1::derive_address,
-    cpi::{CpiAccounts, CpiInputs, CpiSigner},
+    cpi::{v1::CpiAccounts, CpiSigner},
     derive_light_cpi_signer,
     instruction::{account_meta::CompressedAccountMeta, PackedAddressTreeInfo, ValidityProof},
     LightDiscriminator, LightHasher,
@@ -23,6 +24,9 @@ pub const SECOND_SEED: &[u8] = b"second";
 pub mod create_and_update {
 
     use super::*;
+    use light_sdk::cpi::{
+        v1::LightSystemProgramCpi, InvokeLightSystemProgram, LightCpiInstruction,
+    };
 
     /// Creates a new compressed account with initial data
     pub fn create_compressed_account<'info>(
@@ -58,15 +62,10 @@ pub mod create_and_update {
             "Created compressed account with message: {}",
             data_account.message
         );
-        let cpi_inputs = CpiInputs::new_with_address(
-            proof,
-            vec![data_account.to_account_info().map_err(ProgramError::from)?],
-            vec![address_tree_info.into_new_address_params_packed(address_seed)],
-        );
-
-        cpi_inputs
-            .invoke_light_system_program(light_cpi_accounts)
-            .map_err(ProgramError::from)?;
+        LightSystemProgramCpi::new_cpi(LIGHT_CPI_SIGNER, proof)
+            .with_light_account(data_account)?
+            .with_new_addresses(&[address_tree_info.into_new_address_params_packed(address_seed)])
+            .invoke(light_cpi_accounts)?;
 
         Ok(())
     }
@@ -109,30 +108,18 @@ pub mod create_and_update {
                 owner: ctx.accounts.signer.key(),
                 message: existing_account.message.clone(),
             },
-        )
-        .map_err(ProgramError::from)?;
+        )?;
 
         // Update the message
         updated_data_account.message = existing_account.update_message.clone();
 
-        let cpi_inputs = CpiInputs::new_with_address(
-            proof,
-            vec![
-                new_data_account
-                    .to_account_info()
-                    .map_err(ProgramError::from)?,
-                updated_data_account
-                    .to_account_info()
-                    .map_err(ProgramError::from)?,
-            ],
-            vec![new_account
+        LightSystemProgramCpi::new_cpi(LIGHT_CPI_SIGNER, proof)
+            .with_light_account(new_data_account)?
+            .with_light_account(updated_data_account)?
+            .with_new_addresses(&[new_account
                 .address_tree_info
-                .into_new_address_params_packed(new_address_seed)],
-        );
-
-        cpi_inputs
-            .invoke_light_system_program(light_cpi_accounts)
-            .map_err(ProgramError::from)?;
+                .into_new_address_params_packed(new_address_seed)])
+            .invoke(light_cpi_accounts)?;
 
         msg!(
             "Created new account with message: '{}' and updated existing account to: '{}'",
@@ -164,8 +151,7 @@ pub mod create_and_update {
                 owner: ctx.accounts.signer.key(),
                 message: first_account.message.clone(),
             },
-        )
-        .map_err(ProgramError::from)?;
+        )?;
 
         // Update the message of the first account
         updated_first_account.message = first_account.update_message.clone();
@@ -178,27 +164,15 @@ pub mod create_and_update {
                 owner: ctx.accounts.signer.key(),
                 message: second_account.message.clone(),
             },
-        )
-        .map_err(ProgramError::from)?;
+        )?;
 
         // Update the message of the second account
         updated_second_account.message = second_account.update_message.clone();
 
-        let cpi_inputs = CpiInputs::new(
-            proof,
-            vec![
-                updated_first_account
-                    .to_account_info()
-                    .map_err(ProgramError::from)?,
-                updated_second_account
-                    .to_account_info()
-                    .map_err(ProgramError::from)?,
-            ],
-        );
-
-        cpi_inputs
-            .invoke_light_system_program(light_cpi_accounts)
-            .map_err(ProgramError::from)?;
+        LightSystemProgramCpi::new_cpi(LIGHT_CPI_SIGNER, proof)
+            .with_light_account(updated_first_account)?
+            .with_light_account(updated_second_account)?
+            .invoke(light_cpi_accounts)?;
 
         msg!(
             "Updated first account to: '{}' and second account to: '{}'",
@@ -258,25 +232,14 @@ pub mod create_and_update {
         second_data_account.owner = ctx.accounts.signer.key();
         second_data_account.message = message.clone();
 
-        let cpi_inputs = CpiInputs::new_with_address(
-            proof,
-            vec![
-                first_data_account
-                    .to_account_info()
-                    .map_err(ProgramError::from)?,
-                second_data_account
-                    .to_account_info()
-                    .map_err(ProgramError::from)?,
-            ],
-            vec![
+        LightSystemProgramCpi::new_cpi(LIGHT_CPI_SIGNER, proof)
+            .with_light_account(first_data_account)?
+            .with_light_account(second_data_account)?
+            .with_new_addresses(&[
                 address_tree_info.into_new_address_params_packed(first_address_seed),
                 address_tree_info.into_new_address_params_packed(second_address_seed),
-            ],
-        );
-
-        cpi_inputs
-            .invoke_light_system_program(light_cpi_accounts)
-            .map_err(ProgramError::from)?;
+            ])
+            .invoke(light_cpi_accounts)?;
 
         msg!(
             "Created byte account with data: {:?} and string account with message: '{}'",
