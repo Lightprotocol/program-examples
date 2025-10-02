@@ -1,4 +1,4 @@
-# Create and Update Example
+# Read-only example
 
 This program demonstrates how to create and then read a compressed account on-chain.
 
