@@ -1,6 +1,6 @@
 # Create and Update Example
 
-This example demonstrates the basic operations of compressed accounts using Light Protocol. It shows how to create compressed accounts and how to atomically create and update compressed accounts in a single instruction.
+This program demonstrates how to create and then read a compressed account on-chain.
 
 ## Instructions
 
