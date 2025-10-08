@@ -18,7 +18,7 @@ async fn test_create_compressed_account() {
     let name = "Heinrich".to_string();
 
     let config = ProgramTestConfig::new(
-        false, // TODO: enable once cli with new prover server is released
+        true,
         Some(vec![("account_comparison", account_comparison::ID)]),
     );
     let mut rpc = LightProgramTest::new(config).await.unwrap();

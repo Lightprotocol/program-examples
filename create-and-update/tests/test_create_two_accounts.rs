@@ -10,11 +10,13 @@ use light_sdk::{
     address::v1::derive_address,
     instruction::{PackedAccounts, SystemAccountMetaConfig},
 };
+use serial_test::serial;
 use solana_sdk::{
     instruction::Instruction,
     signature::{Keypair, Signature, Signer},
 };
 
+#[serial]
 #[tokio::test]
 async fn test_create_two_accounts() {
     let config = ProgramTestConfig::new(

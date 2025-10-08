@@ -37,15 +37,27 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           solana-cli-version: ${{ env.SOLANA_CLI_VERSION }}
           rust-toolchain: ${{ env.RUST_TOOLCHAIN }}
+          photon-indexer: 'true'
 
       - name: Install dependencies
         working-directory: ${{ matrix.example }}
         run: npm install
 
+      - name: Build and sync program ID
+        working-directory: ${{ matrix.example }}
+        run: anchor build
+
       - name: Test sbf
         working-directory: ${{ matrix.example }}
         run: cargo test-sbf
 
+      - name: Start test validator
+        working-directory: ${{ matrix.example }}
+        run: |
+          PROGRAM_ID=$(grep -A 1 "\[programs.localnet\]" Anchor.toml | grep "counter" | sed 's/.*"\(.*\)".*/\1/')
+          light test-validator --sbf-program "$PROGRAM_ID" ./target/deploy/counter.so &
+          sleep 10
+
       - name: Run TypeScript tests
         working-directory: ${{ matrix.example }}
-        run: npm test
+        run: anchor test --skip-local-validator --skip-build --skip-deploy

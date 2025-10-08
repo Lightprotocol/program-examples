@@ -13,11 +13,13 @@ use light_sdk::{
     address::v1::derive_address,
     instruction::{account_meta::CompressedAccountMeta, PackedAccounts, SystemAccountMetaConfig},
 };
+use serial_test::serial;
 use solana_sdk::{
     instruction::Instruction,
     signature::{Keypair, Signature, Signer},
 };
 
+#[serial]
 #[tokio::test]
 async fn test_create_compressed_account() {
     let config = ProgramTestConfig::new(
@@ -61,6 +63,7 @@ async fn test_create_compressed_account() {
     assert_eq!(account_data.message, "Hello, World!");
 }
 
+#[serial]
 #[tokio::test]
 async fn test_create_and_update() {
     let config = ProgramTestConfig::new(
