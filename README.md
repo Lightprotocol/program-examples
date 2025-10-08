@@ -2,6 +2,8 @@
 
 Examples for building with ZK compression by Light Protocol.
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Lightprotocol/program-examples) to query the program examples in natural language.
+
 ## Examples
 
 ### Counter Program
