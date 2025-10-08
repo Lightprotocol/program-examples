@@ -11,8 +11,7 @@ use light_program_test::{
 };
 use light_sdk::address::v1::derive_address;
 use light_sdk::instruction::{
-    account_meta::{CompressedAccountMeta, CompressedAccountMetaClose},
-    PackedAccounts, SystemAccountMetaConfig,
+    account_meta::CompressedAccountMeta, PackedAccounts, SystemAccountMetaConfig,
 };
 use solana_sdk::{
     instruction::Instruction,
@@ -52,7 +51,8 @@ async fn test_counter() {
         .get_compressed_account(address, None)
         .await
         .unwrap()
-        .value;
+        .value
+        .unwrap();
     assert_eq!(compressed_counter.address.unwrap(), address);
 
     // Test increment
@@ -64,7 +64,8 @@ async fn test_counter() {
         .get_compressed_account(address, None)
         .await
         .unwrap()
-        .value;
+        .value
+        .unwrap();
 
     // Test decrement
     decrement_counter(&payer, &mut rpc, &compressed_counter)
@@ -75,7 +76,8 @@ async fn test_counter() {
         .get_compressed_account(address, None)
         .await
         .unwrap()
-        .value;
+        .value
+        .unwrap();
 
     // Test reset
     reset_counter(&payer, &mut rpc, &compressed_counter)
@@ -86,12 +88,22 @@ async fn test_counter() {
         .get_compressed_account(address, None)
         .await
         .unwrap()
-        .value;
+        .value
+        .unwrap();
 
     // Test close
     close_counter(&payer, &mut rpc, &compressed_counter)
         .await
         .unwrap();
+
+    // Check that it was closed correctly (account data should be default).
+    let closed_account = rpc
+        .get_compressed_account(address, None)
+        .await
+        .unwrap()
+        .value
+        .unwrap();
+    assert_eq!(closed_account.data, Some(Default::default()));
 }
 
 pub async fn create_counter(
@@ -104,7 +116,7 @@ pub async fn create_counter(
     let system_account_meta_config = SystemAccountMetaConfig::new(counter::ID);
     let mut accounts = PackedAccounts::default();
     accounts.add_pre_accounts_signer(payer.pubkey());
-    accounts.add_system_accounts(system_account_meta_config);
+    accounts.add_system_accounts(system_account_meta_config)?;
 
     let rpc_result = rpc
         .get_validity_proof(
@@ -120,7 +132,7 @@ pub async fn create_counter(
 
     let output_merkle_tree_index = accounts.insert_or_get(*merkle_tree_pubkey);
     let packed_address_tree_info = rpc_result.pack_tree_infos(&mut accounts).address_trees[0];
-    let (accounts, _, _) = accounts.to_account_metas();
+    let (account_metas, _, _) = accounts.to_account_metas();
 
     let instruction_data = CreateCounterInstructionData {
         proof: rpc_result.proof,
@@ -131,7 +143,7 @@ pub async fn create_counter(
 
     let instruction = Instruction {
         program_id: counter::ID,
-        accounts,
+        accounts: account_metas,
         data: [
             &[counter::InstructionType::CreateCounter as u8][..],
             &inputs[..],
@@ -152,7 +164,7 @@ pub async fn increment_counter(
     let system_account_meta_config = SystemAccountMetaConfig::new(counter::ID);
     let mut accounts = PackedAccounts::default();
     accounts.add_pre_accounts_signer(payer.pubkey());
-    accounts.add_system_accounts(system_account_meta_config);
+    accounts.add_system_accounts(system_account_meta_config)?;
 
     let hash = compressed_account.hash;
 
@@ -176,7 +188,7 @@ pub async fn increment_counter(
         output_state_tree_index: packed_accounts.output_tree_index,
     };
 
-    let (accounts, _, _) = accounts.to_account_metas();
+    let (account_metas, _, _) = accounts.to_account_metas();
     let instruction_data = IncrementCounterInstructionData {
         proof: rpc_result.proof,
         counter_value: counter_account.value,
@@ -186,7 +198,7 @@ pub async fn increment_counter(
 
     let instruction = Instruction {
         program_id: counter::ID,
-        accounts,
+        accounts: account_metas,
         data: [
             &[counter::InstructionType::IncrementCounter as u8][..],
             &inputs[..],
@@ -207,7 +219,7 @@ pub async fn decrement_counter(
     let system_account_meta_config = SystemAccountMetaConfig::new(counter::ID);
     let mut accounts = PackedAccounts::default();
     accounts.add_pre_accounts_signer(payer.pubkey());
-    accounts.add_system_accounts(system_account_meta_config);
+    accounts.add_system_accounts(system_account_meta_config)?;
 
     let hash = compressed_account.hash;
 
@@ -231,7 +243,7 @@ pub async fn decrement_counter(
         output_state_tree_index: packed_accounts.output_tree_index,
     };
 
-    let (accounts, _, _) = accounts.to_account_metas();
+    let (account_metas, _, _) = accounts.to_account_metas();
     let instruction_data = DecrementCounterInstructionData {
         proof: rpc_result.proof,
         counter_value: counter_account.value,
@@ -241,7 +253,7 @@ pub async fn decrement_counter(
 
     let instruction = Instruction {
         program_id: counter::ID,
-        accounts,
+        accounts: account_metas,
         data: [
             &[counter::InstructionType::DecrementCounter as u8][..],
             &inputs[..],
@@ -262,7 +274,7 @@ pub async fn reset_counter(
     let system_account_meta_config = SystemAccountMetaConfig::new(counter::ID);
     let mut accounts = PackedAccounts::default();
     accounts.add_pre_accounts_signer(payer.pubkey());
-    accounts.add_system_accounts(system_account_meta_config);
+    accounts.add_system_accounts(system_account_meta_config)?;
 
     let hash = compressed_account.hash;
 
@@ -286,7 +298,7 @@ pub async fn reset_counter(
         output_state_tree_index: packed_accounts.output_tree_index,
     };
 
-    let (accounts, _, _) = accounts.to_account_metas();
+    let (account_metas, _, _) = accounts.to_account_metas();
     let instruction_data = ResetCounterInstructionData {
         proof: rpc_result.proof,
         counter_value: counter_account.value,
@@ -296,7 +308,7 @@ pub async fn reset_counter(
 
     let instruction = Instruction {
         program_id: counter::ID,
-        accounts,
+        accounts: account_metas,
         data: [
             &[counter::InstructionType::ResetCounter as u8][..],
             &inputs[..],
@@ -317,7 +329,7 @@ pub async fn close_counter(
     let system_account_meta_config = SystemAccountMetaConfig::new(counter::ID);
     let mut accounts = PackedAccounts::default();
     accounts.add_pre_accounts_signer(payer.pubkey());
-    accounts.add_system_accounts(system_account_meta_config);
+    accounts.add_system_accounts(system_account_meta_config)?;
 
     let hash = compressed_account.hash;
 
@@ -335,12 +347,13 @@ pub async fn close_counter(
         CounterAccount::deserialize(&mut compressed_account.data.as_ref().unwrap().data.as_slice())
             .unwrap();
 
-    let meta_close = CompressedAccountMetaClose {
+    let meta_close = CompressedAccountMeta {
         tree_info: packed_accounts.packed_tree_infos[0],
         address: compressed_account.address.unwrap(),
+        output_state_tree_index: packed_accounts.output_tree_index,
     };
 
-    let (accounts, _, _) = accounts.to_account_metas();
+    let (account_metas, _, _) = accounts.to_account_metas();
     let instruction_data = CloseCounterInstructionData {
         proof: rpc_result.proof,
         counter_value: counter_account.value,
@@ -350,7 +363,7 @@ pub async fn close_counter(
 
     let instruction = Instruction {
         program_id: counter::ID,
-        accounts,
+        accounts: account_metas,
         data: [
             &[counter::InstructionType::CloseCounter as u8][..],
             &inputs[..],

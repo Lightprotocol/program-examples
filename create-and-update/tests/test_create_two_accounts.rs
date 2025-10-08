@@ -10,11 +10,13 @@ use light_sdk::{
     address::v1::derive_address,
     instruction::{PackedAccounts, SystemAccountMetaConfig},
 };
+use serial_test::serial;
 use solana_sdk::{
     instruction::Instruction,
     signature::{Keypair, Signature, Signer},
 };
 
+#[serial]
 #[tokio::test]
 async fn test_create_two_accounts() {
     let config = ProgramTestConfig::new(
@@ -59,7 +61,8 @@ async fn test_create_two_accounts() {
         .get_compressed_account(first_address, None)
         .await
         .unwrap()
-        .value;
+        .value
+        .unwrap();
 
     let first_data = &first_compressed_account.data.as_ref().unwrap().data;
     let first_account_data = ByteDataAccount::deserialize(&mut &first_data[..]).unwrap();
@@ -71,7 +74,8 @@ async fn test_create_two_accounts() {
         .get_compressed_account(second_address, None)
         .await
         .unwrap()
-        .value;
+        .value
+        .unwrap();
 
     let second_data = &second_compressed_account.data.as_ref().unwrap().data;
     let second_account_data = DataAccount::deserialize(&mut &second_data[..]).unwrap();
@@ -94,7 +98,7 @@ where
 {
     let mut remaining_accounts = PackedAccounts::default();
     let config = SystemAccountMetaConfig::new(create_and_update::ID);
-    remaining_accounts.add_system_accounts(config);
+    remaining_accounts.add_system_accounts(config)?;
 
     let rpc_result = rpc
         .get_validity_proof(
@@ -135,10 +139,10 @@ where
 
     let instruction = Instruction {
         program_id: create_and_update::ID,
-        accounts: [
-            accounts.to_account_metas(None),
-            remaining_accounts.to_account_metas().0,
-        ]
+        accounts: [accounts.to_account_metas(None), {
+            let (metas, _, _) = remaining_accounts.to_account_metas();
+            metas
+        }]
         .concat(),
         data: instruction_data.data(),
     };

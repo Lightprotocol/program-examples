@@ -14,6 +14,7 @@ import {
   Rpc,
   sleep,
 } from "@lightprotocol/stateless.js";
+import { assert } from "chai";
 
 const path = require("path");
 const os = require("os");
@@ -85,10 +86,7 @@ describe("test-anchor", () => {
     await sleep(2000);
 
     counterAccount = await rpc.getCompressedAccount(bn(address.toBytes()));
-    counter = coder.types.decode(
-      "CounterAccount",
-      counterAccount.data.data
-    );
+    counter = coder.types.decode("CounterAccount", counterAccount.data.data);
     console.log("counter account ", counterAccount);
     console.log("des counter ", counter);
 
@@ -103,11 +101,17 @@ describe("test-anchor", () => {
 
     // Wait for indexer to catch up.
     await sleep(2000);
-
-    const deletedCounterAccount = await rpc.getCompressedAccount(
-      bn(address.toBytes())
-    );
-    console.log("deletedCounterAccount ", deletedCounterAccount);
+    let should_have_failed = false;
+    try {
+      const deletedCounterAccount = await rpc.getCompressedAccount(
+        bn(address.toBytes())
+      );
+      console.log("deletedCounterAccount ", deletedCounterAccount);
+    } catch (e) {
+      should_have_failed = true;
+    }
+    // TODO: assert is Null after next update.
+    assert.isTrue(should_have_failed);
   });
 });
 

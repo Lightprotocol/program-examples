@@ -13,11 +13,13 @@ use light_sdk::{
     address::v1::derive_address,
     instruction::{account_meta::CompressedAccountMeta, PackedAccounts, SystemAccountMetaConfig},
 };
+use serial_test::serial;
 use solana_sdk::{
     instruction::Instruction,
     signature::{Keypair, Signature, Signer},
 };
 
+#[serial]
 #[tokio::test]
 async fn test_create_compressed_account() {
     let config = ProgramTestConfig::new(
@@ -51,7 +53,8 @@ async fn test_create_compressed_account() {
         .get_compressed_account(address, None)
         .await
         .unwrap()
-        .value;
+        .value
+        .unwrap();
 
     assert_eq!(compressed_account.leaf_index, 0);
     let data = &compressed_account.data.as_ref().unwrap().data;
@@ -60,6 +63,7 @@ async fn test_create_compressed_account() {
     assert_eq!(account_data.message, "Hello, World!");
 }
 
+#[serial]
 #[tokio::test]
 async fn test_create_and_update() {
     let config = ProgramTestConfig::new(
@@ -93,7 +97,8 @@ async fn test_create_and_update() {
         .get_compressed_account(initial_address, None)
         .await
         .unwrap()
-        .value;
+        .value
+        .unwrap();
 
     // Create and update in one instruction
     create_and_update_accounts(
@@ -118,7 +123,8 @@ async fn test_create_and_update() {
         .get_compressed_account(new_address, None)
         .await
         .unwrap()
-        .value;
+        .value
+        .unwrap();
 
     let new_data = &new_compressed_account.data.as_ref().unwrap().data;
     let new_account_data = DataAccount::deserialize(&mut &new_data[..]).unwrap();
@@ -130,7 +136,8 @@ async fn test_create_and_update() {
         .get_compressed_account(initial_address, None)
         .await
         .unwrap()
-        .value;
+        .value
+        .unwrap();
 
     let updated_data = &updated_compressed_account.data.as_ref().unwrap().data;
     let updated_account_data = DataAccount::deserialize(&mut &updated_data[..]).unwrap();
@@ -156,7 +163,8 @@ async fn test_create_and_update() {
         .get_compressed_account(initial_address, None)
         .await
         .unwrap()
-        .value;
+        .value
+        .unwrap();
 
     let final_first_data = &final_first_account.data.as_ref().unwrap().data;
     let final_first_account_data = DataAccount::deserialize(&mut &final_first_data[..]).unwrap();
@@ -169,7 +177,8 @@ async fn test_create_and_update() {
         .get_compressed_account(new_address, None)
         .await
         .unwrap()
-        .value;
+        .value
+        .unwrap();
 
     let final_second_data = &final_second_account.data.as_ref().unwrap().data;
     let final_second_account_data = DataAccount::deserialize(&mut &final_second_data[..]).unwrap();
@@ -191,7 +200,7 @@ where
 {
     let mut remaining_accounts = PackedAccounts::default();
     let config = SystemAccountMetaConfig::new(create_and_update::ID);
-    remaining_accounts.add_system_accounts(config);
+    remaining_accounts.add_system_accounts(config)?;
 
     let rpc_result = rpc
         .get_validity_proof(
@@ -222,13 +231,10 @@ where
         signer: payer.pubkey(),
     };
 
+    let (remaining_metas, _, _) = remaining_accounts.to_account_metas();
     let instruction = Instruction {
         program_id: create_and_update::ID,
-        accounts: [
-            accounts.to_account_metas(None),
-            remaining_accounts.to_account_metas().0,
-        ]
-        .concat(),
+        accounts: [accounts.to_account_metas(None), remaining_metas].concat(),
         data: instruction_data.data(),
     };
 
@@ -249,7 +255,7 @@ where
 {
     let mut remaining_accounts = PackedAccounts::default();
     let config = SystemAccountMetaConfig::new(create_and_update::ID);
-    remaining_accounts.add_system_accounts(config);
+    remaining_accounts.add_system_accounts(config)?;
 
     let hash = existing_account.hash;
 
@@ -301,13 +307,10 @@ where
         signer: payer.pubkey(),
     };
 
+    let (remaining_metas, _, _) = remaining_accounts.to_account_metas();
     let instruction = Instruction {
         program_id: create_and_update::ID,
-        accounts: [
-            accounts.to_account_metas(None),
-            remaining_accounts.to_account_metas().0,
-        ]
-        .concat(),
+        accounts: [accounts.to_account_metas(None), remaining_metas].concat(),
         data: instruction_data.data(),
     };
 
@@ -331,7 +334,7 @@ where
 {
     let mut remaining_accounts = PackedAccounts::default();
     let config = SystemAccountMetaConfig::new(create_and_update::ID);
-    remaining_accounts.add_system_accounts(config);
+    remaining_accounts.add_system_accounts(config)?;
 
     let first_hash = first_account.hash;
     let second_hash = second_account.hash;
@@ -374,13 +377,10 @@ where
         signer: payer.pubkey(),
     };
 
+    let (remaining_metas, _, _) = remaining_accounts.to_account_metas();
     let instruction = Instruction {
         program_id: create_and_update::ID,
-        accounts: [
-            accounts.to_account_metas(None),
-            remaining_accounts.to_account_metas().0,
-        ]
-        .concat(),
+        accounts: [accounts.to_account_metas(None), remaining_metas].concat(),
         data: instruction_data.data(),
     };
 

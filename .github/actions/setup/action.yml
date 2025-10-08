@@ -1,0 +1,108 @@
+name: Setup Environment
+description: Setup Rust, Solana CLI, and optionally Node.js for testing
+
+inputs:
+  example:
+    description: "Example directory path"
+    required: true
+  node-version:
+    description: "Node.js version to install (optional)"
+    required: false
+    default: ""
+  node-version-default:
+    description: "Default Node.js version for Light CLI"
+    required: false
+    default: "22"
+  solana-cli-version:
+    description: "Solana CLI version"
+    required: false
+    default: "2.3.11"
+  rust-toolchain:
+    description: "Rust toolchain version"
+    required: false
+    default: "1.90.0"
+  anchor-version:
+    description: "Anchor CLI version (for TypeScript tests)"
+    required: false
+    default: "0.31.1"
+  photon-indexer:
+    description: "Install Photon indexer (required for TypeScript tests)"
+    required: false
+    default: "false"
+
+runs:
+  using: composite
+  steps:
+    - name: Install Rust toolchain
+      uses: actions-rust-lang/setup-rust-toolchain@v1
+      with:
+        toolchain: ${{ inputs.rust-toolchain }}
+        cache-workspaces: ${{ inputs.example }}
+
+    - name: Setup Node.js
+      if: inputs.node-version != ''
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+
+    - name: Setup Node.js (for Light CLI)
+      if: inputs.node-version == ''
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version-default }}
+
+    - name: Cache Solana CLI tools
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/solana/
+          ~/.local/share/solana/
+        key: solana-cli-${{ runner.os }}-build-${{ inputs.solana-cli-version }}
+
+    - name: Install Solana CLI tools
+      shell: bash
+      run: |
+        if [[ "${{ inputs.solana-cli-version }}" == 1* ]]; then
+          cd $HOME
+          wget -q https://github.com/solana-labs/solana/releases/download/v${{ inputs.solana-cli-version }}/solana-release-x86_64-unknown-linux-gnu.tar.bz2
+          tar jxf solana-release-x86_64-unknown-linux-gnu.tar.bz2
+          echo "$HOME/solana-release/bin" >> $GITHUB_PATH
+        else
+          sh -c "$(curl -sSfL https://release.anza.xyz/v${{ inputs.solana-cli-version }}/install)"
+          echo "/home/runner/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
+        fi
+
+    - name: Install Anchor CLI
+      if: inputs.node-version != ''
+      shell: bash
+      run: |
+        cargo install --git https://github.com/coral-xyz/anchor avm --locked --force
+        avm install ${{ inputs.anchor-version }}
+        avm use ${{ inputs.anchor-version }}
+
+    - name: Install Light CLI
+      shell: bash
+      run: npm install -g @lightprotocol/zk-compression-cli
+
+    - name: Install Photon indexer
+      if: inputs.photon-indexer == 'true'
+      shell: bash
+      env:
+        RUSTFLAGS: "-A dead-code"
+      run: cargo install --git https://github.com/lightprotocol/photon.git --rev 49b7e7f0d668babbc4d65fe8a0a7236df76f75a8 --locked
+
+    - name: Generate keypair
+      shell: bash
+      run: solana-keygen new --no-bip39-passphrase
+
+    - name: Display versions
+      shell: bash
+      run: |
+        rustc --version
+        cargo --version
+        solana --version
+        light --version
+        if [ -n "${{ inputs.node-version }}" ]; then
+          node --version
+          npm --version
+        fi
