@@ -59,6 +59,22 @@ runs:
           ~/.local/share/solana/
         key: solana-cli-${{ runner.os }}-build-${{ inputs.solana-cli-version }}
 
+    - name: Cache AVM and Anchor
+      if: inputs.node-version != ''
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/bin/avm
+          ~/.avm
+        key: avm-anchor-${{ runner.os }}-${{ inputs.anchor-version }}
+
+    - name: Cache Photon indexer
+      if: inputs.photon-indexer == 'true'
+      uses: actions/cache@v4
+      with:
+        path: ~/.cargo/bin/photon
+        key: photon-${{ runner.os }}-49b7e7f0d668babbc4d65fe8a0a7236df76f75a8
+
     - name: Install Solana CLI tools
       shell: bash
       run: |
