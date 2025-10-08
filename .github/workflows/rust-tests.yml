@@ -1,0 +1,44 @@
+name: Rust
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  SOLANA_CLI_VERSION: "2.3.11"
+  RUST_TOOLCHAIN: "1.90.0"
+
+jobs:
+  test-rust:
+    name: ${{ matrix.example }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        example:
+          - create-and-update
+          - counter/native
+          - counter/pinocchio
+          - account-comparison
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup environment
+        uses: ./.github/actions/setup
+        with:
+          example: ${{ matrix.example }}
+          solana-cli-version: ${{ env.SOLANA_CLI_VERSION }}
+          rust-toolchain: ${{ env.RUST_TOOLCHAIN }}
+
+      - name: Build and test
+        working-directory: ${{ matrix.example }}
+        run: cargo test-sbf

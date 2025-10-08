@@ -1,0 +1,51 @@
+name: Anchor
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  SOLANA_CLI_VERSION: "2.3.11"
+  RUST_TOOLCHAIN: "1.90.0"
+  NODE_VERSION: "22"
+
+jobs:
+  test-typescript:
+    name: ${{ matrix.example }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        example:
+          - counter/anchor
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup environment
+        uses: ./.github/actions/setup
+        with:
+          example: ${{ matrix.example }}
+          node-version: ${{ env.NODE_VERSION }}
+          solana-cli-version: ${{ env.SOLANA_CLI_VERSION }}
+          rust-toolchain: ${{ env.RUST_TOOLCHAIN }}
+
+      - name: Install dependencies
+        working-directory: ${{ matrix.example }}
+        run: npm install
+
+      - name: Test sbf
+        working-directory: ${{ matrix.example }}
+        run: cargo test-sbf
+
+      - name: Run TypeScript tests
+        working-directory: ${{ matrix.example }}
+        run: npm test

@@ -1,0 +1,60 @@
+name: Setup Environment
+description: Setup Rust, Solana CLI, and optionally Node.js for testing
+
+inputs:
+  example:
+    description: 'Example directory path'
+    required: true
+  node-version:
+    description: 'Node.js version to install (optional)'
+    required: false
+    default: ''
+  solana-cli-version:
+    description: 'Solana CLI version'
+    required: false
+    default: '2.3.11'
+  rust-toolchain:
+    description: 'Rust toolchain version'
+    required: false
+    default: '1.90.0'
+
+runs:
+  using: composite
+  steps:
+    - name: Install Rust toolchain
+      uses: actions-rust-lang/setup-rust-toolchain@v1
+      with:
+        toolchain: ${{ inputs.rust-toolchain }}
+        cache-workspaces: ${{ inputs.example }}
+
+    - name: Install Solana CLI
+      uses: heyAyushh/setup-solana@v5.5
+      with:
+        solana-cli-version: ${{ inputs.solana-cli-version }}
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version != '' && inputs.node-version || '22' }}
+        cache: ${{ inputs.node-version != '' && 'npm' || '' }}
+        cache-dependency-path: ${{ inputs.node-version != '' && format('{0}/package-lock.json', inputs.example) || '' }}
+
+    - name: Install Light CLI
+      shell: bash
+      run: npm install -g @lightprotocol/zk-compression-cli
+
+    - name: Generate keypair
+      shell: bash
+      run: solana-keygen new --no-bip39-passphrase
+
+    - name: Display versions
+      shell: bash
+      run: |
+        rustc --version
+        cargo --version
+        solana --version
+        light --version
+        if [ -n "${{ inputs.node-version }}" ]; then
+          node --version
+          npm --version
+        fi
