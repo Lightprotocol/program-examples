@@ -1,4 +1,4 @@
-// #![cfg(feature = "test-sbf")]
+#![cfg(feature = "test-sbf")]
 
 use borsh::{BorshDeserialize, BorshSerialize};
 use counter::{
@@ -11,7 +11,8 @@ use light_program_test::{
 };
 use light_sdk::address::v1::derive_address;
 use light_sdk::instruction::{
-    account_meta::CompressedAccountMeta, PackedAccounts, SystemAccountMetaConfig,
+    account_meta::{CompressedAccountMeta, CompressedAccountMetaClose},
+    PackedAccounts, SystemAccountMetaConfig,
 };
 use solana_sdk::{
     instruction::Instruction,
@@ -51,8 +52,7 @@ async fn test_counter() {
         .get_compressed_account(address, None)
         .await
         .unwrap()
-        .value
-        .unwrap();
+        .value;
     assert_eq!(compressed_counter.address.unwrap(), address);
 
     // Test increment
@@ -64,8 +64,7 @@ async fn test_counter() {
         .get_compressed_account(address, None)
         .await
         .unwrap()
-        .value
-        .unwrap();
+        .value;
 
     // Test decrement
     decrement_counter(&payer, &mut rpc, &compressed_counter)
@@ -76,8 +75,7 @@ async fn test_counter() {
         .get_compressed_account(address, None)
         .await
         .unwrap()
-        .value
-        .unwrap();
+        .value;
 
     // Test reset
     reset_counter(&payer, &mut rpc, &compressed_counter)
@@ -88,8 +86,7 @@ async fn test_counter() {
         .get_compressed_account(address, None)
         .await
         .unwrap()
-        .value
-        .unwrap();
+        .value;
 
     // Test close
     close_counter(&payer, &mut rpc, &compressed_counter)
@@ -107,7 +104,7 @@ pub async fn create_counter(
     let system_account_meta_config = SystemAccountMetaConfig::new(counter::ID.into());
     let mut accounts = PackedAccounts::default();
     accounts.add_pre_accounts_signer(payer.pubkey());
-    accounts.add_system_accounts(system_account_meta_config)?;
+    accounts.add_system_accounts(system_account_meta_config);
 
     let rpc_result = rpc
         .get_validity_proof(
@@ -155,7 +152,7 @@ pub async fn increment_counter(
     let system_account_meta_config = SystemAccountMetaConfig::new(counter::ID.into());
     let mut accounts = PackedAccounts::default();
     accounts.add_pre_accounts_signer(payer.pubkey());
-    accounts.add_system_accounts(system_account_meta_config)?;
+    accounts.add_system_accounts(system_account_meta_config);
 
     let hash = compressed_account.hash;
 
@@ -210,7 +207,7 @@ pub async fn decrement_counter(
     let system_account_meta_config = SystemAccountMetaConfig::new(counter::ID.into());
     let mut accounts = PackedAccounts::default();
     accounts.add_pre_accounts_signer(payer.pubkey());
-    accounts.add_system_accounts(system_account_meta_config)?;
+    accounts.add_system_accounts(system_account_meta_config);
 
     let hash = compressed_account.hash;
 
@@ -265,7 +262,7 @@ pub async fn reset_counter(
     let system_account_meta_config = SystemAccountMetaConfig::new(counter::ID.into());
     let mut accounts = PackedAccounts::default();
     accounts.add_pre_accounts_signer(payer.pubkey());
-    accounts.add_system_accounts(system_account_meta_config)?;
+    accounts.add_system_accounts(system_account_meta_config);
 
     let hash = compressed_account.hash;
 
@@ -320,7 +317,7 @@ pub async fn close_counter(
     let system_account_meta_config = SystemAccountMetaConfig::new(counter::ID.into());
     let mut accounts = PackedAccounts::default();
     accounts.add_pre_accounts_signer(payer.pubkey());
-    accounts.add_system_accounts(system_account_meta_config)?;
+    accounts.add_system_accounts(system_account_meta_config);
 
     let hash = compressed_account.hash;
 
@@ -338,10 +335,9 @@ pub async fn close_counter(
         CounterAccount::deserialize(&mut compressed_account.data.as_ref().unwrap().data.as_slice())
             .unwrap();
 
-    let meta_close = CompressedAccountMeta {
+    let meta_close = CompressedAccountMetaClose {
         tree_info: packed_accounts.packed_tree_infos[0],
         address: compressed_account.address.unwrap(),
-        output_state_tree_index: packed_accounts.packed_tree_infos[0].queue_pubkey_index,
     };
 
     let (accounts, _, _) = accounts.to_account_metas();
