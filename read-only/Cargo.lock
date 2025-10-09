@@ -3602,7 +3602,6 @@ dependencies = [
  "borsh 0.10.4",
  "light-client",
  "light-compressed-account",
- "light-hasher",
  "light-program-test",
  "light-sdk",
  "light-sdk-types",

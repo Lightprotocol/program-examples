@@ -15,7 +15,6 @@ test-sbf = []
 anchor-lang = "0.31.1"
 borsh = "0.10.4"
 light-sdk = { path = "/Users/ananas/dev/light-protocol2/sdk-libs/sdk", features = ["anchor", "v2"] }
-light-hasher = { path = "/Users/ananas/dev/light-protocol2/program-libs/hasher", features = ["solana"] }
 light-sdk-types = { path = "/Users/ananas/dev/light-protocol2/sdk-libs/sdk-types" }
 light-compressed-account = { path = "/Users/ananas/dev/light-protocol2/program-libs/compressed-account" }
 

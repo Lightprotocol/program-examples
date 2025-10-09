@@ -28,7 +28,7 @@ full compressed account lifecycle (create, increment, decrement, reset, close):
 
 - **[account-comparison](./account-comparison/)** - Compare compressed vs regular Solana accounts.
 
-  
+
 ## Light Protocol dependencies
 
 ### Rust Crates
@@ -49,7 +49,7 @@ full compressed account lifecycle (create, increment, decrement, reset, close):
 Required versions:
 
 - **Rust**: 1.86.0 or later
-- **Solana CLI**: 2.2.15
+- **Solana CLI**: 2.3.10
 - **Anchor CLI**: 0.31.1
 - **Zk compression CLI**: 0.27.0 or later
 - **Node.js**: 23.5.0 or later
