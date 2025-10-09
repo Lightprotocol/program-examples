@@ -1,13 +1,18 @@
 #![allow(unexpected_cfgs)]
+// Suppress anchor realloc warning.
+#![allow(deprecated)]
 
 use anchor_lang::{prelude::*, AnchorDeserialize, AnchorSerialize};
 use borsh::{BorshDeserialize, BorshSerialize};
+use light_sdk::cpi::{
+    v1, v2::LightSystemProgramCpi, InvokeLightSystemProgram, LightCpiInstruction,
+};
 use light_sdk::{
     account::LightAccount,
     address::v1::derive_address,
-    cpi::{CpiAccounts, CpiInputs, CpiSigner},
+    cpi::{v1::CpiAccounts, CpiSigner},
     derive_light_cpi_signer,
-    instruction::{account_meta::CompressedAccountMeta, PackedAddressTreeInfo, ValidityProof},
+    instruction::{account_meta::CompressedAccountMetaBurn, PackedAddressTreeInfo, ValidityProof},
     LightDiscriminator, LightHasher,
 };
 
@@ -20,16 +25,6 @@ pub const FIRST_SEED: &[u8] = b"first";
 
 #[program]
 pub mod read_only {
-
-    use light_compressed_account::{
-        compressed_account::{
-            CompressedAccount, CompressedAccountData, PackedReadOnlyCompressedAccount,
-        },
-        instruction_data::with_readonly::InstructionDataInvokeCpiWithReadOnly,
-    };
-    use light_hasher::{DataHasher, Poseidon};
-    use light_sdk::cpi::{invoke_light_system_program, to_account_metas};
-    use light_sdk_types::LIGHT_SYSTEM_PROGRAM_ID;
 
     use super::*;
 
@@ -67,20 +62,18 @@ pub mod read_only {
             "Created compressed account with message: {}",
             data_account.message
         );
-        let cpi_inputs = CpiInputs::new_with_address(
-            proof,
-            vec![data_account.to_account_info().map_err(ProgramError::from)?],
-            vec![address_tree_info.into_new_address_params_packed(address_seed)],
-        );
 
-        cpi_inputs
-            .invoke_light_system_program(light_cpi_accounts)
-            .map_err(ProgramError::from)?;
+        let new_address_params = address_tree_info.into_new_address_params_packed(address_seed);
+
+        v1::LightSystemProgramCpi::new_cpi(crate::LIGHT_CPI_SIGNER, proof)
+            .with_light_account(data_account)?
+            .with_new_addresses(&[new_address_params])
+            .invoke(light_cpi_accounts)?;
 
         Ok(())
     }
 
-    /// Reads a compressed account and validates via `invoke_light_system_program`
+    /// Reads a compressed account and validates via read-only CPI
     pub fn read<'info>(
         ctx: Context<'_, '_, '_, 'info, GenericAnchorAccounts<'info>>,
         proof: ValidityProof,
@@ -96,75 +89,17 @@ pub mod read_only {
             owner: ctx.accounts.signer.key(),
             message: existing_account.message.clone(),
         };
-        let compressed_account = CompressedAccount {
-            address: Some(existing_account.account_meta.address),
-            owner: crate::ID.to_bytes().into(),
-            data: Some(CompressedAccountData {
-                data: vec![], // not used to compute the hash
-                data_hash: read_data_account.hash::<Poseidon>().unwrap(),
-                discriminator: DataAccount::discriminator(),
-            }),
-            lamports: 0,
-        };
-        let merkle_tree_pubkey = light_cpi_accounts
-            .get_tree_account_info(
-                existing_account
-                    .account_meta
-                    .tree_info
-                    .merkle_tree_pubkey_index as usize,
-            )
-            .unwrap()
-            .key
-            .to_bytes()
-            .into();
-        let account_hash = compressed_account
-            .hash(
-                &merkle_tree_pubkey,
-                &existing_account.account_meta.tree_info.leaf_index,
-                true,
-            )
-            .unwrap();
+        let read_only_account = LightAccount::<'_, DataAccount>::new_read_only(
+            &crate::ID,
+            &existing_account.account_meta,
+            read_data_account,
+            light_cpi_accounts.tree_pubkeys().unwrap().as_slice(),
+        )?;
 
-        let instruction_data = InstructionDataInvokeCpiWithReadOnly {
-            read_only_accounts: vec![PackedReadOnlyCompressedAccount {
-                root_index: existing_account.account_meta.tree_info.root_index,
-                merkle_context: light_sdk::instruction::PackedMerkleContext {
-                    merkle_tree_pubkey_index: existing_account
-                        .account_meta
-                        .tree_info
-                        .merkle_tree_pubkey_index,
-                    queue_pubkey_index: existing_account.account_meta.tree_info.queue_pubkey_index,
-                    leaf_index: existing_account.account_meta.tree_info.leaf_index,
-                    prove_by_index: existing_account.account_meta.tree_info.prove_by_index,
-                },
-                account_hash,
-            }],
-            proof: proof.into(),
-            bump: LIGHT_CPI_SIGNER.bump,
-            invoking_program_id: LIGHT_CPI_SIGNER.program_id.into(),
-            mode: 0,
-            ..Default::default()
-        };
-        let inputs = instruction_data.try_to_vec().unwrap();
-
-        let mut data = Vec::with_capacity(8 + inputs.len());
-        data.extend_from_slice(
-            &light_compressed_account::discriminators::DISCRIMINATOR_INVOKE_CPI_WITH_READ_ONLY,
-        );
-        data.extend(inputs);
-        let account_infos = light_cpi_accounts
-            .to_account_infos()
-            .iter()
-            .map(|e| e.to_account_info())
-            .collect::<Vec<_>>();
-        let account_metas: Vec<AccountMeta> = to_account_metas(light_cpi_accounts).unwrap();
-        let instruction = anchor_lang::solana_program::instruction::Instruction {
-            accounts: account_metas,
-            data,
-            program_id: LIGHT_SYSTEM_PROGRAM_ID.into(),
-        };
-        invoke_light_system_program(account_infos.as_slice(), instruction, LIGHT_CPI_SIGNER.bump)
-            .map_err(ProgramError::from)?;
+        LightSystemProgramCpi::new_cpi(crate::LIGHT_CPI_SIGNER, proof)
+            .mode_v1()
+            .with_light_account(read_only_account)?
+            .invoke(light_cpi_accounts)?;
 
         Ok(())
     }
@@ -188,6 +123,6 @@ pub struct DataAccount {
 
 #[derive(Clone, Debug, AnchorSerialize, AnchorDeserialize)]
 pub struct ExistingCompressedAccountIxData {
-    pub account_meta: CompressedAccountMeta,
+    pub account_meta: CompressedAccountMetaBurn,
     pub message: String,
 }
