@@ -4,16 +4,16 @@
 
 use anchor_lang::{prelude::*, AnchorDeserialize, AnchorSerialize};
 use borsh::{BorshDeserialize, BorshSerialize};
-use light_sdk::cpi::{
-    v1, v2::LightSystemProgramCpi, InvokeLightSystemProgram, LightCpiInstruction,
-};
+use light_sdk::cpi::{v2::LightSystemProgramCpi, InvokeLightSystemProgram, LightCpiInstruction};
 use light_sdk::{
     account::LightAccount,
-    address::v1::derive_address,
-    cpi::{v1::CpiAccounts, CpiSigner},
+    address::v2::derive_address,
+    cpi::{v2::CpiAccounts, CpiSigner},
     derive_light_cpi_signer,
-    instruction::{account_meta::CompressedAccountMetaBurn, PackedAddressTreeInfo, ValidityProof},
-    LightDiscriminator, LightHasher,
+    instruction::{
+        account_meta::CompressedAccountMetaReadOnly, PackedAddressTreeInfo, ValidityProof,
+    },
+    LightDiscriminator,
 };
 
 declare_id!("HNqStLMpNuNJqhBF1FbGTKHEFbBLJmq8RdJJmZKWz6jH");
@@ -63,9 +63,10 @@ pub mod read_only {
             data_account.message
         );
 
-        let new_address_params = address_tree_info.into_new_address_params_packed(address_seed);
+        let new_address_params =
+            address_tree_info.into_new_address_params_assigned_packed(address_seed, Some(0));
 
-        v1::LightSystemProgramCpi::new_cpi(crate::LIGHT_CPI_SIGNER, proof)
+        LightSystemProgramCpi::new_cpi(crate::LIGHT_CPI_SIGNER, proof)
             .with_light_account(data_account)?
             .with_new_addresses(&[new_address_params])
             .invoke(light_cpi_accounts)?;
@@ -97,7 +98,6 @@ pub mod read_only {
         )?;
 
         LightSystemProgramCpi::new_cpi(crate::LIGHT_CPI_SIGNER, proof)
-            .mode_v1()
             .with_light_account(read_only_account)?
             .invoke(light_cpi_accounts)?;
 
@@ -111,18 +111,14 @@ pub struct GenericAnchorAccounts<'info> {
     pub signer: Signer<'info>,
 }
 
-#[derive(
-    Clone, Debug, Default, BorshSerialize, BorshDeserialize, LightDiscriminator, LightHasher,
-)]
+#[derive(Clone, Debug, Default, BorshSerialize, BorshDeserialize, LightDiscriminator)]
 pub struct DataAccount {
-    #[hash]
     pub owner: Pubkey,
-    #[hash]
     pub message: String,
 }
 
 #[derive(Clone, Debug, AnchorSerialize, AnchorDeserialize)]
 pub struct ExistingCompressedAccountIxData {
-    pub account_meta: CompressedAccountMetaBurn,
+    pub account_meta: CompressedAccountMetaReadOnly,
     pub message: String,
 }

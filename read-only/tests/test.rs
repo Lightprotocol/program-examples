@@ -6,9 +6,9 @@ use light_program_test::{
     program_test::LightProgramTest, AddressWithTree, Indexer, ProgramTestConfig, Rpc, RpcError,
 };
 use light_sdk::{
-    address::v1::derive_address,
+    address::v2::derive_address,
     instruction::{
-        account_meta::CompressedAccountMetaBurn, PackedAccounts, SystemAccountMetaConfig,
+        account_meta::CompressedAccountMetaReadOnly, PackedAccounts, SystemAccountMetaConfig,
     },
 };
 use read_only::{DataAccount, ExistingCompressedAccountIxData, FIRST_SEED};
@@ -25,7 +25,7 @@ async fn test_read_compressed_account() {
     let mut rpc = LightProgramTest::new(config).await.unwrap();
     let payer = rpc.get_payer().insecure_clone();
 
-    let address_tree_info = rpc.get_address_tree_v1();
+    let address_tree_info = rpc.get_address_tree_v2();
 
     let (address, _) = derive_address(
         &[FIRST_SEED, payer.pubkey().as_ref()],
@@ -81,7 +81,7 @@ where
 {
     let mut remaining_accounts = PackedAccounts::default();
     let config = SystemAccountMetaConfig::new(read_only::ID);
-    remaining_accounts.add_system_accounts(config)?;
+    remaining_accounts.add_system_accounts_v2(config)?;
 
     let rpc_result = rpc
         .get_validity_proof(
@@ -134,7 +134,7 @@ where
 {
     let mut remaining_accounts = PackedAccounts::default();
     let config = SystemAccountMetaConfig::new(read_only::ID);
-    remaining_accounts.add_system_accounts(config)?;
+    remaining_accounts.add_system_accounts_v2(config)?;
 
     let hash = compressed_account.hash;
     println!("hash {:?}", hash);
@@ -146,7 +146,7 @@ where
     let packed_tree_accounts = rpc_result.pack_tree_infos(&mut remaining_accounts);
     let packed_state_tree_accounts = packed_tree_accounts.state_trees.unwrap();
 
-    let account_meta = CompressedAccountMetaBurn {
+    let account_meta = CompressedAccountMetaReadOnly {
         tree_info: packed_state_tree_accounts.packed_tree_infos[0],
         address: compressed_account.address.unwrap(),
     };
