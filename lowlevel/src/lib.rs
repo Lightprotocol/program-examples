@@ -5,12 +5,15 @@ use anchor_lang::{prelude::*, AnchorDeserialize, AnchorSerialize};
 use light_compressed_account::instruction_data::with_account_info::{
     CompressedAccountInfo, OutAccountInfo,
 };
+use light_sdk::cpi::v1::CpiAccounts;
 use light_sdk::{
     address::v1::derive_address,
-    cpi::{CpiAccounts, CpiInputs, CpiSigner},
+    cpi::{v2::LightSystemProgramCpi, InvokeLightSystemProgram, LightCpiInstruction},
     derive_light_cpi_signer,
     instruction::{PackedAddressTreeInfo, ValidityProof},
 };
+use light_sdk_types::CpiSigner;
+
 declare_id!("HNqStLMpNuNJqhBF1FbGTKHEFbBLJmq8RdJJmZKWz6jH");
 
 pub const LIGHT_CPI_SIGNER: CpiSigner =
@@ -53,15 +56,15 @@ pub mod lowlevel {
             &address_pubkey,
             &crate::ID,
         );
-        // get root for input Merkle tree
-        let input_root = read_merkle_tree_root(&ctx.accounts.input_merkle_tree, input_root_index)?;
-        msg!("Input merkle tree root: {:?}", input_root);
+        // Get root from input Merkle tree (example of reading on-chain state)
+        let _input_root = read_merkle_tree_root(&ctx.accounts.input_merkle_tree, input_root_index)?;
 
+        // Create output compressed account using low-level CompressedAccountInfo
         let output_account = CompressedAccountInfo {
             address: None,
             input: None,
             output: Some(OutAccountInfo {
-                discriminator: 1u64.to_le_bytes(), // doesn't really matter as long as you only have one type of compressed account.
+                discriminator: 1u64.to_le_bytes(),
                 output_merkle_tree_index: output_state_tree_index,
                 lamports: 0,
                 data: encrypted_utxo,
@@ -69,17 +72,15 @@ pub mod lowlevel {
             }),
         };
 
-        // Create 1 output compressed account without address
-        // Create 1 address without compressed account
-        let cpi_inputs = CpiInputs::new_with_address(
-            proof,
-            vec![output_account],
-            vec![address_tree_info.into_new_address_params_packed(address_seed)],
-        );
-
-        cpi_inputs
-            .invoke_light_system_program(light_cpi_accounts)
-            .map_err(ProgramError::from)?;
+        // Use new CPI builder pattern:
+        // - Creates 1 output compressed account without address
+        // - Creates 1 address without compressed account
+        LightSystemProgramCpi::new_cpi(LIGHT_CPI_SIGNER, proof)
+            .with_account_infos(&[output_account])
+            .with_new_addresses(&[
+                address_tree_info.into_new_address_params_assigned_packed(address_seed, None)
+            ])
+            .invoke(light_cpi_accounts)?;
 
         Ok(())
     }
