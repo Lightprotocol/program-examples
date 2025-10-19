@@ -1,11 +1,11 @@
 [package]
-name = "lowlevel"
+name = "zk-id"
 version = "0.1.0"
 edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "lowlevel"
+name = "zk_id"
 
 [features]
 default = []
@@ -21,6 +21,7 @@ light-compressed-account = {version = "0.5.0"}
 light-concurrent-merkle-tree = "2"
 # use cpi feature to avoid custom allocator conflict issues
 account-compression = { version = "2", features = ["cpi"] }
+groth16-solana = { path = "/Users/ananas/dev/groth16-solana" }
 
 [dev-dependencies]
 light-program-test = "0.15.0"
@@ -33,6 +34,8 @@ num-bigint = "0.4"
 serde_json = "1.0"
 light-merkle-tree-reference = "3.0.0"
 light-compressed-account = {version = "0.5.0", features = ["new-unique"]}
+groth16-solana = { path = "/Users/ananas/dev/groth16-solana", features = ["vk", "circom"] }
 
 [build-dependencies]
 rust-witness = "0.1"
+groth16-solana = { path = "/Users/ananas/dev/groth16-solana", features = ["vk"] }

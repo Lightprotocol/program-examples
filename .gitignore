@@ -6,3 +6,5 @@ node_modules
 test-ledger
 .yarn
 .claude
+build
+pot

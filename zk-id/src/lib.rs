@@ -22,8 +22,11 @@ pub const LIGHT_CPI_SIGNER: CpiSigner =
 pub const FIRST_SEED: &[u8] = b"first";
 pub const SECOND_SEED: &[u8] = b"second";
 
+// Include the generated verifying key module
+pub mod verifying_key;
+
 #[program]
-pub mod lowlevel {
+pub mod zk_id {
 
     use super::*;
 
@@ -34,7 +37,7 @@ pub mod lowlevel {
         address_tree_info: PackedAddressTreeInfo,
         output_state_tree_index: u8,
         input_root_index: u16,
-        encrypted_utxo: Vec<u8>,    // must be checked by your zkp
+        encrypted_data: Vec<u8>,    // must be checked by your zkp
         output_utxo_hash: [u8; 32], // must be checked by your zkp
     ) -> Result<()> {
         let light_cpi_accounts = CpiAccounts::new(
@@ -67,7 +70,7 @@ pub mod lowlevel {
                 discriminator: 1u64.to_le_bytes(),
                 output_merkle_tree_index: output_state_tree_index,
                 lamports: 0,
-                data: encrypted_utxo,
+                data: encrypted_data,
                 data_hash: output_utxo_hash,
             }),
         };

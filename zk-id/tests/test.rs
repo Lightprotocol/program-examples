@@ -12,11 +12,11 @@ use light_sdk::{
     address::v1::derive_address,
     instruction::{PackedAccounts, SystemAccountMetaConfig},
 };
-use lowlevel::FIRST_SEED;
 use solana_sdk::{
     instruction::Instruction,
     signature::{Keypair, Signature, Signer},
 };
+use zk_id::FIRST_SEED;
 
 #[tokio::test]
 async fn test_create_address_and_output_without_address() {
@@ -129,7 +129,7 @@ where
     let output_state_tree_index = rpc
         .get_random_state_tree_info()?
         .pack_output_tree_index(&mut remaining_accounts)?;
-    
+
     let input_state_tree_info = rpc.get_random_state_tree_info()?;
     let input_root_index = 0u16;
 

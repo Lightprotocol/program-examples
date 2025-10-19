@@ -1876,6 +1876,23 @@ dependencies = [
 [[package]]
 name = "groth16-solana"
 version = "0.2.0"
+dependencies = [
+ "ark-bn254 0.5.0",
+ "ark-ec 0.5.0",
+ "ark-ff 0.5.0",
+ "ark-groth16",
+ "ark-serialize 0.5.0",
+ "circom-prover",
+ "num-bigint 0.4.6",
+ "serde",
+ "serde_json",
+ "solana-bn254",
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "groth16-solana"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3a6d1ffb18dbf5cfc60b11bd7da88474c672870247c1e5b498619bcb6ba3d8f5"
 dependencies = [
@@ -3253,7 +3270,7 @@ version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "85fdf317ec3cfcd3a8e6556a5b5e7fbcc207a40264700f9a5271876838f26f58"
 dependencies = [
- "groth16-solana",
+ "groth16-solana 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "light-compressed-account 0.3.0",
  "thiserror 2.0.17",
 ]
@@ -3264,7 +3281,7 @@ version = "4.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "26398153a8c0fa61957a9ad046b3a433c401a37e0e0e9c8d42dee097fa76ce65"
 dependencies = [
- "groth16-solana",
+ "groth16-solana 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "light-compressed-account 0.5.0",
  "thiserror 2.0.17",
 ]
@@ -3392,29 +3409,6 @@ name = "log"
 version = "0.4.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "34080505efa8e45a4b816c349525ebe327ceaa8559756f0356cba97ef3bf7432"
-
-[[package]]
-name = "lowlevel"
-version = "0.1.0"
-dependencies = [
- "account-compression",
- "anchor-lang",
- "borsh 0.10.4",
- "circom-prover",
- "light-client",
- "light-compressed-account 0.5.0",
- "light-concurrent-merkle-tree 2.1.0",
- "light-hasher 4.0.0",
- "light-merkle-tree-reference 3.0.1",
- "light-program-test",
- "light-sdk",
- "light-sdk-types",
- "num-bigint 0.4.6",
- "rust-witness",
- "serde_json",
- "solana-sdk",
- "tokio",
-]
 
 [[package]]
 name = "lru-slab"
@@ -9113,6 +9107,30 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.107",
+]
+
+[[package]]
+name = "zk-id"
+version = "0.1.0"
+dependencies = [
+ "account-compression",
+ "anchor-lang",
+ "borsh 0.10.4",
+ "circom-prover",
+ "groth16-solana 0.2.0",
+ "light-client",
+ "light-compressed-account 0.5.0",
+ "light-concurrent-merkle-tree 2.1.0",
+ "light-hasher 4.0.0",
+ "light-merkle-tree-reference 3.0.1",
+ "light-program-test",
+ "light-sdk",
+ "light-sdk-types",
+ "num-bigint 0.4.6",
+ "rust-witness",
+ "serde_json",
+ "solana-sdk",
+ "tokio",
 ]
 
 [[package]]
