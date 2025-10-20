@@ -1,0 +1,107 @@
+#![cfg(feature = "test-sbf")]
+
+use anchor_lang::AnchorDeserialize;
+use light_program_test::{
+    program_test::LightProgramTest, AddressWithTree, Indexer, ProgramTestConfig, Rpc, RpcError,
+};
+use light_sdk::{
+    address::v1::derive_address,
+    instruction::{PackedAccounts, SystemAccountMetaConfig},
+};
+use program_create::MyCompressedAccount;
+use solana_sdk::{
+    instruction::{AccountMeta, Instruction},
+    signature::{Keypair, Signature, Signer},
+};
+
+#[tokio::test]
+async fn test_create() {
+    let config = ProgramTestConfig::new(true, Some(vec![("program_create", program_create::ID)]));
+    let mut rpc = LightProgramTest::new(config).await.unwrap();
+    let payer = rpc.get_payer().insecure_clone();
+
+    let address_tree_info = rpc.get_address_tree_v1();
+
+    let (address, _) = derive_address(
+        &[b"message", payer.pubkey().as_ref()],
+        &address_tree_info.tree,
+        &program_create::ID,
+    );
+
+    create_message_account(&mut rpc, &payer, &address, "Hello, compressed world!".to_string())
+        .await
+        .unwrap();
+
+    let account = get_message_account(&mut rpc, address).await;
+    assert_eq!(account.owner, payer.pubkey());
+    assert_eq!(account.message, "Hello, compressed world!");
+}
+
+async fn create_message_account(
+    rpc: &mut LightProgramTest,
+    payer: &Keypair,
+    address: &[u8; 32],
+    message: String,
+) -> Result<Signature, RpcError> {
+    let config = SystemAccountMetaConfig::new(program_create::ID);
+    let mut remaining_accounts = PackedAccounts::default();
+    remaining_accounts.add_system_accounts(config);
+
+    let address_tree_info = rpc.get_address_tree_v1();
+
+    let rpc_result = rpc
+        .get_validity_proof(
+            vec![],
+            vec![AddressWithTree {
+                address: *address,
+                tree: address_tree_info.tree,
+            }],
+            None,
+        )
+        .await?
+        .value;
+    let packed_accounts = rpc_result.pack_tree_infos(&mut remaining_accounts);
+
+    let output_state_tree_index = rpc
+        .get_random_state_tree_info()
+        .unwrap()
+        .pack_output_tree_index(&mut remaining_accounts)
+        .unwrap();
+
+    let (remaining_accounts, _, _) = remaining_accounts.to_account_metas();
+
+    let instruction = Instruction {
+        program_id: program_create::ID,
+        accounts: [
+            vec![AccountMeta::new(payer.pubkey(), true)],
+            remaining_accounts,
+        ]
+        .concat(),
+        data: {
+            use anchor_lang::InstructionData;
+            program_create::instruction::Create {
+                proof: rpc_result.proof,
+                address_tree_info: packed_accounts.address_trees[0],
+                output_state_tree_index: output_state_tree_index,
+                message,
+            }
+            .data()
+        },
+    };
+
+    rpc.create_and_send_transaction(&[instruction], &payer.pubkey(), &[payer])
+        .await
+}
+
+async fn get_message_account(
+    rpc: &mut LightProgramTest,
+    address: [u8; 32],
+) -> MyCompressedAccount {
+    let account = rpc
+        .get_compressed_account(address, None)
+        .await
+        .unwrap()
+        .value;
+    let data = &account.data.as_ref().unwrap().data;
+    MyCompressedAccount::deserialize(&mut &data[..]).unwrap()
+}

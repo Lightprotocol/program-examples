@@ -1,0 +1,15 @@
+[toolchain]
+
+[features]
+resolution = true
+skip-lint = false
+
+[programs.localnet]
+anchor_program_burn = "3VjoDzKqub6USAHbj2chMZb8396SdmmhcdosaoqPN9Rr"
+
+[registry]
+url = "https://api.apr.dev"
+
+[provider]
+cluster = "localnet"
+wallet = "~/.config/solana/id.json"
