@@ -1,4 +1,5 @@
 #![allow(unexpected_cfgs)]
+#![allow(deprecated)]
 
 use account_compression::{state_merkle_tree_from_bytes_zero_copy, StateMerkleTreeAccount};
 use anchor_lang::{prelude::*, AnchorDeserialize, AnchorSerialize};
@@ -9,7 +10,7 @@ use light_sdk::account::{poseidon::LightAccount as LightAccountPoseidon, LightAc
 use light_sdk::cpi::v1::CpiAccounts;
 use light_sdk::{
     address::v1::derive_address,
-    cpi::{v2::LightSystemProgramCpi, InvokeLightSystemProgram, LightCpiInstruction},
+    cpi::{v1::LightSystemProgramCpi, InvokeLightSystemProgram, LightCpiInstruction},
     derive_light_cpi_signer,
     instruction::{account_meta::CompressedAccountMeta, PackedAddressTreeInfo, ValidityProof},
     LightDiscriminator, LightHasher,
@@ -22,6 +23,7 @@ pub const LIGHT_CPI_SIGNER: CpiSigner =
     derive_light_cpi_signer!("HNqStLMpNuNJqhBF1FbGTKHEFbBLJmq8RdJJmZKWz6jH");
 
 pub const ISSUER: &[u8] = b"issuer";
+pub const CREDENTIAL: &[u8] = b"credential";
 pub const ZK_ID_CHECK: &[u8] = b"ZK_ID_CHECK";
 
 // Include the generated verifying key module
@@ -55,7 +57,7 @@ pub mod zk_id {
                 .map_err(|_| ErrorCode::AccountNotEnoughKeys)?,
             &crate::ID,
         );
-
+        msg!("address {:?}", address);
         let mut issuer_account = LightAccount::<'_, IssuerAccount>::new_init(
             &crate::ID,
             Some(address),
@@ -72,9 +74,7 @@ pub mod zk_id {
 
         LightSystemProgramCpi::new_cpi(LIGHT_CPI_SIGNER, proof)
             .with_light_account(issuer_account)?
-            .with_new_addresses(&[
-                address_tree_info.into_new_address_params_assigned_packed(address_seed, Some(0))
-            ])
+            .with_new_addresses(&[address_tree_info.into_new_address_params_packed(address_seed)])
             .invoke(light_cpi_accounts)?;
 
         Ok(())
@@ -114,7 +114,7 @@ pub mod zk_id {
             .ok_or(ProgramError::ArithmeticOverflow)?;
 
         let (address, address_seed) = derive_address(
-            &[ISSUER, ctx.accounts.signer.key().as_ref()],
+            &[CREDENTIAL, credential_pubkey.as_ref()],
             &address_tree_info
                 .get_tree_pubkey(&light_cpi_accounts)
                 .map_err(|_| ErrorCode::AccountNotEnoughKeys)?,
@@ -139,9 +139,7 @@ pub mod zk_id {
         LightSystemProgramCpi::new_cpi(LIGHT_CPI_SIGNER, proof)
             .with_light_account(issuer_account)?
             .with_light_account_poseidon(credential_account)?
-            .with_new_addresses(&[
-                address_tree_info.into_new_address_params_assigned_packed(address_seed, Some(0))
-            ])
+            .with_new_addresses(&[address_tree_info.into_new_address_params_packed(address_seed)])
             .invoke(light_cpi_accounts)?;
 
         Ok(())
@@ -200,23 +198,34 @@ pub mod zk_id {
             output_state_tree_index,
         );
         event_account.data = encrypted_data;
-        let event_account_info = event_account.to_account_info()?;
+
+        let event_account_info = event_account
+            .to_output_compressed_account_with_packed_context(None)?
+            .unwrap();
 
         // Construct public inputs array for the circuit
-        // Order must match the circuit: owner_hashed, merkle_tree_hashed, discriminator, issuer_hashed, expectedRoot
+        // Order MUST match the circuit's public declaration exactly:
+        // owner_hashed, merkle_tree_hashed, discriminator, issuer_hashed, expectedRoot, public_encrypted_data_hash, public_data_hash
         let public_inputs: [[u8; 32]; 7] = [
             account_owner_hashed,
             merkle_tree_hashed,
             discriminator,
             issuer_hashed,
+            event_account_info
+                .compressed_account
+                .data
+                .as_ref()
+                .unwrap()
+                .data_hash, // This is public_encrypted_data_hash
+            data_hash, // This is public_data_hash
             expected_root,
-            event_account_info.output.as_ref().unwrap().data_hash,
-            data_hash,
         ];
+
         let proof_a = decompress_g1(&credential_proof.a).map_err(|e| {
             let code: u32 = e.into();
             Error::from(ProgramError::Custom(code))
         })?;
+
         let proof_b = decompress_g2(&credential_proof.b).map_err(|e| {
             let code: u32 = e.into();
             Error::from(ProgramError::Custom(code))
@@ -244,13 +253,9 @@ pub mod zk_id {
             Error::from(ProgramError::Custom(code))
         })?;
 
-        msg!("ZK proof verified successfully");
-
         LightSystemProgramCpi::new_cpi(LIGHT_CPI_SIGNER, proof)
-            .with_account_infos(&[event_account_info])
-            .with_new_addresses(&[
-                address_tree_info.into_new_address_params_assigned_packed(address_seed, Some(0))
-            ])
+            .with_output_compressed_accounts(&[event_account_info])
+            .with_new_addresses(&[address_tree_info.into_new_address_params_packed(address_seed)])
             .invoke(light_cpi_accounts)?;
 
         Ok(())

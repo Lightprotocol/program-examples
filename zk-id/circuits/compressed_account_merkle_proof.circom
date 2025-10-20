@@ -11,18 +11,20 @@ template CompressedAccountHash() {
     signal input owner_hashed;
     signal input leaf_index;
     signal input merkle_tree_hashed;
+    signal input address;
     signal input discriminator;
     signal input data_hash;
 
     signal output hash;
 
-    component poseidon = Poseidon(5);
+    component poseidon = Poseidon(6);
 
     poseidon.inputs[0] <== owner_hashed;
     poseidon.inputs[1] <== leaf_index;
     poseidon.inputs[2] <== merkle_tree_hashed;
-    poseidon.inputs[3] <== discriminator + 36893488147419103232; // + discriminator domain
-    poseidon.inputs[4] <== data_hash;
+    poseidon.inputs[3] <== address;
+    poseidon.inputs[4] <== discriminator + 36893488147419103232; // + discriminator domain
+    poseidon.inputs[5] <== data_hash;
 
     hash <== poseidon.out;
 }
@@ -61,6 +63,8 @@ template CompressedAccountMerkleProof(levels) {
     // Compressed account inputs
     signal input owner_hashed;
     signal input leaf_index;
+    signal input account_leaf_index;
+    signal input address;
     signal input merkle_tree_hashed;
     signal input discriminator;
     signal input issuer_hashed;
@@ -81,7 +85,8 @@ template CompressedAccountMerkleProof(levels) {
     // Step 1: Compute compressed account hash
     component accountHasher = CompressedAccountHash();
     accountHasher.owner_hashed <== owner_hashed;
-    accountHasher.leaf_index <== leaf_index;
+    accountHasher.leaf_index <== account_leaf_index;
+    accountHasher.address <== address;
     accountHasher.merkle_tree_hashed <== merkle_tree_hashed;
     accountHasher.discriminator <== discriminator;
     accountHasher.data_hash <== data_hasher.out;
@@ -106,8 +111,8 @@ component main {
         merkle_tree_hashed,
         discriminator,
         issuer_hashed,
-        expectedRoot,
         public_encrypted_data_hash,
-        public_data_hash
+        public_data_hash,
+        expectedRoot
     ]
 } = CompressedAccountMerkleProof(26);

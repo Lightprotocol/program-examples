@@ -3,7 +3,10 @@ use groth16_solana::groth16::Groth16Verifier;
 use groth16_solana::proof_parser::circom_prover::{convert_proof, convert_public_inputs};
 use light_compressed_account::compressed_account::{CompressedAccount, CompressedAccountData};
 use light_compressed_account::Pubkey;
-use light_hasher::{hash_to_field_size::hash_to_bn254_field_size_be, Hasher, Poseidon, Sha256};
+use light_hasher::{
+    hash_to_field_size::{hash_to_bn254_field_size_be, hashv_to_bn254_field_size_be_const_array},
+    Hasher, Poseidon, Sha256,
+};
 use light_merkle_tree_reference::MerkleTree;
 use num_bigint::BigUint;
 use std::collections::HashMap;
@@ -44,14 +47,20 @@ fn add_compressed_account_to_circuit_inputs(
         [0u8; 8]
     };
 
-    // Hash values for circuit
+    // Hash values for circuit - use 2-round hash like on-chain
     let owner_hashed = hash_to_bn254_field_size_be(owner.as_ref());
     let merkle_tree_hashed = hash_to_bn254_field_size_be(merkle_tree_pubkey.as_ref());
-    let issuer_hashed = hash_to_bn254_field_size_be(issuer_pubkey.as_ref());
-    let credential_pubkey_hashed = hash_to_bn254_field_size_be(credential_pubkey.as_ref());
+    let issuer_hashed =
+        hashv_to_bn254_field_size_be_const_array::<2>(&[issuer_pubkey.as_ref()]).unwrap();
+    let credential_pubkey_hashed =
+        hashv_to_bn254_field_size_be_const_array::<2>(&[credential_pubkey.as_ref()]).unwrap();
 
     // Hash encrypted_data with SHA256 and truncate (set first byte to 0)
-    let mut encrypted_data_hash = Sha256::hash(encrypted_data).unwrap();
+    // Include length prefix like in the main test
+    let mut hash_input = Vec::new();
+    hash_input.extend_from_slice((encrypted_data.len() as u32).to_le_bytes().as_ref());
+    hash_input.extend_from_slice(encrypted_data);
+    let mut encrypted_data_hash = Sha256::hash(&hash_input).unwrap();
     encrypted_data_hash[0] = 0;
 
     // Compute public_data_hash (hash of issuer and credential pubkey)
@@ -67,6 +76,22 @@ fn add_compressed_account_to_circuit_inputs(
         vec![BigUint::from_bytes_be(&owner_hashed).to_string()],
     );
     inputs.insert("leaf_index".to_string(), vec![leaf_index.to_string()]);
+
+    // Add account_leaf_index (same format as SDK: 32-byte array with value at [28..32] in LE)
+    let mut account_leaf_index_bytes = [0u8; 32];
+    account_leaf_index_bytes[28..32].copy_from_slice(&(leaf_index as u32).to_le_bytes());
+    inputs.insert(
+        "account_leaf_index".to_string(),
+        vec![BigUint::from_bytes_be(&account_leaf_index_bytes).to_string()],
+    );
+
+    // Add address field - use the address from the compressed account
+    let address = compressed_account.address.unwrap_or([0u8; 32]);
+    inputs.insert(
+        "address".to_string(),
+        vec![BigUint::from_bytes_be(&address).to_string()],
+    );
+
     inputs.insert(
         "merkle_tree_hashed".to_string(),
         vec![BigUint::from_bytes_be(&merkle_tree_hashed).to_string()],
@@ -134,10 +159,14 @@ fn test_compressed_account_merkle_proof_circuit() {
     let issuer_pubkey = Pubkey::new_from_array([4u8; 32]);
     let credential_pubkey = Pubkey::new_from_array([5u8; 32]);
     let encrypted_data = vec![6u8; 64];
+    let mut address = [3u8; 32];
+    address[0] = 0; // Ensure first byte is 0
 
-    // Compute data_hash as hash of issuer and credential
-    let issuer_hashed = hash_to_bn254_field_size_be(issuer_pubkey.as_ref());
-    let credential_pubkey_hashed = hash_to_bn254_field_size_be(credential_pubkey.as_ref());
+    // Compute data_hash as hash of issuer and credential - use 2-round hash
+    let issuer_hashed =
+        hashv_to_bn254_field_size_be_const_array::<2>(&[issuer_pubkey.as_ref()]).unwrap();
+    let credential_pubkey_hashed =
+        hashv_to_bn254_field_size_be_const_array::<2>(&[credential_pubkey.as_ref()]).unwrap();
     let data_hash = Poseidon::hashv(&[
         issuer_hashed.as_slice(),
         credential_pubkey_hashed.as_slice(),
@@ -147,7 +176,7 @@ fn test_compressed_account_merkle_proof_circuit() {
     let compressed_account = CompressedAccount {
         owner,
         lamports: 0,
-        address: None,
+        address: Some(address),
         data: Some(CompressedAccountData {
             discriminator: [1u8; 8],
             data: vec![],
@@ -209,9 +238,11 @@ fn test_invalid_proof_rejected() {
     let credential_pubkey = Pubkey::new_from_array([5u8; 32]);
     let encrypted_data = vec![6u8; 64];
 
-    // Compute data_hash as hash of issuer and credential
-    let issuer_hashed = hash_to_bn254_field_size_be(issuer_pubkey.as_ref());
-    let credential_pubkey_hashed = hash_to_bn254_field_size_be(credential_pubkey.as_ref());
+    // Compute data_hash as hash of issuer and credential - use 2-round hash
+    let issuer_hashed =
+        hashv_to_bn254_field_size_be_const_array::<2>(&[issuer_pubkey.as_ref()]).unwrap();
+    let credential_pubkey_hashed =
+        hashv_to_bn254_field_size_be_const_array::<2>(&[credential_pubkey.as_ref()]).unwrap();
     let data_hash = Poseidon::hashv(&[
         issuer_hashed.as_slice(),
         credential_pubkey_hashed.as_slice(),
@@ -283,10 +314,14 @@ fn test_groth16_solana_verification() {
     let issuer_pubkey = Pubkey::new_from_array([4u8; 32]);
     let credential_pubkey = Pubkey::new_from_array([5u8; 32]);
     let encrypted_data = vec![6u8; 64];
+    let mut address = [3u8; 32];
+    address[0] = 0; // Ensure first byte is 0
 
-    // Compute data_hash as hash of issuer and credential
-    let issuer_hashed = hash_to_bn254_field_size_be(issuer_pubkey.as_ref());
-    let credential_pubkey_hashed = hash_to_bn254_field_size_be(credential_pubkey.as_ref());
+    // Compute data_hash as hash of issuer and credential - use 2-round hash
+    let issuer_hashed =
+        hashv_to_bn254_field_size_be_const_array::<2>(&[issuer_pubkey.as_ref()]).unwrap();
+    let credential_pubkey_hashed =
+        hashv_to_bn254_field_size_be_const_array::<2>(&[credential_pubkey.as_ref()]).unwrap();
     let data_hash = Poseidon::hashv(&[
         issuer_hashed.as_slice(),
         credential_pubkey_hashed.as_slice(),
@@ -296,7 +331,7 @@ fn test_groth16_solana_verification() {
     let compressed_account = CompressedAccount {
         owner,
         lamports: 0,
-        address: None,
+        address: Some(address),
         data: Some(CompressedAccountData {
             discriminator: [1u8; 8],
             data: vec![],
