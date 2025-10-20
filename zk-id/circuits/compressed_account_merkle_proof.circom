@@ -63,11 +63,20 @@ template CompressedAccountMerkleProof(levels) {
     signal input leaf_index;
     signal input merkle_tree_hashed;
     signal input discriminator;
-    signal input data_hash;
+    signal input issuer_hashed;
+    signal input credential_pubkey_hashed;
+    signal input encrypted_data_hash;
+    signal input public_encrypted_data_hash;
+    signal input public_data_hash;
 
     // Merkle proof inputs
     signal input pathElements[levels];
     signal input expectedRoot;
+
+    component data_hasher = Poseidon(2);
+    data_hasher.inputs[0] <== issuer_hashed;
+    data_hasher.inputs[1] <== credential_pubkey_hashed;
+    data_hasher.out === public_data_hash;
 
     // Step 1: Compute compressed account hash
     component accountHasher = CompressedAccountHash();
@@ -75,7 +84,7 @@ template CompressedAccountMerkleProof(levels) {
     accountHasher.leaf_index <== leaf_index;
     accountHasher.merkle_tree_hashed <== merkle_tree_hashed;
     accountHasher.discriminator <== discriminator;
-    accountHasher.data_hash <== data_hash;
+    accountHasher.data_hash <== data_hasher.out;
 
     // Step 2: Verify Merkle proof
     component merkleProof = MerkleProof(levels);
@@ -86,6 +95,8 @@ template CompressedAccountMerkleProof(levels) {
     // Step 3: CRITICAL CONSTRAINT - Enforce that computed root MUST equal expected root
     // This === operator adds a constraint that will fail witness generation if roots don't match
     merkleProof.root === expectedRoot;
+
+    public_encrypted_data_hash === encrypted_data_hash;
 }
 
 // Main component with 26 levels (typical for Solana state trees)
@@ -94,7 +105,9 @@ component main {
         owner_hashed,
         merkle_tree_hashed,
         discriminator,
-        data_hash,
-        expectedRoot
+        issuer_hashed,
+        expectedRoot,
+        public_encrypted_data_hash,
+        public_data_hash
     ]
 } = CompressedAccountMerkleProof(26);

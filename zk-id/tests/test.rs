@@ -1,6 +1,7 @@
 // #![cfg(feature = "test-sbf")]
 
 use anchor_lang::{InstructionData, ToAccountMetas};
+use light_client::rpc::RpcConnection;
 use light_compressed_account::{
     compressed_account::hash_with_hashed_values, hash_to_bn254_field_size_be,
 };
@@ -14,9 +15,10 @@ use light_sdk::{
 };
 use solana_sdk::{
     instruction::Instruction,
+    pubkey::Pubkey,
     signature::{Keypair, Signature, Signer},
 };
-use zk_id::FIRST_SEED;
+use zk_id::ISSUER;
 
 #[tokio::test]
 async fn test_create_address_and_output_without_address() {
@@ -27,7 +29,7 @@ async fn test_create_address_and_output_without_address() {
     let address_tree_info = rpc.get_address_tree_v1();
 
     let (address, _) = derive_address(
-        &[FIRST_SEED, payer.pubkey().as_ref()],
+        &[ISSUER, payer.pubkey().as_ref()],
         &address_tree_info.tree,
         &lowlevel::ID,
     );
@@ -149,6 +151,227 @@ where
 
     let instruction = Instruction {
         program_id: lowlevel::ID,
+        accounts: [
+            accounts.to_account_metas(None),
+            remaining_accounts.to_account_metas().0,
+        ]
+        .concat(),
+        data: instruction_data.data(),
+    };
+
+    rpc.create_and_send_transaction(&[instruction], &payer.pubkey(), &[payer])
+        .await
+}
+
+#[tokio::test]
+async fn test_add_credential() {
+    let config = ProgramTestConfig::new(true, Some(vec![("zk_id", zk_id::ID)]));
+    let mut rpc = LightProgramTest::new(config).await.unwrap();
+    let payer = rpc.get_payer().insecure_clone();
+
+    let address_tree_info = rpc.get_address_tree_v1();
+
+    let (issuer_address, _) = derive_address(
+        &[ISSUER, payer.pubkey().as_ref()],
+        &address_tree_info.tree,
+        &zk_id::ID,
+    );
+
+    // First, create the issuer account
+    create_issuer(&mut rpc, &payer, &issuer_address, address_tree_info.clone())
+        .await
+        .unwrap();
+
+    // Get the issuer account
+    let issuer_accounts = rpc
+        .get_compressed_accounts_by_owner(&zk_id::ID, None, None)
+        .await
+        .unwrap();
+    assert_eq!(issuer_accounts.value.items.len(), 1);
+    let issuer_account = &issuer_accounts.value.items[0];
+
+    // Create a test credential pubkey
+    let credential_pubkey = Pubkey::new_unique();
+
+    let (credential_address, _) = derive_address(
+        &[ISSUER, payer.pubkey().as_ref()],
+        &address_tree_info.tree,
+        &zk_id::ID,
+    );
+
+    // Create the credential account
+    add_credential(
+        &mut rpc,
+        &payer,
+        &credential_address,
+        address_tree_info,
+        issuer_account,
+        credential_pubkey,
+    )
+    .await
+    .unwrap();
+
+    // Verify both accounts exist now (issuer + credential)
+    let program_compressed_accounts = rpc
+        .get_compressed_accounts_by_owner(&zk_id::ID, None, None)
+        .await
+        .unwrap();
+
+    assert_eq!(program_compressed_accounts.value.items.len(), 2);
+
+    println!(
+        "Successfully created credential account for pubkey: {}",
+        credential_pubkey
+    );
+}
+
+async fn add_credential<R>(
+    rpc: &mut R,
+    payer: &Keypair,
+    address: &[u8; 32],
+    address_tree_info: light_client::indexer::TreeInfo,
+    issuer_account: &light_client::rpc::RpcCompressedAccount,
+    credential_pubkey: Pubkey,
+) -> Result<Signature, RpcError>
+where
+    R: Rpc + Indexer,
+{
+    let mut remaining_accounts = PackedAccounts::default();
+    let config = SystemAccountMetaConfig::new(zk_id::ID);
+    remaining_accounts.add_system_accounts(config);
+
+    // Pack the issuer account for input
+    let issuer_account_meta = remaining_accounts.pack_compressed_account(issuer_account);
+
+    let rpc_result = rpc
+        .get_validity_proof(
+            vec![issuer_account.hash],
+            vec![AddressWithTree {
+                address: *address,
+                tree: address_tree_info.tree,
+            }],
+            None,
+        )
+        .await?
+        .value;
+
+    let packed_address_tree_accounts = rpc_result
+        .pack_tree_infos(&mut remaining_accounts)
+        .address_trees;
+    let output_state_tree_index = rpc
+        .get_random_state_tree_info()?
+        .pack_output_tree_index(&mut remaining_accounts)?;
+
+    let instruction_data = zk_id::instruction::AddCredential {
+        proof: rpc_result.proof,
+        address_tree_info: packed_address_tree_accounts[0],
+        output_state_tree_index,
+        issuer_account_meta,
+        credential_pubkey,
+    };
+
+    let accounts = zk_id::accounts::GenericAnchorAccounts {
+        signer: payer.pubkey(),
+        input_merkle_tree: rpc.get_random_state_tree_info()?.tree,
+    };
+
+    let instruction = Instruction {
+        program_id: zk_id::ID,
+        accounts: [
+            accounts.to_account_metas(None),
+            remaining_accounts.to_account_metas().0,
+        ]
+        .concat(),
+        data: instruction_data.data(),
+    };
+
+    rpc.create_and_send_transaction(&[instruction], &payer.pubkey(), &[payer])
+        .await
+}
+
+#[tokio::test]
+async fn test_create_issuer() {
+    let config = ProgramTestConfig::new(true, Some(vec![("zk_id", zk_id::ID)]));
+    let mut rpc = LightProgramTest::new(config).await.unwrap();
+    let payer = rpc.get_payer().insecure_clone();
+
+    let address_tree_info = rpc.get_address_tree_v1();
+
+    let (address, _) = derive_address(
+        &[ISSUER, payer.pubkey().as_ref()],
+        &address_tree_info.tree,
+        &zk_id::ID,
+    );
+
+    // Create the issuer account
+    create_issuer(&mut rpc, &payer, &address, address_tree_info)
+        .await
+        .unwrap();
+
+    // Verify the issuer account was created
+    let program_compressed_accounts = rpc
+        .get_compressed_accounts_by_owner(&zk_id::ID, None, None)
+        .await
+        .unwrap();
+
+    assert_eq!(program_compressed_accounts.value.items.len(), 1);
+    let compressed_account = &program_compressed_accounts.value.items[0];
+
+    // Verify account has data and address
+    assert!(compressed_account.data.is_some());
+    assert_eq!(compressed_account.address, Some(address));
+
+    println!(
+        "Successfully created issuer account for pubkey: {}",
+        payer.pubkey()
+    );
+}
+
+async fn create_issuer<R>(
+    rpc: &mut R,
+    payer: &Keypair,
+    address: &[u8; 32],
+    address_tree_info: light_client::indexer::TreeInfo,
+) -> Result<Signature, RpcError>
+where
+    R: Rpc + Indexer,
+{
+    let mut remaining_accounts = PackedAccounts::default();
+    let config = SystemAccountMetaConfig::new(zk_id::ID);
+    remaining_accounts.add_system_accounts(config);
+
+    let rpc_result = rpc
+        .get_validity_proof(
+            vec![],
+            vec![AddressWithTree {
+                address: *address,
+                tree: address_tree_info.tree,
+            }],
+            None,
+        )
+        .await?
+        .value;
+
+    let packed_address_tree_accounts = rpc_result
+        .pack_tree_infos(&mut remaining_accounts)
+        .address_trees;
+    let output_state_tree_index = rpc
+        .get_random_state_tree_info()?
+        .pack_output_tree_index(&mut remaining_accounts)?;
+
+    let instruction_data = zk_id::instruction::CreateIssuer {
+        proof: rpc_result.proof,
+        address_tree_info: packed_address_tree_accounts[0],
+        output_state_tree_index,
+    };
+
+    let accounts = zk_id::accounts::GenericAnchorAccounts {
+        signer: payer.pubkey(),
+        input_merkle_tree: rpc.get_random_state_tree_info()?.tree,
+    };
+
+    let instruction = Instruction {
+        program_id: zk_id::ID,
         accounts: [
             accounts.to_account_metas(None),
             remaining_accounts.to_account_metas().0,
