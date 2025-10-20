@@ -156,7 +156,6 @@ pub mod zk_id {
         encrypted_data: Vec<u8>,
         credential_proof: CompressedProof,
         issuer: [u8; 32],
-        merkle_tree_hashed: [u8; 32],
         data_hash: [u8; 32],
         verification_id: [u8; 32],
     ) -> Result<()> {
@@ -190,6 +189,12 @@ pub mod zk_id {
             input_root_index,
         )
         .map_err(|e| ProgramError::from(e))?;
+
+        let merkle_tree_pubkey = ctx.accounts.input_merkle_tree.key();
+        let merkle_tree_hashed =
+            hashv_to_bn254_field_size_be_const_array::<2>(&[&merkle_tree_pubkey.to_bytes()])
+                .unwrap();
+
         let mut discriminator = [0u8; 32];
         discriminator[24..].copy_from_slice(CredentialAccount::LIGHT_DISCRIMINATOR_SLICE);
         let issuer_hashed = hashv_to_bn254_field_size_be_const_array::<2>(&[&issuer]).unwrap();

@@ -332,8 +332,6 @@ where
         .get_random_state_tree_info()?
         .pack_output_tree_index(&mut remaining_accounts)?;
 
-    let merkle_tree_hashed = hash_to_bn254_field_size_be(state_tree.as_ref());
-
     let instruction_data = zk_id::instruction::ZkVerifyCredential {
         proof: rpc_result.proof,
         address_tree_info: packed_address_tree_accounts[0],
@@ -342,7 +340,6 @@ where
         encrypted_data,
         credential_proof,
         issuer: credential_account_parsed.issuer.to_bytes(),
-        merkle_tree_hashed,
         data_hash,
         verification_id,
     };
