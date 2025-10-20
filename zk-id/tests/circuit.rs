@@ -9,6 +9,7 @@ use light_hasher::{
 };
 use light_merkle_tree_reference::MerkleTree;
 use num_bigint::BigUint;
+use solana_sdk::signature::{Keypair, Signer};
 use std::collections::HashMap;
 
 // Link the generated witness library
@@ -20,6 +21,52 @@ rust_witness::witness!(compressedaccountmerkleproof);
 // Use the verifying key from the library
 use zk_id::verifying_key::VERIFYINGKEY;
 
+/// Derives a credential keypair from a Solana keypair
+/// The private key is derived by signing "CREDENTIAL" and truncating to 248 bits
+/// The public key is Poseidon(private_key)
+#[derive(Debug, Clone)]
+struct CredentialKeypair {
+    pub private_key: [u8; 32], // 248 bits
+    pub public_key: [u8; 32],  // Poseidon hash of private key
+}
+
+impl CredentialKeypair {
+    pub fn new(solana_keypair: &Keypair) -> Self {
+        // Sign the message "CREDENTIAL" with the Solana keypair
+        let message = b"CREDENTIAL";
+        let signature = solana_keypair.sign_message(message);
+
+        // Hash the signature to get entropy
+        let hashed = Sha256::hash(signature.as_ref()).unwrap();
+
+        // Truncate to 248 bits (31 bytes) for BN254 field compatibility
+        let mut private_key = [0u8; 32];
+        private_key[1..32].copy_from_slice(&hashed[0..31]);
+
+        let public_key = Poseidon::hashv(&[&private_key]).unwrap();
+
+        Self {
+            private_key,
+            public_key,
+        }
+    }
+
+    /// Get the private key as a BigUint for circuit input
+    pub fn private_key_biguint(&self) -> BigUint {
+        BigUint::from_bytes_be(&self.private_key)
+    }
+
+    /// Compute nullifier for a given verification_id
+    pub fn compute_nullifier(&self, verification_id: &[u8; 31]) -> [u8; 32] {
+        // Nullifier = Poseidon(verification_id, private_key)
+        // Both need to be padded to 32 bytes for Poseidon
+        let mut padded_verification = [0u8; 32];
+        padded_verification[1..32].copy_from_slice(verification_id);
+
+        Poseidon::hashv(&[&padded_verification, &self.private_key]).unwrap()
+    }
+}
+
 /// Helper function to add compressed account inputs to the circuit inputs HashMap
 ///
 /// # Arguments
@@ -28,7 +75,8 @@ use zk_id::verifying_key::VERIFYINGKEY;
 /// * `merkle_tree_pubkey` - The public key of the Merkle tree
 /// * `leaf_index` - The index of the leaf in the Merkle tree
 /// * `issuer_pubkey` - The issuer's public key
-/// * `credential_pubkey` - The credential public key (private input)
+/// * `credential` - The credential keypair (contains private key and public key commitment)
+/// * `verification_id` - The verification context (31 bytes)
 /// * `encrypted_data` - The encrypted data
 fn add_compressed_account_to_circuit_inputs(
     inputs: &mut HashMap<String, Vec<String>>,
@@ -36,7 +84,8 @@ fn add_compressed_account_to_circuit_inputs(
     merkle_tree_pubkey: &Pubkey,
     leaf_index: u32,
     issuer_pubkey: &Pubkey,
-    credential_pubkey: &Pubkey,
+    credential: &CredentialKeypair,
+    verification_id: &[u8; 31],
     encrypted_data: &[u8],
 ) {
     // Extract data from compressed account
@@ -52,8 +101,6 @@ fn add_compressed_account_to_circuit_inputs(
     let merkle_tree_hashed = hash_to_bn254_field_size_be(merkle_tree_pubkey.as_ref());
     let issuer_hashed =
         hashv_to_bn254_field_size_be_const_array::<2>(&[issuer_pubkey.as_ref()]).unwrap();
-    let credential_pubkey_hashed =
-        hashv_to_bn254_field_size_be_const_array::<2>(&[credential_pubkey.as_ref()]).unwrap();
 
     // Hash encrypted_data with SHA256 and truncate (set first byte to 0)
     // Include length prefix like in the main test
@@ -63,12 +110,8 @@ fn add_compressed_account_to_circuit_inputs(
     let mut encrypted_data_hash = Sha256::hash(&hash_input).unwrap();
     encrypted_data_hash[0] = 0;
 
-    // Compute public_data_hash (hash of issuer and credential pubkey)
-    let public_data_hash = Poseidon::hashv(&[
-        issuer_hashed.as_slice(),
-        credential_pubkey_hashed.as_slice(),
-    ])
-    .unwrap();
+    // Compute nullifier using credential private key and verification_id
+    let nullifier = credential.compute_nullifier(verification_id);
 
     // Add all inputs to the HashMap
     inputs.insert(
@@ -104,10 +147,21 @@ fn add_compressed_account_to_circuit_inputs(
         "issuer_hashed".to_string(),
         vec![BigUint::from_bytes_be(&issuer_hashed).to_string()],
     );
+
+    // Add credential private key (private input)
     inputs.insert(
-        "credential_pubkey_hashed".to_string(),
-        vec![BigUint::from_bytes_be(&credential_pubkey_hashed).to_string()],
+        "credentialPrivateKey".to_string(),
+        vec![credential.private_key_biguint().to_string()],
     );
+
+    // Add verification_id (public input) - pad to 32 bytes
+    let mut padded_verification = [0u8; 32];
+    padded_verification[1..32].copy_from_slice(verification_id);
+    inputs.insert(
+        "verification_id".to_string(),
+        vec![BigUint::from_bytes_be(&padded_verification).to_string()],
+    );
+
     inputs.insert(
         "encrypted_data_hash".to_string(),
         vec![BigUint::from_bytes_be(&encrypted_data_hash).to_string()],
@@ -116,9 +170,11 @@ fn add_compressed_account_to_circuit_inputs(
         "public_encrypted_data_hash".to_string(),
         vec![BigUint::from_bytes_be(&encrypted_data_hash).to_string()],
     );
+
+    // Add nullifier (public output)
     inputs.insert(
-        "public_data_hash".to_string(),
-        vec![BigUint::from_bytes_be(&public_data_hash).to_string()],
+        "nullifier".to_string(),
+        vec![BigUint::from_bytes_be(&nullifier).to_string()],
     );
 }
 
@@ -157,21 +213,22 @@ fn test_compressed_account_merkle_proof_circuit() {
     let merkle_tree_pubkey = Pubkey::new_from_array([2u8; 32]);
     let leaf_index: u32 = 0;
     let issuer_pubkey = Pubkey::new_from_array([4u8; 32]);
-    let credential_pubkey = Pubkey::new_from_array([5u8; 32]);
+
+    // Create credential keypair
+    let user_keypair = Keypair::new();
+    let credential = CredentialKeypair::new(&user_keypair);
+
     let encrypted_data = vec![6u8; 64];
     let mut address = [3u8; 32];
     address[0] = 0; // Ensure first byte is 0
 
-    // Compute data_hash as hash of issuer and credential - use 2-round hash
+    // Create verification_id (31 bytes)
+    let verification_id = [7u8; 31];
+
+    // Compute data_hash as hash of issuer and credential commitment
     let issuer_hashed =
         hashv_to_bn254_field_size_be_const_array::<2>(&[issuer_pubkey.as_ref()]).unwrap();
-    let credential_pubkey_hashed =
-        hashv_to_bn254_field_size_be_const_array::<2>(&[credential_pubkey.as_ref()]).unwrap();
-    let data_hash = Poseidon::hashv(&[
-        issuer_hashed.as_slice(),
-        credential_pubkey_hashed.as_slice(),
-    ])
-    .unwrap();
+    let data_hash = Poseidon::hashv(&[issuer_hashed.as_slice(), &credential.public_key]).unwrap();
 
     let compressed_account = CompressedAccount {
         owner,
@@ -205,7 +262,8 @@ fn test_compressed_account_merkle_proof_circuit() {
         &merkle_tree_pubkey,
         leaf_index,
         &issuer_pubkey,
-        &credential_pubkey,
+        &credential,
+        &verification_id,
         &encrypted_data,
     );
     add_merkle_proof_to_circuit_inputs(&mut proof_inputs, &merkle_proof_hashes, &merkle_root);
@@ -235,19 +293,21 @@ fn test_invalid_proof_rejected() {
     let merkle_tree_pubkey = Pubkey::new_from_array([2u8; 32]);
     let leaf_index: u32 = 0;
     let issuer_pubkey = Pubkey::new_from_array([4u8; 32]);
-    let credential_pubkey = Pubkey::new_from_array([5u8; 32]);
+
+    // Create credential keypair
+    let user_keypair = Keypair::new();
+    let credential = CredentialKeypair::new(&user_keypair);
+
     let encrypted_data = vec![6u8; 64];
 
-    // Compute data_hash as hash of issuer and credential - use 2-round hash
+    // Create verification_id (31 bytes)
+    let mut verification_id = [7u8; 31];
+    verification_id[0] = 0x0F;
+
+    // Compute data_hash as hash of issuer and credential commitment
     let issuer_hashed =
         hashv_to_bn254_field_size_be_const_array::<2>(&[issuer_pubkey.as_ref()]).unwrap();
-    let credential_pubkey_hashed =
-        hashv_to_bn254_field_size_be_const_array::<2>(&[credential_pubkey.as_ref()]).unwrap();
-    let data_hash = Poseidon::hashv(&[
-        issuer_hashed.as_slice(),
-        credential_pubkey_hashed.as_slice(),
-    ])
-    .unwrap();
+    let data_hash = Poseidon::hashv(&[issuer_hashed.as_slice(), &credential.public_key]).unwrap();
 
     let compressed_account = CompressedAccount {
         owner,
@@ -279,7 +339,8 @@ fn test_invalid_proof_rejected() {
         &merkle_tree_pubkey,
         leaf_index,
         &issuer_pubkey,
-        &credential_pubkey,
+        &credential,
+        &verification_id,
         &encrypted_data,
     );
 
@@ -312,21 +373,22 @@ fn test_groth16_solana_verification() {
     let merkle_tree_pubkey = Pubkey::new_from_array([2u8; 32]);
     let leaf_index: u32 = 0;
     let issuer_pubkey = Pubkey::new_from_array([4u8; 32]);
-    let credential_pubkey = Pubkey::new_from_array([5u8; 32]);
+
+    // Create credential keypair
+    let user_keypair = Keypair::new();
+    let credential = CredentialKeypair::new(&user_keypair);
+
     let encrypted_data = vec![6u8; 64];
     let mut address = [3u8; 32];
     address[0] = 0; // Ensure first byte is 0
 
-    // Compute data_hash as hash of issuer and credential - use 2-round hash
+    // Create verification_id (31 bytes)
+    let verification_id = [7u8; 31];
+
+    // Compute data_hash as hash of issuer and credential commitment
     let issuer_hashed =
         hashv_to_bn254_field_size_be_const_array::<2>(&[issuer_pubkey.as_ref()]).unwrap();
-    let credential_pubkey_hashed =
-        hashv_to_bn254_field_size_be_const_array::<2>(&[credential_pubkey.as_ref()]).unwrap();
-    let data_hash = Poseidon::hashv(&[
-        issuer_hashed.as_slice(),
-        credential_pubkey_hashed.as_slice(),
-    ])
-    .unwrap();
+    let data_hash = Poseidon::hashv(&[issuer_hashed.as_slice(), &credential.public_key]).unwrap();
 
     let compressed_account = CompressedAccount {
         owner,
@@ -360,13 +422,15 @@ fn test_groth16_solana_verification() {
         &merkle_tree_pubkey,
         leaf_index,
         &issuer_pubkey,
-        &credential_pubkey,
+        &credential,
+        &verification_id,
         &encrypted_data,
     );
     add_merkle_proof_to_circuit_inputs(&mut proof_inputs, &merkle_proof_hashes, &merkle_root);
 
     // Generate proof with circom-prover
     let circuit_inputs = serde_json::to_string(&proof_inputs).unwrap();
+    println!("circuit_inputs {:?}", circuit_inputs);
     let proof = CircomProver::prove(
         ProofLib::Arkworks,
         WitnessFn::RustWitness(compressedaccountmerkleproof_witness),
@@ -382,7 +446,7 @@ fn test_groth16_solana_verification() {
 
     // Convert proof and public inputs to groth16-solana format
     let (proof_a, proof_b, proof_c) = convert_proof(&proof.proof).expect("Failed to convert proof");
-    let public_inputs: [[u8; 32]; 7] = convert_public_inputs(&proof.pub_inputs);
+    let public_inputs: [[u8; 32]; 8] = convert_public_inputs(&proof.pub_inputs);
 
     // Verify with groth16-solana
     let mut verifier =

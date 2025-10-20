@@ -27,15 +27,31 @@ cargo test-sbf
 - `owner_hashed`, `merkle_tree_hashed`, `discriminator` - Account identifiers
 - `issuer_hashed` - Credential issuer
 - `expectedRoot` - Merkle tree root
-- `public_encrypted_data_hash`, `public_data_hash` - Data commitments
+- `verification_id` - Context for nullifier generation (prevents reuse in same context)
+- `public_encrypted_data_hash` - Encrypted data commitment
+- `nullifier` - Unique value preventing double-spending (Poseidon(verification_id, credential_secret))
 
 **Private inputs** (hidden):
-- `leaf_index` - Account position in tree
+- `credentialPrivateKey` - Secret key proving credential ownership
+- `leaf_index`, `account_leaf_index` - Account positions
+- `address` - Account address
 - `pathElements[26]` - Merkle proof path
+- `encrypted_data_hash` - Private data hash
+
+## Circuit Files
+
+- `compressed_account_merkle_proof.circom` - Main circuit that combines all components
+- `credential.circom` - Keypair verification for credential ownership
+- `compressed_account.circom` - Computes Poseidon hash of account fields
+- `merkle_proof.circom` - Binary Merkle tree inclusion proof
 
 ## Architecture
 
 ```
-CompressedAccountMerkleProof
-├── CompressedAccountHash (Poseidon hash of 5 fields)
-└── MerkleProof (26-level binary tree verification)
+CompressedAccountMerkleProof (main)
+├── Keypair (credential.circom)
+│   └── Proves knowledge of private key
+├── CompressedAccountHash (compressed_account.circom)
+│   └── Poseidon hash of 6 fields
+└── MerkleProof (merkle_proof.circom)
+    └── 26-level binary tree verification

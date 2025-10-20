@@ -1,4 +1,4 @@
-#![cfg(feature = "test-sbf")]
+// #![cfg(feature = "test-sbf")]
 
 use anchor_lang::{InstructionData, ToAccountMetas};
 use circom_prover::{prover::ProofLib, witness::WitnessFn, CircomProver};
@@ -20,6 +20,47 @@ use solana_sdk::{
 };
 use std::collections::HashMap;
 use zk_id::{CREDENTIAL, ISSUER, ZK_ID_CHECK};
+
+/// Derives a credential keypair from a Solana keypair
+/// The private key is derived by signing "CREDENTIAL" and truncating to 248 bits
+/// The public key is Poseidon(private_key)
+#[derive(Debug, Clone)]
+struct CredentialKeypair {
+    pub private_key: [u8; 32], // 248 bits
+    pub public_key: [u8; 32],  // Poseidon hash of private key
+}
+
+impl CredentialKeypair {
+    pub fn new(solana_keypair: &Keypair) -> Self {
+        // Sign the message "CREDENTIAL" with the Solana keypair
+        let message = b"CREDENTIAL";
+        let signature = solana_keypair.sign_message(message);
+
+        // Hash the signature to get entropy
+        let hashed = Sha256::hash(signature.as_ref()).unwrap();
+
+        // Truncate to 248 bits (31 bytes) for BN254 field compatibility
+        let mut private_key = [0u8; 32];
+        private_key[1..32].copy_from_slice(&hashed[0..31]);
+
+        let public_key = Poseidon::hashv(&[&private_key]).unwrap();
+
+        Self {
+            private_key,
+            public_key,
+        }
+    }
+
+    /// Compute nullifier for a given verification_id
+    pub fn compute_nullifier(&self, verification_id: &[u8; 31]) -> [u8; 32] {
+        // Nullifier = Poseidon(verification_id, private_key)
+        // Both need to be padded to 32 bytes for Poseidon
+        let mut padded_verification = [0u8; 32];
+        padded_verification[1..32].copy_from_slice(verification_id);
+
+        Poseidon::hashv(&[&padded_verification, &self.private_key]).unwrap()
+    }
+}
 
 // Link the generated witness library
 #[link(name = "circuit", kind = "static")]
@@ -57,9 +98,13 @@ async fn test_create_issuer_and_add_credential() {
     println!("Created issuer account for pubkey: {}", payer.pubkey());
 
     // Step 2: Create a credential account
-    let credential_pubkey = Pubkey::new_unique();
+    // Create a credential keypair for the user
+    let user_keypair = Keypair::new();
+    let credential = CredentialKeypair::new(&user_keypair);
+
+    // Use the credential commitment as the "pubkey" for address derivation
     let (credential_address, _) = derive_address(
-        &[CREDENTIAL, credential_pubkey.as_ref()],
+        &[CREDENTIAL, credential.public_key.as_ref()],
         &address_tree_info.tree,
         &zk_id::ID,
     );
@@ -70,7 +115,7 @@ async fn test_create_issuer_and_add_credential() {
         &credential_address,
         address_tree_info.clone(),
         issuer_account,
-        credential_pubkey,
+        credential.public_key,
     )
     .await
     .unwrap();
@@ -88,8 +133,8 @@ async fn test_create_issuer_and_add_credential() {
     );
 
     println!(
-        "Successfully created credential account for pubkey: {}",
-        credential_pubkey
+        "Successfully created credential account with public_key: {:?}",
+        credential.public_key
     );
 
     // Step 3: Verify the credential with ZK proof
@@ -100,9 +145,15 @@ async fn test_create_issuer_and_add_credential() {
         .value
         .expect("Credential account not found");
     println!("credential_account {:?}", credential_account);
-    verify_credential(&mut rpc, &payer, &credential_account, address_tree_info)
-        .await
-        .unwrap();
+    verify_credential(
+        &mut rpc,
+        &payer,
+        &credential_account,
+        address_tree_info,
+        &user_keypair,
+    )
+    .await
+    .unwrap();
 
     println!("Successfully verified credential with ZK proof!");
 
@@ -176,7 +227,7 @@ async fn add_credential<R>(
     address: &[u8; 32],
     address_tree_info: light_client::indexer::TreeInfo,
     issuer_account: &CompressedAccount,
-    credential_pubkey: Pubkey,
+    credential_commitment: [u8; 32],
 ) -> Result<Signature, RpcError>
 where
     R: Rpc + Indexer,
@@ -222,7 +273,7 @@ where
         address_tree_info: packed_address_tree_accounts[0],
         output_state_tree_index,
         issuer_account_meta,
-        credential_pubkey,
+        credential_pubkey: Pubkey::new_from_array(credential_commitment),
         num_credentials_issued: issuer_account_parsed.num_credentials_issued,
     };
 
@@ -249,6 +300,7 @@ async fn verify_credential<R>(
     payer: &Keypair,
     credential_account: &CompressedAccount,
     address_tree_info: light_client::indexer::TreeInfo,
+    user_keypair: &Keypair,
 ) -> Result<Signature, RpcError>
 where
     R: Rpc + Indexer,
@@ -276,36 +328,36 @@ where
     // Generate encrypted data (in a real scenario, this would be user-provided)
     let encrypted_data = vec![42u8; 64];
 
+    // Create the credential keypair from the user keypair
+    let credential = CredentialKeypair::new(user_keypair);
+
+    // Generate a verification_id (31 bytes)
+    let mut verification_id = [0u8; 31];
+    let random_pubkey = Pubkey::new_unique();
+    verification_id.copy_from_slice(&random_pubkey.to_bytes()[0..31]);
+
     // Generate the ZK proof using the actual merkle root
-    // Use the actual issuer and credential_pubkey from the parsed account
-    let (credential_proof, _computed_data_hash) = generate_credential_proof(
+    let (credential_proof, nullifier) = generate_credential_proof(
         credential_account,
         &state_tree,
         leaf_index,
         &merkle_proof_hashes,
         &merkle_root,
         &credential_account_parsed.issuer,
-        &credential_account_parsed.credential_pubkey, // Use actual credential_pubkey from account
+        &credential,
         &encrypted_data,
+        &verification_id,
     );
-
-    // Use the actual data_hash from the credential account
-    let public_data_hash = credential_data.data_hash;
-
-    // The data_hash parameter should be the public_data_hash (hash of issuer + credential_pubkey)
-    let data_hash = public_data_hash;
 
     // Create the verification transaction
     let mut remaining_accounts = PackedAccounts::default();
     let config = SystemAccountMetaConfig::new(zk_id::ID);
     remaining_accounts.add_system_accounts(config)?;
 
-    let verification_id = Pubkey::new_unique().to_bytes();
-
     let (event_address, _) = derive_address(
         &[
             ZK_ID_CHECK,
-            data_hash.as_slice(),
+            nullifier.as_slice(),
             verification_id.as_slice(),
         ],
         &address_tree_info.tree,
@@ -337,10 +389,10 @@ where
         address_tree_info: packed_address_tree_accounts[0],
         output_state_tree_index,
         input_root_index: root_index,
-        encrypted_data,
+        public_data: encrypted_data,
         credential_proof,
         issuer: credential_account_parsed.issuer.to_bytes(),
-        data_hash,
+        nullifier,
         verification_id,
     };
 
@@ -370,11 +422,12 @@ fn generate_credential_proof(
     merkle_proof_hashes: &[[u8; 32]],
     merkle_root: &[u8; 32],
     issuer_pubkey: &Pubkey,
-    credential_pubkey: &Pubkey,
+    credential: &CredentialKeypair,
     encrypted_data: &[u8],
+    verification_id: &[u8; 31],
 ) -> (
     light_compressed_account::instruction_data::compressed_proof::CompressedProof,
-    [u8; 32],
+    [u8; 32], // nullifier
 ) {
     let zkey_path = "./build/compressed_account_merkle_proof_final.zkey".to_string();
 
@@ -396,20 +449,15 @@ fn generate_credential_proof(
     let issuer_hashed =
         hashv_to_bn254_field_size_be_const_array::<2>(&[issuer_pubkey.as_ref()]).unwrap();
 
-    // Use the same hashing as issuer - 2-round hash
-    let credential_pubkey_hashed =
-        hashv_to_bn254_field_size_be_const_array::<2>(&[credential_pubkey.as_ref()]).unwrap();
+    // Compute data_hash as hash of issuer and credential commitment (public key is already a Poseidon hash)
     let mut hash_input = Vec::new();
     hash_input.extend_from_slice((encrypted_data.len() as u32).to_le_bytes().as_ref());
     hash_input.extend_from_slice(encrypted_data);
     let mut encrypted_data_hash = Sha256::hash(hash_input.as_slice()).unwrap();
     encrypted_data_hash[0] = 0;
 
-    let public_data_hash = Poseidon::hashv(&[
-        issuer_hashed.as_slice(),
-        credential_pubkey_hashed.as_slice(),
-    ])
-    .unwrap();
+    let public_data_hash =
+        Poseidon::hashv(&[issuer_hashed.as_slice(), &credential.public_key]).unwrap();
 
     // Verify the data_hash matches
     let expected_data_hash = credential_account.data.as_ref().unwrap().data_hash;
@@ -477,10 +525,13 @@ fn generate_credential_proof(
         "issuer_hashed".to_string(),
         vec![BigUint::from_bytes_be(&issuer_hashed).to_string()],
     );
+
+    // Add credential private key (private input) - already padded to 32 bytes
     proof_inputs.insert(
-        "credential_pubkey_hashed".to_string(),
-        vec![BigUint::from_bytes_be(&credential_pubkey_hashed).to_string()],
+        "credentialPrivateKey".to_string(),
+        vec![BigUint::from_bytes_be(&credential.private_key).to_string()],
     );
+
     proof_inputs.insert(
         "encrypted_data_hash".to_string(),
         vec![BigUint::from_bytes_be(&encrypted_data_hash).to_string()],
@@ -489,9 +540,20 @@ fn generate_credential_proof(
         "public_encrypted_data_hash".to_string(),
         vec![BigUint::from_bytes_be(&encrypted_data_hash).to_string()],
     );
+
+    // Add verification_id (public input) - pad to 32 bytes
+    let mut padded_verification = [0u8; 32];
+    padded_verification[1..32].copy_from_slice(verification_id);
     proof_inputs.insert(
-        "public_data_hash".to_string(),
-        vec![BigUint::from_bytes_be(&public_data_hash).to_string()],
+        "verification_id".to_string(),
+        vec![BigUint::from_bytes_be(&padded_verification).to_string()],
+    );
+
+    // Compute nullifier
+    let nullifier = credential.compute_nullifier(verification_id);
+    proof_inputs.insert(
+        "nullifier".to_string(),
+        vec![BigUint::from_bytes_be(&nullifier).to_string()],
     );
 
     // Add merkle proof inputs
@@ -540,9 +602,9 @@ fn generate_credential_proof(
         use groth16_solana::groth16::Groth16Verifier;
         use groth16_solana::proof_parser::circom_prover::convert_public_inputs;
 
-        // Convert public inputs from the circom proof
-        let public_inputs_converted: [[u8; 32]; 7] = convert_public_inputs(&proof.pub_inputs);
-
+        // Convert public inputs from the circom proof (8 public inputs in circuit)
+        let public_inputs_converted: [[u8; 32]; 8] = convert_public_inputs(&proof.pub_inputs);
+        println!("public_inputs_converted {:?}", public_inputs_converted);
         // Create verifier using the uncompressed proofs (which have proof_a negated)
         let mut verifier = Groth16Verifier::new(
             &proof_a_uncompressed,
@@ -566,5 +628,5 @@ fn generate_credential_proof(
             c: proof_c,
         };
 
-    (compressed_proof, public_data_hash)
+    (compressed_proof, nullifier)
 }

@@ -2,7 +2,10 @@
 # ZK-ID Program
 
 A minimal zk id Solana program that uses zero-knowledge proofs for identity verification with compressed accounts.
-(Note this is a proof of concept and not production-ready.)
+Note this is an example how to verify a zk inclusion proof, not a full zk identity protocol and not production-ready.
+For examples of zk identity protocols, see:
+- [Iden3](https://github.com/iden3) - Full decentralized identity protocol with claims, revocation, and recovery
+- [Semaphore](https://github.com/semaphore-protocol/semaphore) - Privacy-preserving group signaling with nullifiers
 
 ## Program Instructions
 
@@ -16,8 +19,9 @@ Issues a new credential by creating a compressed account that binds a user's pub
 Verifies a zero-knowledge proof of credential ownership using Groth16 verification and creates an encrypted event account to store the verification result on-chain.
 
 **Properties:**
-- The credential is not exposed during zk proof verification.
-- Each credential can only be used once per `verification_id`.
+- Credential verification is private. The credential is not exposed during zk proof verification.
+- Each credential can only be used once per `verification_id`. (The event account address serves as a nullifier.)
+- Only the credential owner can produce a valid proof.
 
 ## Requirements
 

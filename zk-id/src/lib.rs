@@ -4,6 +4,8 @@
 use anchor_lang::{prelude::*, AnchorDeserialize, AnchorSerialize};
 use borsh::{BorshDeserialize, BorshSerialize};
 use groth16_solana::groth16::Groth16Verifier;
+use light_hasher::to_byte_array::ToByteArray;
+use light_hasher::HasherError;
 use light_sdk::account::{poseidon::LightAccount as LightAccountPoseidon, LightAccount};
 use light_sdk::cpi::v1::CpiAccounts;
 use light_sdk::{
@@ -129,7 +131,7 @@ pub mod zk_id {
         );
 
         credential_account.issuer = ctx.accounts.signer.key();
-        credential_account.credential_pubkey = credential_pubkey;
+        credential_account.credential_pubkey = CredentialPubkey::new(credential_pubkey);
 
         msg!(
             "Created credential account for pubkey: {} (issuer credential count: {})",
@@ -153,11 +155,11 @@ pub mod zk_id {
         address_tree_info: PackedAddressTreeInfo,
         output_state_tree_index: u8,
         input_root_index: u16,
-        encrypted_data: Vec<u8>,
+        public_data: Vec<u8>,
         credential_proof: CompressedProof,
         issuer: [u8; 32],
-        data_hash: [u8; 32],
-        verification_id: [u8; 32],
+        nullifier: [u8; 32],
+        verification_id: [u8; 31],
     ) -> Result<()> {
         let light_cpi_accounts = CpiAccounts::new(
             ctx.accounts.signer.as_ref(),
@@ -176,7 +178,7 @@ pub mod zk_id {
         let (address, address_seed) = derive_address(
             &[
                 ZK_ID_CHECK,
-                data_hash.as_slice(),
+                nullifier.as_slice(),
                 verification_id.as_slice(),
             ],
             &address_pubkey,
@@ -206,7 +208,7 @@ pub mod zk_id {
             Some(address),
             output_state_tree_index,
         );
-        event_account.data = encrypted_data;
+        event_account.data = public_data;
 
         let event_account_info = event_account
             .to_output_compressed_account_with_packed_context(None)?
@@ -215,20 +217,25 @@ pub mod zk_id {
             // Construct public inputs array for the circuit
             // Order MUST match the circuit's public declaration exactly:
             // owner_hashed, merkle_tree_hashed, discriminator, issuer_hashed, expectedRoot, public_encrypted_data_hash, public_data_hash
-            let public_inputs: [[u8; 32]; 7] = [
+            let mut padded_verification_id = [0u8; 32];
+            padded_verification_id[1..].copy_from_slice(&verification_id);
+
+            let public_inputs: [[u8; 32]; 8] = [
                 account_owner_hashed,
                 merkle_tree_hashed,
                 discriminator,
                 issuer_hashed,
+                expected_root,
+                padded_verification_id,
                 event_account_info
                     .compressed_account
                     .data
                     .as_ref()
                     .unwrap()
                     .data_hash, // This is public_encrypted_data_hash
-                data_hash, // This is public_data_hash
-                expected_root,
+                nullifier,
             ];
+            msg!("public_inputs {:?}", public_inputs);
 
             let proof_a = decompress_g1(&credential_proof.a).map_err(|e| {
                 let code: u32 = e.into();
@@ -270,6 +277,7 @@ pub mod zk_id {
         Ok(())
     }
 }
+
 #[derive(Accounts)]
 pub struct GenericAnchorAccounts<'info> {
     #[account(mut)]
@@ -289,8 +297,28 @@ pub struct VerifyAccounts<'info> {
 pub struct CredentialAccount {
     #[hash]
     pub issuer: Pubkey,
-    #[hash]
+    /// CredentialPubkey (is a Poseidon hash -> no need to annotate with #[hash])
+    pub credential_pubkey: CredentialPubkey,
+}
+
+#[derive(Clone, Debug, Default, BorshSerialize, BorshDeserialize, LightDiscriminator)]
+pub struct CredentialPubkey {
     pub credential_pubkey: Pubkey,
+}
+
+impl CredentialPubkey {
+    pub fn new(credential_pubkey: Pubkey) -> Self {
+        Self { credential_pubkey }
+    }
+}
+
+// ToByteArray is required by LightHasher and not implemented for Pubkey or [u8;32],
+// so we implement it here for CredentialPubkey.
+impl ToByteArray for CredentialPubkey {
+    const NUM_FIELDS: usize = 1;
+    fn to_byte_array(&self) -> std::result::Result<[u8; 32], HasherError> {
+        Ok(self.credential_pubkey.to_bytes())
+    }
 }
 
 #[derive(Clone, Debug, Default, BorshSerialize, BorshDeserialize, LightDiscriminator)]
