@@ -20,6 +20,7 @@ Verifies a zero-knowledge proof of credential ownership using Groth16 verificati
 
 **Properties:**
 - Credential verification is private. The credential is not exposed during zk proof verification.
+  (The transaction payer is not private, for full privacy a relayer or freshly funded keypair should be used.)
 - Each credential can only be used once per `verification_id`. (The event account address serves as a nullifier.)
 - Only the credential owner can produce a valid proof.
 
