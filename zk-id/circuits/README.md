@@ -71,6 +71,5 @@ Private inputs:
 ## References
 
 - Compressed Account Circuit: https://github.com/ananas-block/compressed-account-circuit
-- Merkle Proof Implementation: /Users/ananas/dev/light-protocol2/circuit-lib/circuit-lib.circom
 - Mopro ZK Library: https://github.com/zkmopro/mopro
 - SnarkJS: https://github.com/iden3/snarkjs

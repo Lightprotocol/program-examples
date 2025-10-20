@@ -169,12 +169,18 @@ fi
 # Contribute to the ceremony
 echo ""
 echo "Contributing to the ceremony..."
+# Generate real randomness from /dev/urandom combined with system entropy
+# This creates 256 bits of entropy for the contribution
+RANDOM_ENTROPY=$(head -c 32 /dev/urandom | xxd -p -c 256)
+SYSTEM_ENTROPY="${RANDOM}${RANDOM}${RANDOM}$(date +%s%N)$(uname -a | sha256sum | cut -d' ' -f1)"
+COMBINED_ENTROPY="${RANDOM_ENTROPY}${SYSTEM_ENTROPY}"
+
 npx snarkjs zkey contribute \
     build/circuit_0000.zkey \
     build/compressed_account_merkle_proof_final.zkey \
     --name="First contribution" \
     -v \
-    -e="$(date +%s)"
+    -e="$COMBINED_ENTROPY"
 
 if [ $? -eq 0 ]; then
     echo -e "${GREEN}✓${NC} Contribution complete"

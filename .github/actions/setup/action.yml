@@ -108,6 +108,13 @@ runs:
       shell: bash
       run: npm install -g @lightprotocol/zk-compression-cli
 
+    - name: Cache Powers of Tau file
+      if: inputs.install-circom == 'true'
+      uses: actions/cache@v4
+      with:
+        path: ${{ inputs.example }}/pot/powersOfTau28_hez_final_16.ptau
+        key: ptau-powersOfTau28_hez_final_16-v1
+
     - name: Cache circom installation
       if: inputs.install-circom == 'true'
       id: cache-circom
