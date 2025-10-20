@@ -67,16 +67,64 @@ PTAU_FILE="pot/powersOfTau28_hez_final_16.ptau"
 if [ -f "$PTAU_FILE" ]; then
     echo -e "${YELLOW}Powers of Tau file already exists, skipping download${NC}"
 else
-    echo "Downloading from Hermez ceremony (this may take a few minutes)..."
-    curl -L -o "$PTAU_FILE" \
-        https://hermez.s3-eu-west-1.amazonaws.com/powersOfTau28_hez_final_16.ptau
+    echo "Downloading Powers of Tau file (this may take a few minutes)..."
 
-    if [ $? -eq 0 ]; then
-        echo -e "${GREEN}✓${NC} Powers of Tau downloaded successfully"
-    else
-        echo -e "${RED}Error: Failed to download Powers of Tau${NC}"
+    # Try up to 3 times to download the file
+    MAX_RETRIES=3
+    RETRY_COUNT=0
+    DOWNLOAD_SUCCESS=false
+
+    # Use the Google Cloud Storage URL which is more reliable
+    PTAU_URL="https://storage.googleapis.com/zkevm/ptau/powersOfTau28_hez_final_16.ptau"
+
+    while [ $RETRY_COUNT -lt $MAX_RETRIES ] && [ "$DOWNLOAD_SUCCESS" = "false" ]; do
+        RETRY_COUNT=$((RETRY_COUNT + 1))
+
+        if [ $RETRY_COUNT -gt 1 ]; then
+            echo "Retry attempt $RETRY_COUNT of $MAX_RETRIES..."
+        fi
+
+        # Download with curl (more universally available in CI)
+        curl -L --fail --retry 3 --retry-delay 5 \
+             --output "$PTAU_FILE" \
+             --progress-bar \
+             "$PTAU_URL"
+
+        if [ $? -eq 0 ] && [ -f "$PTAU_FILE" ]; then
+            # Check file size - powersOfTau28_hez_final_16.ptau should be around 72MB
+            FILE_SIZE=$(stat -f%z "$PTAU_FILE" 2>/dev/null || stat -c%s "$PTAU_FILE" 2>/dev/null || echo "0")
+            MIN_SIZE=$((70 * 1024 * 1024))  # 70 MB minimum
+            MAX_SIZE=$((80 * 1024 * 1024))  # 80 MB maximum
+
+            if [ "$FILE_SIZE" -ge "$MIN_SIZE" ] && [ "$FILE_SIZE" -le "$MAX_SIZE" ]; then
+                echo -e "${GREEN}✓${NC} Powers of Tau downloaded successfully ($(( FILE_SIZE / 1024 / 1024 )) MB)"
+                DOWNLOAD_SUCCESS=true
+            else
+                echo -e "${YELLOW}Warning: Unexpected file size (got $(( FILE_SIZE / 1024 / 1024 )) MB)${NC}"
+                rm -f "$PTAU_FILE"
+
+                if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+                    echo "Retrying download..."
+                    sleep 2
+                fi
+            fi
+        else
+            echo -e "${YELLOW}Download attempt failed${NC}"
+            rm -f "$PTAU_FILE"
+
+            if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+                sleep 2
+            fi
+        fi
+    done
+
+    if [ "$DOWNLOAD_SUCCESS" = "false" ]; then
+        echo -e "${RED}Error: Failed to download Powers of Tau after $MAX_RETRIES attempts${NC}"
+        echo ""
         echo "Please download manually from:"
-        echo "https://hermez.s3-eu-west-1.amazonaws.com/powersOfTau28_hez_final_16.ptau"
+        echo "https://storage.googleapis.com/zkevm/ptau/powersOfTau28_hez_final_16.ptau"
+        echo ""
+        echo "Then place the file at: $PTAU_FILE"
         exit 1
     fi
 fi

@@ -1,18 +1,19 @@
 #![allow(unexpected_cfgs)]
 #![allow(deprecated)]
 
-use account_compression::{state_merkle_tree_from_bytes_zero_copy, StateMerkleTreeAccount};
 use anchor_lang::{prelude::*, AnchorDeserialize, AnchorSerialize};
 use borsh::{BorshDeserialize, BorshSerialize};
 use groth16_solana::groth16::Groth16Verifier;
-use light_compressed_account::instruction_data::compressed_proof::CompressedProof;
 use light_sdk::account::{poseidon::LightAccount as LightAccountPoseidon, LightAccount};
 use light_sdk::cpi::v1::CpiAccounts;
 use light_sdk::{
     address::v1::derive_address,
     cpi::{v1::LightSystemProgramCpi, InvokeLightSystemProgram, LightCpiInstruction},
     derive_light_cpi_signer,
-    instruction::{account_meta::CompressedAccountMeta, PackedAddressTreeInfo, ValidityProof},
+    instruction::{
+        account_meta::CompressedAccountMeta, CompressedProof, PackedAddressTreeInfo, ValidityProof,
+    },
+    merkle_tree::v1::read_state_merkle_tree_root,
     LightDiscriminator, LightHasher,
 };
 use light_sdk_types::CpiSigner;
@@ -147,7 +148,7 @@ pub mod zk_id {
 
     /// Verifies a ZK proof of credential ownership and creates an encrypted event account.
     pub fn zk_verify_credential<'info>(
-        ctx: Context<'_, '_, '_, 'info, GenericAnchorAccounts<'info>>,
+        ctx: Context<'_, '_, '_, 'info, VerifyAccounts<'info>>,
         proof: ValidityProof,
         address_tree_info: PackedAddressTreeInfo,
         output_state_tree_index: u8,
@@ -184,8 +185,11 @@ pub mod zk_id {
         );
 
         // Get root from input Merkle tree (example of reading on-chain state)
-        let expected_root =
-            read_merkle_tree_root(&ctx.accounts.input_merkle_tree, input_root_index)?;
+        let expected_root = read_state_merkle_tree_root(
+            &ctx.accounts.input_merkle_tree.to_account_info(),
+            input_root_index,
+        )
+        .map_err(|e| ProgramError::from(e))?;
         let mut discriminator = [0u8; 32];
         discriminator[24..].copy_from_slice(CredentialAccount::LIGHT_DISCRIMINATOR_SLICE);
         let issuer_hashed = hashv_to_bn254_field_size_be_const_array::<2>(&[&issuer]).unwrap();
@@ -202,57 +206,57 @@ pub mod zk_id {
         let event_account_info = event_account
             .to_output_compressed_account_with_packed_context(None)?
             .unwrap();
+        {
+            // Construct public inputs array for the circuit
+            // Order MUST match the circuit's public declaration exactly:
+            // owner_hashed, merkle_tree_hashed, discriminator, issuer_hashed, expectedRoot, public_encrypted_data_hash, public_data_hash
+            let public_inputs: [[u8; 32]; 7] = [
+                account_owner_hashed,
+                merkle_tree_hashed,
+                discriminator,
+                issuer_hashed,
+                event_account_info
+                    .compressed_account
+                    .data
+                    .as_ref()
+                    .unwrap()
+                    .data_hash, // This is public_encrypted_data_hash
+                data_hash, // This is public_data_hash
+                expected_root,
+            ];
 
-        // Construct public inputs array for the circuit
-        // Order MUST match the circuit's public declaration exactly:
-        // owner_hashed, merkle_tree_hashed, discriminator, issuer_hashed, expectedRoot, public_encrypted_data_hash, public_data_hash
-        let public_inputs: [[u8; 32]; 7] = [
-            account_owner_hashed,
-            merkle_tree_hashed,
-            discriminator,
-            issuer_hashed,
-            event_account_info
-                .compressed_account
-                .data
-                .as_ref()
-                .unwrap()
-                .data_hash, // This is public_encrypted_data_hash
-            data_hash, // This is public_data_hash
-            expected_root,
-        ];
+            let proof_a = decompress_g1(&credential_proof.a).map_err(|e| {
+                let code: u32 = e.into();
+                Error::from(ProgramError::Custom(code))
+            })?;
 
-        let proof_a = decompress_g1(&credential_proof.a).map_err(|e| {
-            let code: u32 = e.into();
-            Error::from(ProgramError::Custom(code))
-        })?;
+            let proof_b = decompress_g2(&credential_proof.b).map_err(|e| {
+                let code: u32 = e.into();
+                Error::from(ProgramError::Custom(code))
+            })?;
+            let proof_c = decompress_g1(&credential_proof.c).map_err(|e| {
+                let code: u32 = e.into();
+                Error::from(ProgramError::Custom(code))
+            })?;
 
-        let proof_b = decompress_g2(&credential_proof.b).map_err(|e| {
-            let code: u32 = e.into();
-            Error::from(ProgramError::Custom(code))
-        })?;
-        let proof_c = decompress_g1(&credential_proof.c).map_err(|e| {
-            let code: u32 = e.into();
-            Error::from(ProgramError::Custom(code))
-        })?;
+            // Verify the Groth16 proof
+            let mut verifier = Groth16Verifier::new(
+                &proof_a,
+                &proof_b,
+                &proof_c,
+                &public_inputs,
+                &crate::verifying_key::VERIFYINGKEY,
+            )
+            .map_err(|e| {
+                let code: u32 = e.into();
+                Error::from(ProgramError::Custom(code))
+            })?;
 
-        // Verify the Groth16 proof
-        let mut verifier = Groth16Verifier::new(
-            &proof_a,
-            &proof_b,
-            &proof_c,
-            &public_inputs,
-            &crate::verifying_key::VERIFYINGKEY,
-        )
-        .map_err(|e| {
-            let code: u32 = e.into();
-            Error::from(ProgramError::Custom(code))
-        })?;
-
-        verifier.verify().map_err(|e| {
-            let code: u32 = e.into();
-            Error::from(ProgramError::Custom(code))
-        })?;
-
+            verifier.verify().map_err(|e| {
+                let code: u32 = e.into();
+                Error::from(ProgramError::Custom(code))
+            })?;
+        }
         LightSystemProgramCpi::new_cpi(LIGHT_CPI_SIGNER, proof)
             .with_output_compressed_accounts(&[event_account_info])
             .with_new_addresses(&[address_tree_info.into_new_address_params_packed(address_seed)])
@@ -261,12 +265,17 @@ pub mod zk_id {
         Ok(())
     }
 }
-
 #[derive(Accounts)]
 pub struct GenericAnchorAccounts<'info> {
     #[account(mut)]
     pub signer: Signer<'info>,
-    pub input_merkle_tree: AccountLoader<'info, StateMerkleTreeAccount>,
+}
+#[derive(Accounts)]
+pub struct VerifyAccounts<'info> {
+    #[account(mut)]
+    pub signer: Signer<'info>,
+    /// CHECK: read_state_merkle_tree_root checks account owner, and discriminator
+    pub input_merkle_tree: UncheckedAccount<'info>,
 }
 
 #[derive(
@@ -288,24 +297,6 @@ pub struct EncryptedEventAccount {
 pub struct IssuerAccount {
     pub issuer_pubkey: Pubkey,
     pub num_credentials_issued: u64,
-}
-
-/// Reads a root from the concurrent state merkle tree by index
-pub fn read_merkle_tree_root(
-    input_merkle_tree: &AccountLoader<StateMerkleTreeAccount>,
-    root_index: u16,
-) -> Result<[u8; 32]> {
-    let account_info = input_merkle_tree.to_account_info();
-    let account_data = account_info.try_borrow_data()?;
-
-    let merkle_tree = state_merkle_tree_from_bytes_zero_copy(&account_data)
-        .map_err(|_| ProgramError::InvalidAccountData)?;
-
-    if root_index as usize >= merkle_tree.roots.len() {
-        return Err(ProgramError::InvalidArgument.into());
-    }
-
-    Ok(merkle_tree.roots[root_index as usize])
 }
 
 #[error_code]

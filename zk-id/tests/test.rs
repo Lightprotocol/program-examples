@@ -1,4 +1,4 @@
-// #![cfg(feature = "test-sbf")]
+#![cfg(feature = "test-sbf")]
 
 use anchor_lang::{InstructionData, ToAccountMetas};
 use circom_prover::{prover::ProofLib, witness::WitnessFn, CircomProver};
@@ -101,8 +101,8 @@ async fn test_create_issuer_and_add_credential() {
         .expect("Credential account not found");
     println!("credential_account {:?}", credential_account);
     verify_credential(&mut rpc, &payer, &credential_account, address_tree_info)
-    .await
-    .unwrap();
+        .await
+        .unwrap();
 
     println!("Successfully verified credential with ZK proof!");
 
@@ -154,7 +154,6 @@ where
 
     let accounts = zk_id::accounts::GenericAnchorAccounts {
         signer: payer.pubkey(),
-        input_merkle_tree: rpc.get_random_state_tree_info()?.tree,
     };
 
     let instruction = Instruction {
@@ -229,7 +228,6 @@ where
 
     let accounts = zk_id::accounts::GenericAnchorAccounts {
         signer: payer.pubkey(),
-        input_merkle_tree: rpc.get_random_state_tree_info()?.tree,
     };
 
     let instruction = Instruction {
@@ -349,7 +347,7 @@ where
         verification_id,
     };
 
-    let accounts = zk_id::accounts::GenericAnchorAccounts {
+    let accounts = zk_id::accounts::VerifyAccounts {
         signer: payer.pubkey(),
         input_merkle_tree: state_tree,
     };
