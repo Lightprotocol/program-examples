@@ -31,10 +31,7 @@ pub mod verifying_key;
 pub mod zk_id {
 
     use groth16_solana::decompression::{decompress_g1, decompress_g2};
-    use light_hasher::hash_to_field_size::{
-        hashv_to_bn254_field_size_be_array, hashv_to_bn254_field_size_be_const_array,
-    };
-    use light_sdk::instruction::account_info::CompressedAccountInfoTrait;
+    use light_hasher::hash_to_field_size::hashv_to_bn254_field_size_be_const_array;
 
     use super::*;
 
