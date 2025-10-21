@@ -1,8 +1,6 @@
 # Compressed Accounts Program Examples
 
-Examples for building with ZK compression by Light Protocol.
-
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Lightprotocol/program-examples) to query the program examples in natural language.
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Lightprotocol/program-examples) to query the program examples in natural language and for help with debugging.
 
 ## Examples
 
