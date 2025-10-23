@@ -14,22 +14,22 @@ test-sbf = []
 [dependencies]
 anchor-lang = "0.31.1"
 borsh = "0.10.4"
-light-sdk = { version = "0.15.1", features = ["anchor", "poseidon", "merkle-tree"] }
-light-hasher = "4"
-light-sdk-types = "0.15.0"
+light-sdk = { git = "https://github.com/Lightprotocol/light-protocol", features = ["anchor", "poseidon", "merkle-tree", "v2"], rev = "73ea25ff5f2ef336c90322b55f5b067a1c6e4c2f" }
+light-hasher = { git = "https://github.com/Lightprotocol/light-protocol", rev = "73ea25ff5f2ef336c90322b55f5b067a1c6e4c2f" }
+light-sdk-types = { git = "https://github.com/Lightprotocol/light-protocol", features = ["v2"], rev = "73ea25ff5f2ef336c90322b55f5b067a1c6e4c2f" }
 groth16-solana = { git = "https://github.com/Lightprotocol/groth16-solana", rev = "66c0dc87d0808c4d2aadb53c61435b6edb8ddfd9" }
 
 [dev-dependencies]
-light-program-test = "0.15.1"
-light-client = "0.15.0"
+light-program-test = { git = "https://github.com/Lightprotocol/light-protocol", features = ["v2"], rev = "73ea25ff5f2ef336c90322b55f5b067a1c6e4c2f" }
+light-client = { git = "https://github.com/Lightprotocol/light-protocol", features = ["v2"], rev = "73ea25ff5f2ef336c90322b55f5b067a1c6e4c2f" }
 tokio = "1.40.0"
 solana-sdk = "2.2"
 circom-prover = "0.1"
 rust-witness = "0.1"
 num-bigint = "0.4"
 serde_json = "1.0"
-light-compressed-account = { version = "0.5.0", features = ["new-unique"] }
-light-merkle-tree-reference= "3"
+light-compressed-account = { git = "https://github.com/Lightprotocol/light-protocol", features = ["new-unique"], rev = "73ea25ff5f2ef336c90322b55f5b067a1c6e4c2f" }
+light-merkle-tree-reference = { git = "https://github.com/Lightprotocol/light-protocol", rev = "73ea25ff5f2ef336c90322b55f5b067a1c6e4c2f" }
 groth16-solana = { git = "https://github.com/Lightprotocol/groth16-solana", features = ["vk", "circom"], rev = "66c0dc87d0808c4d2aadb53c61435b6edb8ddfd9" }
 
 [build-dependencies]

@@ -9,7 +9,7 @@ use light_hasher::HasherError;
 use light_sdk::account::{poseidon::LightAccount as LightAccountPoseidon, LightAccount};
 use light_sdk::cpi::v1::CpiAccounts;
 use light_sdk::{
-    address::v1::derive_address,
+    address::v2::derive_address,
     cpi::{v1::LightSystemProgramCpi, InvokeLightSystemProgram, LightCpiInstruction},
     derive_light_cpi_signer,
     instruction::{
@@ -170,7 +170,7 @@ pub mod zk_id {
             .get_tree_pubkey(&light_cpi_accounts)
             .map_err(|_| ErrorCode::AccountNotEnoughKeys)?;
 
-        if address_pubkey.to_bytes() != light_sdk::constants::ADDRESS_TREE_V1 {
+        if address_pubkey.to_bytes() != light_sdk::constants::ADDRESS_TREE_V2 {
             msg!("Invalid address tree");
             return Err(ProgramError::InvalidAccountData.into());
         }

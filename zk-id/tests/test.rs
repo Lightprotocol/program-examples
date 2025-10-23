@@ -9,7 +9,7 @@ use light_program_test::{
     program_test::LightProgramTest, AddressWithTree, Indexer, ProgramTestConfig, Rpc, RpcError,
 };
 use light_sdk::{
-    address::v1::derive_address,
+    address::v2::derive_address,
     instruction::{PackedAccounts, SystemAccountMetaConfig},
 };
 use num_bigint::BigUint;
@@ -74,7 +74,7 @@ async fn test_create_issuer_and_add_credential() {
     let mut rpc = LightProgramTest::new(config).await.unwrap();
     let payer = rpc.get_payer().insecure_clone();
 
-    let address_tree_info = rpc.get_address_tree_v1();
+    let address_tree_info = rpc.get_address_tree_v2();
 
     let (issuer_address, _) = derive_address(
         &[ISSUER, payer.pubkey().as_ref()],
@@ -260,7 +260,7 @@ where
     };
 
     let output_state_tree_index = rpc
-        .get_random_state_tree_info()?
+        .get_random_state_tree_info_v1()?
         .pack_output_tree_index(&mut remaining_accounts)?;
 
     // Parse the issuer account data to get num_credentials_issued
@@ -381,7 +381,7 @@ where
         .address_trees;
 
     let output_state_tree_index = rpc
-        .get_random_state_tree_info()?
+        .get_random_state_tree_info_v1()?
         .pack_output_tree_index(&mut remaining_accounts)?;
 
     let instruction_data = zk_id::instruction::ZkVerifyCredential {
