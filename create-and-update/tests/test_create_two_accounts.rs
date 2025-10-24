@@ -7,7 +7,7 @@ use light_program_test::{
     program_test::LightProgramTest, AddressWithTree, Indexer, ProgramTestConfig, Rpc, RpcError,
 };
 use light_sdk::{
-    address::v1::derive_address,
+    address::v2::derive_address,
     instruction::{PackedAccounts, SystemAccountMetaConfig},
 };
 use serial_test::serial;
@@ -26,7 +26,7 @@ async fn test_create_two_accounts() {
     let mut rpc = LightProgramTest::new(config).await.unwrap();
     let payer = rpc.get_payer().insecure_clone();
 
-    let address_tree_info = rpc.get_address_tree_v1();
+    let address_tree_info = rpc.get_address_tree_v2();
 
     let (first_address, _) = derive_address(
         &[FIRST_SEED, payer.pubkey().as_ref()],

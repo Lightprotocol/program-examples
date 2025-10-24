@@ -5,7 +5,7 @@ use anchor_lang::{prelude::*, AnchorDeserialize, AnchorSerialize};
 use borsh::{BorshDeserialize, BorshSerialize};
 use light_sdk::{
     account::LightAccount,
-    address::v1::derive_address,
+    address::v2::derive_address,
     cpi::{v1::CpiAccounts, CpiSigner},
     derive_light_cpi_signer,
     instruction::{account_meta::CompressedAccountMeta, PackedAddressTreeInfo, ValidityProof},
@@ -50,7 +50,7 @@ pub mod create_and_update {
             &crate::ID,
         );
 
-        let mut data_account = LightAccount::<'_, DataAccount>::new_init(
+        let mut data_account = LightAccount::<DataAccount>::new_init(
             &crate::ID,
             Some(address),
             output_state_tree_index,
@@ -93,7 +93,7 @@ pub mod create_and_update {
             &crate::ID,
         );
 
-        let mut new_data_account = LightAccount::<'_, DataAccount>::new_init(
+        let mut new_data_account = LightAccount::<DataAccount>::new_init(
             &crate::ID,
             Some(new_address),
             existing_account.account_meta.output_state_tree_index,
@@ -101,7 +101,7 @@ pub mod create_and_update {
         new_data_account.owner = ctx.accounts.signer.key();
         new_data_account.message = new_account.message.clone();
 
-        let mut updated_data_account = LightAccount::<'_, DataAccount>::new_mut(
+        let mut updated_data_account = LightAccount::<DataAccount>::new_mut(
             &crate::ID,
             &existing_account.account_meta,
             DataAccount {
@@ -144,7 +144,7 @@ pub mod create_and_update {
         );
 
         // Update first compressed account
-        let mut updated_first_account = LightAccount::<'_, DataAccount>::new_mut(
+        let mut updated_first_account = LightAccount::<DataAccount>::new_mut(
             &crate::ID,
             &first_account.account_meta,
             DataAccount {
@@ -157,7 +157,7 @@ pub mod create_and_update {
         updated_first_account.message = first_account.update_message.clone();
 
         // Update second compressed account
-        let mut updated_second_account = LightAccount::<'_, DataAccount>::new_mut(
+        let mut updated_second_account = LightAccount::<DataAccount>::new_mut(
             &crate::ID,
             &second_account.account_meta,
             DataAccount {
@@ -207,7 +207,7 @@ pub mod create_and_update {
             &crate::ID,
         );
 
-        let mut first_data_account = LightAccount::<'_, ByteDataAccount>::new_init(
+        let mut first_data_account = LightAccount::<ByteDataAccount>::new_init(
             &crate::ID,
             Some(first_address),
             output_state_tree_index,
@@ -224,7 +224,7 @@ pub mod create_and_update {
             &crate::ID,
         );
 
-        let mut second_data_account = LightAccount::<'_, DataAccount>::new_init(
+        let mut second_data_account = LightAccount::<DataAccount>::new_init(
             &crate::ID,
             Some(second_address),
             output_state_tree_index,
