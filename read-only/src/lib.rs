@@ -50,7 +50,7 @@ pub mod read_only {
             &crate::ID,
         );
 
-        let mut data_account = LightAccount::<'_, DataAccount>::new_init(
+        let mut data_account = LightAccount::<DataAccount>::new_init(
             &crate::ID,
             Some(address),
             output_state_tree_index,
@@ -90,7 +90,7 @@ pub mod read_only {
             owner: ctx.accounts.signer.key(),
             message: existing_account.message.clone(),
         };
-        let read_only_account = LightAccount::<'_, DataAccount>::new_read_only(
+        let read_only_account = LightAccount::<DataAccount>::new_read_only(
             &crate::ID,
             &existing_account.account_meta,
             read_data_account,

@@ -19,22 +19,22 @@ test-sbf = []
 default = []
 
 [dependencies]
-light-sdk-pinocchio = { git = "https://github.com/Lightprotocol/light-protocol", features = ["light-account"], rev = "214bcc42799bb3e685a5e036637d257f8d4551a2" }
-light-sdk-types = { git = "https://github.com/Lightprotocol/light-protocol", rev = "214bcc42799bb3e685a5e036637d257f8d4551a2" }
-light-hasher = { git = "https://github.com/Lightprotocol/light-protocol", rev = "214bcc42799bb3e685a5e036637d257f8d4551a2" }
+light-sdk-pinocchio = { version = "0.16.0" , features = ["light-account"] }
+light-sdk-types = "0.16.0"
+light-hasher = "5.0.0"
 pinocchio = "0.9.2"
-light-macros = { git = "https://github.com/Lightprotocol/light-protocol", rev = "214bcc42799bb3e685a5e036637d257f8d4551a2" }
+light-macros = "2.1.0"
 borsh = "0.10.4"
 solana-pubkey = "2.3"
 
 [dev-dependencies]
-light-program-test = { git = "https://github.com/Lightprotocol/light-protocol", rev = "214bcc42799bb3e685a5e036637d257f8d4551a2" }
-light-client = { git = "https://github.com/Lightprotocol/light-protocol", rev = "214bcc42799bb3e685a5e036637d257f8d4551a2" }
+light-program-test = "0.16.0"
+light-client = "0.16.0"
 tokio = "1.43.0"
 solana-sdk = "2.3"
-light-hasher = { git = "https://github.com/Lightprotocol/light-protocol", features = ["solana"], rev = "214bcc42799bb3e685a5e036637d257f8d4551a2" }
-light-compressed-account = { git = "https://github.com/Lightprotocol/light-protocol", features = ["solana"], rev = "214bcc42799bb3e685a5e036637d257f8d4551a2" }
-light-sdk = { git = "https://github.com/Lightprotocol/light-protocol", rev = "214bcc42799bb3e685a5e036637d257f8d4551a2" }
+light-hasher = { version = "5.0.0", features = ["solana"] }
+light-compressed-account = { version = "0.6.0", features = ["solana"] }
+light-sdk = "0.16.0"
 
 [lints.rust.unexpected_cfgs]
 level = "allow"

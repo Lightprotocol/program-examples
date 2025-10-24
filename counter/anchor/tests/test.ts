@@ -5,14 +5,16 @@ import idl from "../target/idl/counter.json";
 import {
   bn,
   CompressedAccountWithMerkleContext,
+  confirmTx,
   createRpc,
-  defaultStaticAccountsStruct,
   defaultTestStateTreeAccounts,
   deriveAddress,
   deriveAddressSeed,
   LightSystemProgram,
+  PackedAccounts,
   Rpc,
   sleep,
+  SystemAccountMetaConfig,
 } from "@lightprotocol/stateless.js";
 import { assert } from "chai";
 
@@ -61,8 +63,6 @@ describe("test-anchor", () => {
       outputMerkleTree,
       signer
     );
-    // Wait for indexer to catch up.
-    await sleep(2000);
 
     let counterAccount = await rpc.getCompressedAccount(bn(address.toBytes()));
 
@@ -82,9 +82,6 @@ describe("test-anchor", () => {
       signer
     );
 
-    // Wait for indexer to catch up.
-    await sleep(2000);
-
     counterAccount = await rpc.getCompressedAccount(bn(address.toBytes()));
     counter = coder.types.decode("CounterAccount", counterAccount.data.data);
     console.log("counter account ", counterAccount);
@@ -99,19 +96,20 @@ describe("test-anchor", () => {
       signer
     );
 
-    // Wait for indexer to catch up.
-    await sleep(2000);
-    let should_have_failed = false;
-    try {
-      const deletedCounterAccount = await rpc.getCompressedAccount(
-        bn(address.toBytes())
-      );
-      console.log("deletedCounterAccount ", deletedCounterAccount);
-    } catch (e) {
-      should_have_failed = true;
-    }
-    // TODO: assert is Null after next update.
-    assert.isTrue(should_have_failed);
+    const deletedCounterAccount = await rpc.getCompressedAccount(
+      bn(address.toBytes())
+    );
+    console.log("deletedCounterAccount ", deletedCounterAccount);
+
+    assert.isTrue(deletedCounterAccount.data.data.length === 0);
+    assert.equal(
+      deletedCounterAccount.data.discriminator.toString(),
+      Array(8).fill(0).toString()
+    );
+    assert.equal(
+      deletedCounterAccount.data.dataHash.toString(),
+      Array(32).fill(0).toString()
+    );
   });
 });
 
@@ -169,7 +167,8 @@ async function CreateCounterCompressedAccount(
     tx.sign(signer);
 
     const sig = await rpc.sendTransaction(tx, [signer]);
-    await rpc.confirmTransaction(sig);
+    await confirmTx(rpc, sig);
+
     console.log("Created counter compressed account ", sig);
   }
 }
@@ -236,7 +235,8 @@ async function incrementCounterCompressedAccount(
     tx.sign(signer);
 
     const sig = await rpc.sendTransaction(tx, [signer]);
-    await rpc.confirmTransaction(sig);
+    await confirmTx(rpc, sig);
+
     console.log("Incremented counter compressed account ", sig);
   }
 }
@@ -282,6 +282,7 @@ async function deleteCounterCompressedAccount(
         leafIndex: counterAccount.leafIndex,
       },
       address: counterAccount.address,
+      outputStateTreeIndex: outputMerkleTreeIndex,
     };
 
     let proof = {
@@ -303,220 +304,8 @@ async function deleteCounterCompressedAccount(
     tx.sign(signer);
 
     const sig = await rpc.sendTransaction(tx, [signer]);
-    await rpc.confirmTransaction(sig);
+    await confirmTx(rpc, sig);
+
     console.log("Deleted counter compressed account ", sig);
-  }
-}
-
-class PackedAccounts {
-  private preAccounts: web3.AccountMeta[] = [];
-  private systemAccounts: web3.AccountMeta[] = [];
-  private nextIndex: number = 0;
-  private map: Map<web3.PublicKey, [number, web3.AccountMeta]> = new Map();
-
-  static newWithSystemAccounts(
-    config: SystemAccountMetaConfig
-  ): PackedAccounts {
-    const instance = new PackedAccounts();
-    instance.addSystemAccounts(config);
-    return instance;
-  }
-
-  addPreAccountsSigner(pubkey: web3.PublicKey): void {
-    this.preAccounts.push({ pubkey, isSigner: true, isWritable: false });
-  }
-
-  addPreAccountsSignerMut(pubkey: web3.PublicKey): void {
-    this.preAccounts.push({ pubkey, isSigner: true, isWritable: true });
-  }
-
-  addPreAccountsMeta(accountMeta: web3.AccountMeta): void {
-    this.preAccounts.push(accountMeta);
-  }
-
-  addSystemAccounts(config: SystemAccountMetaConfig): void {
-    this.systemAccounts.push(...getLightSystemAccountMetas(config));
-  }
-
-  insertOrGet(pubkey: web3.PublicKey): number {
-    return this.insertOrGetConfig(pubkey, false, true);
-  }
-
-  insertOrGetReadOnly(pubkey: web3.PublicKey): number {
-    return this.insertOrGetConfig(pubkey, false, false);
-  }
-
-  insertOrGetConfig(
-    pubkey: web3.PublicKey,
-    isSigner: boolean,
-    isWritable: boolean
-  ): number {
-    const entry = this.map.get(pubkey);
-    if (entry) {
-      return entry[0];
-    }
-    const index = this.nextIndex++;
-    const meta: web3.AccountMeta = { pubkey, isSigner, isWritable };
-    this.map.set(pubkey, [index, meta]);
-    return index;
-  }
-
-  private hashSetAccountsToMetas(): web3.AccountMeta[] {
-    const entries = Array.from(this.map.entries());
-    entries.sort((a, b) => a[1][0] - b[1][0]);
-    return entries.map(([, [, meta]]) => meta);
-  }
-
-  private getOffsets(): [number, number] {
-    const systemStart = this.preAccounts.length;
-    const packedStart = systemStart + this.systemAccounts.length;
-    return [systemStart, packedStart];
-  }
-
-  toAccountMetas(): {
-    remainingAccounts: web3.AccountMeta[];
-    systemStart: number;
-    packedStart: number;
-  } {
-    const packed = this.hashSetAccountsToMetas();
-    const [systemStart, packedStart] = this.getOffsets();
-    return {
-      remainingAccounts: [
-        ...this.preAccounts,
-        ...this.systemAccounts,
-        ...packed,
-      ],
-      systemStart,
-      packedStart,
-    };
-  }
-}
-
-class SystemAccountMetaConfig {
-  selfProgram: web3.PublicKey;
-  cpiContext?: web3.PublicKey;
-  solCompressionRecipient?: web3.PublicKey;
-  solPoolPda?: web3.PublicKey;
-
-  private constructor(
-    selfProgram: web3.PublicKey,
-    cpiContext?: web3.PublicKey,
-    solCompressionRecipient?: web3.PublicKey,
-    solPoolPda?: web3.PublicKey
-  ) {
-    this.selfProgram = selfProgram;
-    this.cpiContext = cpiContext;
-    this.solCompressionRecipient = solCompressionRecipient;
-    this.solPoolPda = solPoolPda;
-  }
-
-  static new(selfProgram: web3.PublicKey): SystemAccountMetaConfig {
-    return new SystemAccountMetaConfig(selfProgram);
-  }
-
-  static newWithCpiContext(
-    selfProgram: web3.PublicKey,
-    cpiContext: web3.PublicKey
-  ): SystemAccountMetaConfig {
-    return new SystemAccountMetaConfig(selfProgram, cpiContext);
-  }
-}
-
-function getLightSystemAccountMetas(
-  config: SystemAccountMetaConfig
-): web3.AccountMeta[] {
-  let signerSeed = new TextEncoder().encode("cpi_authority");
-  const cpiSigner = web3.PublicKey.findProgramAddressSync(
-    [signerSeed],
-    config.selfProgram
-  )[0];
-  const defaults = SystemAccountPubkeys.default();
-  const metas: web3.AccountMeta[] = [
-    { pubkey: defaults.lightSystemProgram, isSigner: false, isWritable: false },
-    { pubkey: cpiSigner, isSigner: false, isWritable: false },
-    {
-      pubkey: defaults.registeredProgramPda,
-      isSigner: false,
-      isWritable: false,
-    },
-    { pubkey: defaults.noopProgram, isSigner: false, isWritable: false },
-    {
-      pubkey: defaults.accountCompressionAuthority,
-      isSigner: false,
-      isWritable: false,
-    },
-    {
-      pubkey: defaults.accountCompressionProgram,
-      isSigner: false,
-      isWritable: false,
-    },
-    { pubkey: config.selfProgram, isSigner: false, isWritable: false },
-  ];
-  if (config.solPoolPda) {
-    metas.push({
-      pubkey: config.solPoolPda,
-      isSigner: false,
-      isWritable: true,
-    });
-  }
-  if (config.solCompressionRecipient) {
-    metas.push({
-      pubkey: config.solCompressionRecipient,
-      isSigner: false,
-      isWritable: true,
-    });
-  }
-  metas.push({
-    pubkey: defaults.systemProgram,
-    isSigner: false,
-    isWritable: false,
-  });
-  if (config.cpiContext) {
-    metas.push({
-      pubkey: config.cpiContext,
-      isSigner: false,
-      isWritable: true,
-    });
-  }
-  return metas;
-}
-
-class SystemAccountPubkeys {
-  lightSystemProgram: web3.PublicKey;
-  systemProgram: web3.PublicKey;
-  accountCompressionProgram: web3.PublicKey;
-  accountCompressionAuthority: web3.PublicKey;
-  registeredProgramPda: web3.PublicKey;
-  noopProgram: web3.PublicKey;
-  solPoolPda: web3.PublicKey;
-
-  private constructor(
-    lightSystemProgram: web3.PublicKey,
-    systemProgram: web3.PublicKey,
-    accountCompressionProgram: web3.PublicKey,
-    accountCompressionAuthority: web3.PublicKey,
-    registeredProgramPda: web3.PublicKey,
-    noopProgram: web3.PublicKey,
-    solPoolPda: web3.PublicKey
-  ) {
-    this.lightSystemProgram = lightSystemProgram;
-    this.systemProgram = systemProgram;
-    this.accountCompressionProgram = accountCompressionProgram;
-    this.accountCompressionAuthority = accountCompressionAuthority;
-    this.registeredProgramPda = registeredProgramPda;
-    this.noopProgram = noopProgram;
-    this.solPoolPda = solPoolPda;
-  }
-
-  static default(): SystemAccountPubkeys {
-    return new SystemAccountPubkeys(
-      LightSystemProgram.programId,
-      web3.PublicKey.default,
-      defaultStaticAccountsStruct().accountCompressionProgram,
-      defaultStaticAccountsStruct().accountCompressionAuthority,
-      defaultStaticAccountsStruct().registeredProgramPda,
-      defaultStaticAccountsStruct().noopProgram,
-      web3.PublicKey.default
-    );
   }
 }
