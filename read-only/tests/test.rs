@@ -137,7 +137,6 @@ where
     remaining_accounts.add_system_accounts_v2(config)?;
 
     let hash = compressed_account.hash;
-    println!("hash {:?}", hash);
     let rpc_result = rpc
         .get_validity_proof(vec![hash], vec![], None)
         .await?
