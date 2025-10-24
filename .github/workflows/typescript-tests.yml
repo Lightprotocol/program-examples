@@ -27,6 +27,7 @@ jobs:
       matrix:
         example:
           - counter/anchor
+          - basic-operations/anchor
     steps:
       - uses: actions/checkout@v4
 

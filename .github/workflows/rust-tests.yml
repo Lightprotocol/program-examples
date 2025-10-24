@@ -30,6 +30,7 @@ jobs:
           - counter/pinocchio
           - account-comparison
           - zk-id
+          - basic-operations/native
     steps:
       - uses: actions/checkout@v4
 
