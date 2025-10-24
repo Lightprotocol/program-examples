@@ -30,7 +30,27 @@ full compressed account lifecycle (create, increment, decrement, reset, close):
 
 - **[zk-id](./zk-id)** - A minimal zk id Solana program that uses zero-knowledge proofs for identity verification with compressed accounts.
 
-  
+## Tree Versions
+
+Compressed Accounts examples use different Tree versions:
+
+### V1 Trees (Mainnet)
+- **[counter/anchor](./counter/anchor/)** - Full compressed account lifecycle using Anchor
+- **[counter/native](./counter/native/)** - Full compressed account lifecycle using native Solana
+- **[counter/pinocchio](./counter/pinocchio/)** - Full compressed account lifecycle using Pinocchio
+- **[account-comparison](./account-comparison/)** - Account comparison example
+
+V1 Trees are deployed on **mainnet**.
+
+### V2 Trees (Local/Devnet)
+- **[create-and-update](./create-and-update/)** - Create and update accounts with single validity proof
+- **[read-only](./read-only)** - Create and read compressed accounts onchain
+- **[zk-id](./zk-id)** - Zero-knowledge identity verification
+
+V2 Trees consume **significantly less CU** (compute units) and are available on **local and devnet** environments.
+
+Both Tree versions are supported in Light SDK 0.16.0.
+
 ## Light Protocol dependencies
 
 ### Rust Crates
@@ -43,15 +63,15 @@ full compressed account lifecycle (create, increment, decrement, reset, close):
 
 ### TypeScript/JavaScript Packages
 
-- `@lightprotocol/stateless.js` - Client library for interacting with compressed accounts
-- `@lightprotocol/zk-compression-cli` - Command-line tools for ZK compression development
+- `@lightprotocol/stateless.js@0.22.1-alpha.1"` - Client library for interacting with compressed accounts
+- `@lightprotocol/zk-compression-cli@0.27.1-alpha.2` - Command-line tools for ZK compression development
 
 ## Prerequisites
 
 Required versions:
 
-- **Rust**: 1.86.0 or later
-- **Solana CLI**: 2.3.10
+- **Rust**: 1.90.0 or later
+- **Solana CLI**: 2.3.11
 - **Anchor CLI**: 0.31.1
 - **Zk compression CLI**: 0.27.0 or later
 - **Node.js**: 23.5.0 or later
@@ -59,13 +79,13 @@ Required versions:
 Install the Light CLI:
 
 ```bash
-$ npm -g i @lightprotocol/zk-compression-cli
+$ npm -g i @lightprotocol/zk-compression-cli@0.27.1-alpha.2
 ```
 
 Install Solana CLI:
 
 ```bash
-sh -c "$(curl -sSfL https://release.solana.com/v2.2.15/install)"
+sh -c "$(curl -sSfL https://release.solana.com/v2.3.11/install)"
 ```
 
 Install Anchor CLI:
@@ -73,7 +93,7 @@ Install Anchor CLI:
 ```bash
 cargo install --git https://github.com/coral-xyz/anchor avm --force
 avm install latest
-avm use latest
+avm use 0.31.1
 ```
 
 ## Getting Started with your own Program
@@ -81,7 +101,7 @@ avm use latest
 1. install the light cli
 
 ```bash
-$ npm -g i @lightprotocol/zk-compression-cli
+$ npm -g i @lightprotocol/zk-compression-cli@0.27.1-alpha.2
 ```
 
 2. instantiate a template Solana program with compressed accounts
