@@ -132,8 +132,6 @@ async fn create_compressed_account(
     address: &[u8; 32],
     message: String,
 ) -> Result<Signature, RpcError> {
-    use light_sdk::instruction::PackedAddressTreeInfo;
-
     let config = SystemAccountMetaConfig::new(update::ID);
     let mut remaining_accounts = PackedAccounts::default();
     remaining_accounts.add_system_accounts(config)?;
