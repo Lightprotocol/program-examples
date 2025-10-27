@@ -19,7 +19,7 @@ env:
 
 jobs:
   test-rust:
-    name: ${{ matrix.example }}
+    name: ${{ matrix.package && format('{0}/{1}', matrix.example, matrix.package) || matrix.example }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -30,7 +30,17 @@ jobs:
           - counter/pinocchio
           - account-comparison
           - zk-id
-          - basic-operations/native
+        include:
+          - example: basic-operations/native
+            package: native-program-burn
+          - example: basic-operations/native
+            package: native-program-create
+          - example: basic-operations/native
+            package: native-program-update
+          - example: basic-operations/native
+            package: native-program-close
+          - example: basic-operations/native
+            package: native-program-reinit
     steps:
       - uses: actions/checkout@v4
 
@@ -49,4 +59,9 @@ jobs:
 
       - name: Build and test
         working-directory: ${{ matrix.example }}
-        run: cargo test-sbf
+        run: |
+          if [ -n "${{ matrix.package }}" ]; then
+            cargo test-sbf -p ${{ matrix.package }}
+          else
+            cargo test-sbf
+          fi
