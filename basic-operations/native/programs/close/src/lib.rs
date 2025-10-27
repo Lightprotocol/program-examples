@@ -94,7 +94,7 @@ fn create(accounts: &[AccountInfo], instruction_data: &[u8]) -> Result<(), Light
         .address_tree_info
         .into_new_address_params_packed(address_seed);
 
-    let mut my_compressed_account = LightAccount::<'_, MyCompressedAccount>::new_init(
+    let mut my_compressed_account = LightAccount::<MyCompressedAccount>::new_init(
         &ID,
         Some(address),
         instruction_data.output_state_tree_index,
@@ -120,7 +120,7 @@ fn close(accounts: &[AccountInfo], instruction_data: &[u8]) -> Result<(), LightS
 
     let cpi_accounts = CpiAccounts::new(signer, remaining_accounts, LIGHT_CPI_SIGNER);
 
-    let my_compressed_account = LightAccount::<'_, MyCompressedAccount>::new_close(
+    let my_compressed_account = LightAccount::<MyCompressedAccount>::new_close(
         &ID,
         &instruction_data.account_meta,
         MyCompressedAccount {

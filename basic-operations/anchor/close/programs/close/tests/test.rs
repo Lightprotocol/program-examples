@@ -14,7 +14,7 @@ use solana_sdk::{
 
 #[tokio::test]
 async fn test_close() {
-    let config = ProgramTestConfig::new(false, Some(vec![
+    let config = ProgramTestConfig::new(true, Some(vec![
         ("close", close::ID),
     ]));
     let mut rpc = LightProgramTest::new(config).await.unwrap();

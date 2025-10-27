@@ -106,7 +106,7 @@ pub fn create(
         .address_tree_info
         .into_new_address_params_packed(address_seed);
 
-    let mut my_compressed_account = LightAccount::<'_, MyCompressedAccount>::new_init(
+    let mut my_compressed_account = LightAccount::<MyCompressedAccount>::new_init(
         &ID,
         Some(address),
         instruction_data.output_state_tree_index,
