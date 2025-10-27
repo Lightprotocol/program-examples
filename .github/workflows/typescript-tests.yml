@@ -59,8 +59,8 @@ jobs:
       - name: Start test validator
         working-directory: ${{ matrix.example }}
         run: |
-          PROGRAM_NAME=$(basename ${{ matrix.example }})
-          PROGRAM_ID=$(grep -A 1 "\[programs.localnet\]" Anchor.toml | grep "$PROGRAM_NAME" | sed 's/.*"\(.*\)".*/\1/')
+          PROGRAM_NAME=$(grep -A 10 '\[programs.localnet\]' Anchor.toml | grep '=' | head -1 | cut -d' ' -f1)
+          PROGRAM_ID=$(grep -A 10 '\[programs.localnet\]' Anchor.toml | grep '=' | head -1 | sed 's/.*"\(.*\)".*/\1/')
           light test-validator --sbf-program "$PROGRAM_ID" ./target/deploy/${PROGRAM_NAME}.so &
           sleep 10
 
