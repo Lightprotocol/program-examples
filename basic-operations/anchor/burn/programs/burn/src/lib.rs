@@ -11,10 +11,10 @@ use light_sdk::{
     LightDiscriminator,
 };
 
-declare_id!("A1KqLAv8emDMsoGTUcf5r9hxrC1PXQ5rtr8EnBnBY6hR");
+declare_id!("BJhPWQnD31mdo6739Mac1gLuSsbbwTmpgjHsW6shf6WA");
 
 pub const LIGHT_CPI_SIGNER: CpiSigner =
-    derive_light_cpi_signer!("A1KqLAv8emDMsoGTUcf5r9hxrC1PXQ5rtr8EnBnBY6hR");
+    derive_light_cpi_signer!("BJhPWQnD31mdo6739Mac1gLuSsbbwTmpgjHsW6shf6WA");
 
 #[program]
 pub mod burn {
@@ -46,7 +46,7 @@ pub mod burn {
             &crate::ID,
         );
 
-        let mut my_compressed_account = LightAccount::<'_, MyCompressedAccount>::new_init(
+        let mut my_compressed_account = LightAccount::<MyCompressedAccount>::new_init(
             &crate::ID,
             Some(address),
             output_state_tree_index,
@@ -81,7 +81,7 @@ pub mod burn {
             crate::LIGHT_CPI_SIGNER,
         );
 
-        let my_compressed_account = LightAccount::<'_, MyCompressedAccount>::new_burn(
+        let my_compressed_account = LightAccount::<MyCompressedAccount>::new_burn(
             &crate::ID,
             &account_meta,
             MyCompressedAccount {

@@ -99,7 +99,7 @@ describe("test-anchor-burn", () => {
       assert.fail("Expected account to not exist after burning");
     } catch (error: any) {
       // Account should not exist after burn
-      console.log("Verified account was burned (no longer exists)");
+      console.log("Verified account was burned");
     }
   });
 });

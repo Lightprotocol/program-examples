@@ -46,7 +46,7 @@ pub mod update {
             &crate::ID,
         );
 
-        let mut my_compressed_account = LightAccount::<'_, MyCompressedAccount>::new_init(
+        let mut my_compressed_account = LightAccount::<MyCompressedAccount>::new_init(
             &crate::ID,
             Some(address),
             output_state_tree_index,
@@ -82,7 +82,7 @@ pub mod update {
             crate::LIGHT_CPI_SIGNER,
         );
 
-        let mut my_compressed_account = LightAccount::<'_, MyCompressedAccount>::new_mut(
+        let mut my_compressed_account = LightAccount::<MyCompressedAccount>::new_mut(
             &crate::ID,
             &account_meta,
             current_account,

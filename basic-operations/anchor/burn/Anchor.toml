@@ -5,7 +5,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-burn = "A1KqLAv8emDMsoGTUcf5r9hxrC1PXQ5rtr8EnBnBY6hR"
+burn = "BJhPWQnD31mdo6739Mac1gLuSsbbwTmpgjHsW6shf6WA"
 
 [registry]
 url = "https://api.apr.dev"

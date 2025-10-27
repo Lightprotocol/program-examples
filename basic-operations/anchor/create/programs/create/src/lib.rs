@@ -46,7 +46,7 @@ pub mod create {
             &crate::ID,
         );
 
-        let mut my_compressed_account = LightAccount::<'_, MyCompressedAccount>::new_init(
+        let mut my_compressed_account = LightAccount::<MyCompressedAccount>::new_init(
             &crate::ID,
             Some(address),
             output_state_tree_index,

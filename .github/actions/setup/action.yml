@@ -106,7 +106,7 @@ runs:
 
     - name: Install Light CLI
       shell: bash
-      run: npm install -g @lightprotocol/zk-compression-cli
+      run: npm install -g @lightprotocol/zk-compression-cli@0.27.1-alpha.2
 
     - name: Cache Powers of Tau file
       if: inputs.install-circom == 'true'
