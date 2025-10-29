@@ -39,8 +39,13 @@ async fn test_burn() {
     .await
     .unwrap();
 
-    let account = get_compressed_account(&mut rpc, address).await;
-    let message_account = get_message_account(&mut rpc, address).await;
+    let account = rpc.get_compressed_account(address, None)
+        .await
+        .unwrap()
+        .value
+        .unwrap();
+    let data = &account.data.as_ref().unwrap().data;
+    let message_account = MyCompressedAccount::deserialize(&mut &data[..]).unwrap();
     assert_eq!(message_account.owner, payer.pubkey());
     assert_eq!(message_account.message, "Hello, compressed world!");
 
@@ -103,26 +108,6 @@ async fn burn_compressed_account(
         .await
 }
 
-async fn get_compressed_account(
-    rpc: &mut LightProgramTest,
-    address: [u8; 32],
-) -> CompressedAccount {
-    rpc.get_compressed_account(address, None)
-        .await
-        .unwrap()
-        .value
-        .unwrap()
-}
-
-async fn get_message_account(
-    rpc: &mut LightProgramTest,
-    address: [u8; 32],
-) -> MyCompressedAccount {
-    let account = get_compressed_account(rpc, address).await;
-    let data = &account.data.as_ref().unwrap().data;
-    MyCompressedAccount::deserialize(&mut &data[..]).unwrap()
-}
-
 async fn create_compressed_account(
     rpc: &mut LightProgramTest,
     payer: &Keypair,
@@ -149,10 +134,8 @@ async fn create_compressed_account(
     let packed_accounts = rpc_result.pack_tree_infos(&mut remaining_accounts);
 
     let output_state_tree_index = rpc
-        .get_random_state_tree_info()
-        .unwrap()
-        .pack_output_tree_index(&mut remaining_accounts)
-        .unwrap();
+        .get_random_state_tree_info()?
+        .pack_output_tree_index(&mut remaining_accounts)?;
 
     let (remaining_accounts, _, _) = remaining_accounts.to_account_metas();
 

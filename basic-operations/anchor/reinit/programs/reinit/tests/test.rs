@@ -37,7 +37,11 @@ async fn test_reinit() {
     .await
     .unwrap();
 
-    let account = get_compressed_account(&mut rpc, address).await;
+    let account = rpc.get_compressed_account(address, None)
+        .await
+        .unwrap()
+        .value
+        .unwrap();
     close_compressed_account(&mut rpc, &payer, account, "Hello, compressed world!".to_string())
         .await
         .unwrap();
@@ -165,17 +169,6 @@ async fn reinit_compressed_account(
         .await
 }
 
-async fn get_compressed_account(
-    rpc: &mut LightProgramTest,
-    address: [u8; 32],
-) -> CompressedAccount {
-    rpc.get_compressed_account(address, None)
-        .await
-        .unwrap()
-        .value
-        .unwrap()
-}
-
 async fn create_compressed_account(
     rpc: &mut LightProgramTest,
     payer: &Keypair,
@@ -202,10 +195,8 @@ async fn create_compressed_account(
     let packed_accounts = rpc_result.pack_tree_infos(&mut remaining_accounts);
 
     let output_state_tree_index = rpc
-        .get_random_state_tree_info()
-        .unwrap()
-        .pack_output_tree_index(&mut remaining_accounts)
-        .unwrap();
+        .get_random_state_tree_info()?
+        .pack_output_tree_index(&mut remaining_accounts)?;
 
     let (remaining_accounts, _, _) = remaining_accounts.to_account_metas();
 

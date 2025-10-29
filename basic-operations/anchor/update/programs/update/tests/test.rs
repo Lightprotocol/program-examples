@@ -39,13 +39,22 @@ async fn test_update() {
     .await
     .unwrap();
 
-    let account = get_compressed_account(&mut rpc, address).await;
-    println!("{:?}", account);
+    let account = rpc.get_compressed_account(address, None)
+        .await
+        .unwrap()
+        .value
+        .unwrap();
     update_compressed_account(&mut rpc, &payer, account, "Updated message!".to_string())
         .await
         .unwrap();
 
-    let updated = get_message_account(&mut rpc, address).await;
+    let updated_account = rpc.get_compressed_account(address, None)
+        .await
+        .unwrap()
+        .value
+        .unwrap();
+    let data = &updated_account.data.as_ref().unwrap().data;
+    let updated = MyCompressedAccount::deserialize(&mut &data[..]).unwrap();
     assert_eq!(updated.owner, payer.pubkey());
     assert_eq!(updated.message, "Updated message!");
 }
@@ -76,8 +85,7 @@ async fn update_compressed_account(
 
     let current_account = MyCompressedAccount::deserialize(
         &mut compressed_account.data.as_ref().unwrap().data.as_slice(),
-    )
-    .unwrap();
+    )?;
 
     let instruction = Instruction {
         program_id: update::ID,
@@ -106,26 +114,6 @@ async fn update_compressed_account(
         .await
 }
 
-async fn get_compressed_account(
-    rpc: &mut LightProgramTest,
-    address: [u8; 32],
-) -> CompressedAccount {
-    rpc.get_compressed_account(address, None)
-        .await
-        .unwrap()
-        .value
-        .unwrap()
-}
-
-async fn get_message_account(
-    rpc: &mut LightProgramTest,
-    address: [u8; 32],
-) -> MyCompressedAccount {
-    let account = get_compressed_account(rpc, address).await;
-    let data = &account.data.as_ref().unwrap().data;
-    MyCompressedAccount::deserialize(&mut &data[..]).unwrap()
-}
-
 async fn create_compressed_account(
     rpc: &mut LightProgramTest,
     payer: &Keypair,
@@ -152,10 +140,8 @@ async fn create_compressed_account(
     let packed_accounts = rpc_result.pack_tree_infos(&mut remaining_accounts);
 
     let output_state_tree_index = rpc
-        .get_random_state_tree_info()
-        .unwrap()
-        .pack_output_tree_index(&mut remaining_accounts)
-        .unwrap();
+        .get_random_state_tree_info()?
+        .pack_output_tree_index(&mut remaining_accounts)?;
 
     let (remaining_accounts, _, _) = remaining_accounts.to_account_metas();
 
