@@ -27,7 +27,7 @@ anchor build
 
 ### Requirements
 
-- light cli version 0.24.0+ (install via `npm i -g @lightprotocol/zk-compression-cli`)
+- light cli version 0.27.1-alpha.2+ (install via `npm install -g @lightprotocol/zk-compression-cli@0.27.1-alpha.2`)
 - solana cli version 2.1.16+
 - anchor version 0.31.1+
 - Node.js and npm
