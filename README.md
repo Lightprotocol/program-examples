@@ -43,29 +43,29 @@ full compressed account lifecycle (create, increment, decrement, reset, close):
 
 ### TypeScript/JavaScript Packages
 
-- `@lightprotocol/stateless.js` - Client library for interacting with compressed accounts
-- `@lightprotocol/zk-compression-cli` - Command-line tools for ZK compression development
+- `@lightprotocol/stateless.js@0.22.1-alpha.1` - Client library for interacting with compressed accounts
+- `@lightprotocol/zk-compression-cli@0.27.1-alpha.2` - Command-line tools for ZK compression development
 
 ## Prerequisites
 
 Required versions:
 
-- **Rust**: 1.86.0 or later
-- **Solana CLI**: 2.2.15
+- **Rust**: 1.90.0 or later
+- **Solana CLI**: 2.3.11
 - **Anchor CLI**: 0.31.1
-- **Zk compression CLI**: 0.27.0 or later
+- **Zk compression CLI**: 0.27.1-alpha.2 or later
 - **Node.js**: 23.5.0 or later
 
 Install the Light CLI:
 
 ```bash
-$ npm -g i @lightprotocol/zk-compression-cli
+$ npm -g i @lightprotocol/zk-compression-cli@0.27.1-alpha.2
 ```
 
 Install Solana CLI:
 
 ```bash
-sh -c "$(curl -sSfL https://release.solana.com/v2.2.15/install)"
+sh -c "$(curl -sSfL https://release.solana.com/v2.3.11/install)"
 ```
 
 Install Anchor CLI:
@@ -73,7 +73,7 @@ Install Anchor CLI:
 ```bash
 cargo install --git https://github.com/coral-xyz/anchor avm --force
 avm install latest
-avm use latest
+avm use 0.31.1
 ```
 
 ## Getting Started with your own Program
@@ -81,7 +81,7 @@ avm use latest
 1. install the light cli
 
 ```bash
-$ npm -g i @lightprotocol/zk-compression-cli
+$ npm -g i @lightprotocol/zk-compression-cli@0.27.1-alpha.2
 ```
 
 2. instantiate a template Solana program with compressed accounts
