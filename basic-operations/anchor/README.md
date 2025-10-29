@@ -6,11 +6,11 @@ Standalone Anchor programs for compressed accounts.
 
 Each operation is an independent Anchor project:
 
-- **create** - Initialize a new compressed account with `new_init()`
-- **update** - Modify data in an existing compressed account with `new_mut()`
-- **close** - Clear account data while preserving address with `new_close()`
-- **reinit** - Reinitialize a closed account with `new_empty()`
-- **burn** - Permanently delete a compressed account with `new_burn()`
+- **create** - Initialize a new compressed account
+- **update** - Modify data in an existing compressed account
+- **close** - Clear account data while preserving address
+- **reinit** - Reinitialize a closed account
+- **burn** - Permanently delete a compressed account
 
 Each project contains its own workspace, program, and tests.
 
