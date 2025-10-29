@@ -71,7 +71,7 @@ pub mod account_comparison {
         // is hashed with poseidon hashes, serialized with borsh
         // and created with invoke_light_system_program by invoking the light-system-program.
         // The hashing scheme is the account structure derived with LightHasher.
-        let mut compressed_account = LightAccount::<'_, CompressedAccountData>::new_init(
+        let mut compressed_account = LightAccount::<CompressedAccountData>::new_init(
             &crate::ID,
             Some(address),
             output_tree_index,
@@ -99,7 +99,7 @@ pub mod account_comparison {
         proof: ValidityProof,
         account_meta: CompressedAccountMeta,
     ) -> Result<()> {
-        let mut compressed_account = LightAccount::<'_, CompressedAccountData>::new_mut(
+        let mut compressed_account = LightAccount::<CompressedAccountData>::new_mut(
             &crate::ID,
             &account_meta,
             CompressedAccountData {

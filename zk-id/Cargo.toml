@@ -14,22 +14,22 @@ test-sbf = []
 [dependencies]
 anchor-lang = "0.31.1"
 borsh = "0.10.4"
-light-sdk = { version = "0.15.1", features = ["anchor", "poseidon", "merkle-tree"] }
-light-hasher = "4"
-light-sdk-types = "0.15.0"
+light-sdk = { version = "0.16.0" , features = ["anchor", "poseidon", "merkle-tree", "v2"] }
+light-hasher = "5.0.0"
+light-sdk-types = { version = "0.16.0" ,features = ["v2"] }
 groth16-solana = { git = "https://github.com/Lightprotocol/groth16-solana", rev = "66c0dc87d0808c4d2aadb53c61435b6edb8ddfd9" }
 
 [dev-dependencies]
-light-program-test = "0.15.1"
-light-client = "0.15.0"
+light-program-test = { version = "0.16.0" , features = ["v2"] }
+light-client = { version = "0.16.0" , features = ["v2"] }
 tokio = "1.40.0"
 solana-sdk = "2.2"
 circom-prover = "0.1"
 rust-witness = "0.1"
 num-bigint = "0.4"
 serde_json = "1.0"
-light-compressed-account = { version = "0.5.0", features = ["new-unique"] }
-light-merkle-tree-reference= "3"
+light-compressed-account = { version = "0.6.1", features = ["new-unique"] }
+light-merkle-tree-reference = "4.0.0"
 groth16-solana = { git = "https://github.com/Lightprotocol/groth16-solana", features = ["vk", "circom"], rev = "66c0dc87d0808c4d2aadb53c61435b6edb8ddfd9" }
 
 [build-dependencies]

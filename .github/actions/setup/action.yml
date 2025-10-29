@@ -81,7 +81,7 @@ runs:
       uses: actions/cache@v4
       with:
         path: ~/.cargo/bin/photon
-        key: photon-${{ runner.os }}-49b7e7f0d668babbc4d65fe8a0a7236df76f75a8
+        key: photon-${{ runner.os }}-1a785036de52896b68d06413e3b0231122d6aa4a
 
     - name: Install Solana CLI tools
       shell: bash
@@ -141,7 +141,7 @@ runs:
       shell: bash
       env:
         RUSTFLAGS: "-A dead-code"
-      run: cargo install --git https://github.com/lightprotocol/photon.git --rev 49b7e7f0d668babbc4d65fe8a0a7236df76f75a8 --locked
+      run: cargo install --git https://github.com/lightprotocol/photon.git --rev 1a785036de52896b68d06413e3b0231122d6aa4a --locked --force
 
     - name: Generate keypair
       shell: bash

@@ -9,7 +9,7 @@ use light_hasher::HasherError;
 use light_sdk::account::{poseidon::LightAccount as LightAccountPoseidon, LightAccount};
 use light_sdk::cpi::v1::CpiAccounts;
 use light_sdk::{
-    address::v1::derive_address,
+    address::v2::derive_address,
     cpi::{v1::LightSystemProgramCpi, InvokeLightSystemProgram, LightCpiInstruction},
     derive_light_cpi_signer,
     instruction::{
@@ -61,7 +61,7 @@ pub mod zk_id {
             &crate::ID,
         );
         msg!("address {:?}", address);
-        let mut issuer_account = LightAccount::<'_, IssuerAccount>::new_init(
+        let mut issuer_account = LightAccount::<IssuerAccount>::new_init(
             &crate::ID,
             Some(address),
             output_state_tree_index,
@@ -101,7 +101,7 @@ pub mod zk_id {
         );
 
         // Verify the issuer account - read it to ensure it exists and signer is the issuer
-        let mut issuer_account = LightAccount::<'_, IssuerAccount>::new_mut(
+        let mut issuer_account = LightAccount::<IssuerAccount>::new_mut(
             &crate::ID,
             &issuer_account_meta,
             IssuerAccount {
@@ -124,7 +124,7 @@ pub mod zk_id {
             &crate::ID,
         );
 
-        let mut credential_account = LightAccountPoseidon::<'_, CredentialAccount>::new_init(
+        let mut credential_account = LightAccountPoseidon::<CredentialAccount>::new_init(
             &crate::ID,
             Some(address),
             output_state_tree_index,
@@ -170,7 +170,7 @@ pub mod zk_id {
             .get_tree_pubkey(&light_cpi_accounts)
             .map_err(|_| ErrorCode::AccountNotEnoughKeys)?;
 
-        if address_pubkey.to_bytes() != light_sdk::constants::ADDRESS_TREE_V1 {
+        if address_pubkey.to_bytes() != light_sdk::constants::ADDRESS_TREE_V2 {
             msg!("Invalid address tree");
             return Err(ProgramError::InvalidAccountData.into());
         }
@@ -203,7 +203,7 @@ pub mod zk_id {
         let account_owner_hashed =
             hashv_to_bn254_field_size_be_const_array::<2>(&[&crate::ID.to_bytes()]).unwrap();
 
-        let mut event_account = LightAccount::<'_, EncryptedEventAccount>::new_init(
+        let mut event_account = LightAccount::<EncryptedEventAccount>::new_init(
             &crate::ID,
             Some(address),
             output_state_tree_index,

@@ -6,8 +6,10 @@ use light_program_test::{
     program_test::LightProgramTest, AddressWithTree, Indexer, ProgramTestConfig, Rpc, RpcError,
 };
 use light_sdk::{
-    address::v1::derive_address,
-    instruction::{account_meta::CompressedAccountMeta, PackedAccounts, SystemAccountMetaConfig},
+    address::v2::derive_address,
+    instruction::{
+        account_meta::CompressedAccountMetaReadOnly, PackedAccounts, SystemAccountMetaConfig,
+    },
 };
 use read_only::{DataAccount, ExistingCompressedAccountIxData, FIRST_SEED};
 use solana_sdk::{
@@ -18,11 +20,12 @@ use solana_sdk::{
 #[tokio::test]
 async fn test_read_compressed_account() {
     // Read only is only supported for v2 state trees.
-    let config = ProgramTestConfig::new_v2(true, Some(vec![("read_only", read_only::ID)]));
+    let mut config = ProgramTestConfig::new_v2(true, Some(vec![("read_only", read_only::ID)]));
+    config.log_light_protocol_events = true;
     let mut rpc = LightProgramTest::new(config).await.unwrap();
     let payer = rpc.get_payer().insecure_clone();
 
-    let address_tree_info = rpc.get_address_tree_v1();
+    let address_tree_info = rpc.get_address_tree_v2();
 
     let (address, _) = derive_address(
         &[FIRST_SEED, payer.pubkey().as_ref()],
@@ -46,7 +49,8 @@ async fn test_read_compressed_account() {
         .get_compressed_account(address, None)
         .await
         .unwrap()
-        .value;
+        .value
+        .unwrap();
 
     assert_eq!(compressed_account.leaf_index, 0);
     let data = &compressed_account.data.as_ref().unwrap().data;
@@ -77,7 +81,7 @@ where
 {
     let mut remaining_accounts = PackedAccounts::default();
     let config = SystemAccountMetaConfig::new(read_only::ID);
-    remaining_accounts.add_system_accounts(config);
+    remaining_accounts.add_system_accounts_v2(config)?;
 
     let rpc_result = rpc
         .get_validity_proof(
@@ -108,13 +112,10 @@ where
         signer: payer.pubkey(),
     };
 
+    let (remaining_accounts_metas, _, _) = remaining_accounts.to_account_metas();
     let instruction = Instruction {
         program_id: read_only::ID,
-        accounts: [
-            accounts.to_account_metas(None),
-            remaining_accounts.to_account_metas().0,
-        ]
-        .concat(),
+        accounts: [accounts.to_account_metas(None), remaining_accounts_metas].concat(),
         data: instruction_data.data(),
     };
 
@@ -133,10 +134,9 @@ where
 {
     let mut remaining_accounts = PackedAccounts::default();
     let config = SystemAccountMetaConfig::new(read_only::ID);
-    remaining_accounts.add_system_accounts(config);
+    remaining_accounts.add_system_accounts_v2(config)?;
 
     let hash = compressed_account.hash;
-
     let rpc_result = rpc
         .get_validity_proof(vec![hash], vec![], None)
         .await?
@@ -145,10 +145,9 @@ where
     let packed_tree_accounts = rpc_result.pack_tree_infos(&mut remaining_accounts);
     let packed_state_tree_accounts = packed_tree_accounts.state_trees.unwrap();
 
-    let account_meta = CompressedAccountMeta {
+    let account_meta = CompressedAccountMetaReadOnly {
         tree_info: packed_state_tree_accounts.packed_tree_infos[0],
         address: compressed_account.address.unwrap(),
-        output_state_tree_index: 0, // not used
     };
 
     let instruction_data = read_only::instruction::Read {
@@ -163,13 +162,10 @@ where
         signer: payer.pubkey(),
     };
 
+    let (remaining_accounts_metas, _, _) = remaining_accounts.to_account_metas();
     let instruction = Instruction {
         program_id: read_only::ID,
-        accounts: [
-            accounts.to_account_metas(None),
-            remaining_accounts.to_account_metas().0,
-        ]
-        .concat(),
+        accounts: [accounts.to_account_metas(None), remaining_accounts_metas].concat(),
         data: instruction_data.data(),
     };
     rpc.create_and_send_transaction(&[instruction], &payer.pubkey(), &[payer])

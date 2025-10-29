@@ -178,7 +178,7 @@ pub fn create_counter(
         .address_tree_info
         .into_new_address_params_packed(address_seed);
 
-    let mut counter = LightAccount::<'_, CounterAccount>::new_init(
+    let mut counter = LightAccount::<CounterAccount>::new_init(
         &ID,
         Some(address),
         instuction_data.output_state_tree_index,
@@ -200,7 +200,7 @@ pub fn increment_counter(
 ) -> Result<(), ProgramError> {
     let signer = accounts.first().ok_or(ProgramError::NotEnoughAccountKeys)?;
 
-    let mut counter = LightAccount::<'_, CounterAccount>::new_mut(
+    let mut counter = LightAccount::<CounterAccount>::new_mut(
         &ID,
         &instuction_data.account_meta,
         CounterAccount {
@@ -226,7 +226,7 @@ pub fn decrement_counter(
 ) -> Result<(), ProgramError> {
     let signer = accounts.first().ok_or(ProgramError::NotEnoughAccountKeys)?;
 
-    let mut counter = LightAccount::<'_, CounterAccount>::new_mut(
+    let mut counter = LightAccount::<CounterAccount>::new_mut(
         &ID,
         &instuction_data.account_meta,
         CounterAccount {
@@ -255,7 +255,7 @@ pub fn reset_counter(
 ) -> Result<(), ProgramError> {
     let signer = accounts.first().ok_or(ProgramError::NotEnoughAccountKeys)?;
 
-    let mut counter = LightAccount::<'_, CounterAccount>::new_mut(
+    let mut counter = LightAccount::<CounterAccount>::new_mut(
         &ID,
         &instuction_data.account_meta,
         CounterAccount {
@@ -280,7 +280,7 @@ pub fn close_counter(
 ) -> Result<(), ProgramError> {
     let signer = accounts.first().ok_or(ProgramError::NotEnoughAccountKeys)?;
 
-    let counter = LightAccount::<'_, CounterAccount>::new_close(
+    let counter = LightAccount::<CounterAccount>::new_close(
         &ID,
         &instuction_data.account_meta,
         CounterAccount {

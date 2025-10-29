@@ -51,7 +51,7 @@ pub mod counter {
 
         let new_address_params = address_tree_info.into_new_address_params_packed(address_seed);
 
-        let mut counter = LightAccount::<'_, CounterAccount>::new_init(
+        let mut counter = LightAccount::<CounterAccount>::new_init(
             &crate::ID,
             Some(address),
             output_state_tree_index,
@@ -80,7 +80,7 @@ pub mod counter {
         // is hashed with poseidon hashes, serialized with borsh
         // and created with invoke_light_system_program by invoking the light-system-program.
         // The hashing scheme is the account structure derived with LightHasher.
-        let mut counter = LightAccount::<'_, CounterAccount>::new_mut(
+        let mut counter = LightAccount::<CounterAccount>::new_mut(
             &crate::ID,
             &account_meta,
             CounterAccount {
@@ -111,7 +111,7 @@ pub mod counter {
         counter_value: u64,
         account_meta: CompressedAccountMeta,
     ) -> Result<()> {
-        let mut counter = LightAccount::<'_, CounterAccount>::new_mut(
+        let mut counter = LightAccount::<CounterAccount>::new_mut(
             &crate::ID,
             &account_meta,
             CounterAccount {
@@ -141,7 +141,7 @@ pub mod counter {
         counter_value: u64,
         account_meta: CompressedAccountMeta,
     ) -> Result<()> {
-        let mut counter = LightAccount::<'_, CounterAccount>::new_mut(
+        let mut counter = LightAccount::<CounterAccount>::new_mut(
             &crate::ID,
             &account_meta,
             CounterAccount {
@@ -173,7 +173,7 @@ pub mod counter {
         // LightAccount::new_close() will create an account with only input state and no output state.
         // By providing no output state the account is closed after the instruction.
         // The address of a closed account cannot be reused.
-        let counter = LightAccount::<'_, CounterAccount>::new_close(
+        let counter = LightAccount::<CounterAccount>::new_close(
             &crate::ID,
             &account_meta,
             CounterAccount {
