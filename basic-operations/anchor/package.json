@@ -1,0 +1,12 @@
+{
+  "name": "basic-operations-anchor",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "burn",
+    "create",
+    "update",
+    "close",
+    "reinit"
+  ]
+}

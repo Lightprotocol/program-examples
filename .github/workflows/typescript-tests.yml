@@ -27,6 +27,11 @@ jobs:
       matrix:
         example:
           - counter/anchor
+          - basic-operations/anchor/burn
+          - basic-operations/anchor/create
+          - basic-operations/anchor/update
+          - basic-operations/anchor/close
+          - basic-operations/anchor/reinit
     steps:
       - uses: actions/checkout@v4
 
@@ -54,8 +59,9 @@ jobs:
       - name: Start test validator
         working-directory: ${{ matrix.example }}
         run: |
-          PROGRAM_ID=$(grep -A 1 "\[programs.localnet\]" Anchor.toml | grep "counter" | sed 's/.*"\(.*\)".*/\1/')
-          light test-validator --sbf-program "$PROGRAM_ID" ./target/deploy/counter.so &
+          PROGRAM_NAME=$(grep -A 10 '\[programs.localnet\]' Anchor.toml | grep '=' | head -1 | cut -d' ' -f1)
+          PROGRAM_ID=$(grep -A 10 '\[programs.localnet\]' Anchor.toml | grep '=' | head -1 | sed 's/.*"\(.*\)".*/\1/')
+          light test-validator --sbf-program "$PROGRAM_ID" ./target/deploy/${PROGRAM_NAME}.so &
           sleep 10
 
       - name: Run TypeScript tests
