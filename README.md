@@ -4,9 +4,21 @@
 
 ## Examples
 
+### Basic Operations
+
+- **[basic-operations/anchor](./basic-operations/anchor/)** - Anchor program with Rust and TypeScript tests
+- **[basic-operations/native-rust](./basic-operations/native-rust/)** - Native Solana program with light-sdk and Rust tests.
+
+Basic Operations include:
+- **create** - Initialize a new compressed account.
+- **update** - Modify data in an existing compressed account.
+- **close** - Clear account data and preserve its address.
+- **reinit** - Reinitialize a closed account with the same address.
+- **burn** - Permanently delete a compressed account.
+
 ### Counter Program
 
-full compressed account lifecycle (create, increment, decrement, reset, close):
+Full compressed account lifecycle (create, increment, decrement, reset, close):
 
 - **[counter/anchor](./counter/anchor/)** - Anchor program with Rust and TypeScript tests
 - **[counter/native](./counter/native/)** - Native Solana program with light-sdk and Rust tests.
@@ -30,27 +42,7 @@ full compressed account lifecycle (create, increment, decrement, reset, close):
 
 - **[zk-id](./zk-id)** - A minimal zk id Solana program that uses zero-knowledge proofs for identity verification with compressed accounts.
 
-## Tree Versions
-
-Compressed Accounts examples use different Tree versions:
-
-### V1 Trees (Mainnet)
-- **[counter/anchor](./counter/anchor/)** - Full compressed account lifecycle using Anchor
-- **[counter/native](./counter/native/)** - Full compressed account lifecycle using native Solana
-- **[counter/pinocchio](./counter/pinocchio/)** - Full compressed account lifecycle using Pinocchio
-- **[account-comparison](./account-comparison/)** - Account comparison example
-
-V1 Trees are deployed on **mainnet**.
-
-### V2 Trees (Local/Devnet)
-- **[create-and-update](./create-and-update/)** - Create and update accounts with single validity proof
-- **[read-only](./read-only)** - Create and read compressed accounts onchain
-- **[zk-id](./zk-id)** - Zero-knowledge identity verification
-
-V2 Trees consume **significantly less CU** (compute units) and are available on **local and devnet** environments.
-
-Both Tree versions are supported in Light SDK 0.16.0.
-
+  
 ## Light Protocol dependencies
 
 ### Rust Crates
@@ -63,7 +55,7 @@ Both Tree versions are supported in Light SDK 0.16.0.
 
 ### TypeScript/JavaScript Packages
 
-- `@lightprotocol/stateless.js@0.22.1-alpha.1"` - Client library for interacting with compressed accounts
+- `@lightprotocol/stateless.js@0.22.1-alpha.1` - Client library for interacting with compressed accounts
 - `@lightprotocol/zk-compression-cli@0.27.1-alpha.2` - Command-line tools for ZK compression development
 
 ## Prerequisites
