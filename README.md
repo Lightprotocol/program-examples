@@ -4,9 +4,21 @@
 
 ## Examples
 
+### Basic Operations
+
+- **[basic-operations/anchor](./basic-operations/anchor/)** - Anchor program with Rust and TypeScript tests
+- **[basic-operations/native-rust](./basic-operations/native-rust/)** - Native Solana program with light-sdk and Rust tests.
+
+Basic Operations include:
+- **create** - Initialize a new compressed account.
+- **update** - Modify data in an existing compressed account.
+- **close** - Clear account data and preserve its address.
+- **reinit** - Reinitialize a closed account with the same address.
+- **burn** - Permanently delete a compressed account.
+
 ### Counter Program
 
-full compressed account lifecycle (create, increment, decrement, reset, close):
+Full compressed account lifecycle (create, increment, decrement, reset, close):
 
 - **[counter/anchor](./counter/anchor/)** - Anchor program with Rust and TypeScript tests
 - **[counter/native](./counter/native/)** - Native Solana program with light-sdk and Rust tests.
