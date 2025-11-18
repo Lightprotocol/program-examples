@@ -200,7 +200,7 @@ where
 {
     let mut remaining_accounts = PackedAccounts::default();
     let config = SystemAccountMetaConfig::new(create_and_update::ID);
-    remaining_accounts.add_system_accounts(config)?;
+    remaining_accounts.add_system_accounts_v2(config)?;
 
     let rpc_result = rpc
         .get_validity_proof(
@@ -255,7 +255,7 @@ where
 {
     let mut remaining_accounts = PackedAccounts::default();
     let config = SystemAccountMetaConfig::new(create_and_update::ID);
-    remaining_accounts.add_system_accounts(config)?;
+    remaining_accounts.add_system_accounts_v2(config)?;
 
     let hash = existing_account.hash;
 
@@ -334,7 +334,7 @@ where
 {
     let mut remaining_accounts = PackedAccounts::default();
     let config = SystemAccountMetaConfig::new(create_and_update::ID);
-    remaining_accounts.add_system_accounts(config)?;
+    remaining_accounts.add_system_accounts_v2(config)?;
 
     let first_hash = first_account.hash;
     let second_hash = second_account.hash;
