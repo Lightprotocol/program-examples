@@ -6,7 +6,7 @@ use borsh::{BorshDeserialize, BorshSerialize};
 use light_sdk::{
     account::LightAccount,
     address::v2::derive_address,
-    cpi::{v1::CpiAccounts, CpiSigner},
+    cpi::{v2::CpiAccounts, CpiSigner},
     derive_light_cpi_signer,
     instruction::{account_meta::CompressedAccountMeta, PackedAddressTreeInfo, ValidityProof},
     LightDiscriminator, LightHasher,
@@ -25,7 +25,7 @@ pub mod create_and_update {
 
     use super::*;
     use light_sdk::cpi::{
-        v1::LightSystemProgramCpi, InvokeLightSystemProgram, LightCpiInstruction,
+        v2::LightSystemProgramCpi, InvokeLightSystemProgram, LightCpiInstruction,
     };
 
     /// Creates a new compressed account with initial data
@@ -64,7 +64,9 @@ pub mod create_and_update {
         );
         LightSystemProgramCpi::new_cpi(LIGHT_CPI_SIGNER, proof)
             .with_light_account(data_account)?
-            .with_new_addresses(&[address_tree_info.into_new_address_params_packed(address_seed)])
+            .with_new_addresses(&[
+                address_tree_info.into_new_address_params_assigned_packed(address_seed, Some(0))
+            ])
             .invoke(light_cpi_accounts)?;
 
         Ok(())
@@ -118,7 +120,7 @@ pub mod create_and_update {
             .with_light_account(updated_data_account)?
             .with_new_addresses(&[new_account
                 .address_tree_info
-                .into_new_address_params_packed(new_address_seed)])
+                .into_new_address_params_assigned_packed(new_address_seed, Some(0))])
             .invoke(light_cpi_accounts)?;
 
         msg!(
@@ -236,8 +238,10 @@ pub mod create_and_update {
             .with_light_account(first_data_account)?
             .with_light_account(second_data_account)?
             .with_new_addresses(&[
-                address_tree_info.into_new_address_params_packed(first_address_seed),
-                address_tree_info.into_new_address_params_packed(second_address_seed),
+                address_tree_info
+                    .into_new_address_params_assigned_packed(first_address_seed, Some(0)),
+                address_tree_info
+                    .into_new_address_params_assigned_packed(second_address_seed, Some(1)),
             ])
             .invoke(light_cpi_accounts)?;
 
