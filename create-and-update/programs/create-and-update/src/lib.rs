@@ -12,10 +12,10 @@ use light_sdk::{
     LightDiscriminator, LightHasher,
 };
 
-declare_id!("HNqStLMpNuNJqhBF1FbGTKHEFbBLJmq8RdJJmZKWz6jH");
+declare_id!("J6K7nvoVpJHfH13zn47vptnZo1JdUGCGSiVmtfkzz9NA");
 
 pub const LIGHT_CPI_SIGNER: CpiSigner =
-    derive_light_cpi_signer!("HNqStLMpNuNJqhBF1FbGTKHEFbBLJmq8RdJJmZKWz6jH");
+    derive_light_cpi_signer!("J6K7nvoVpJHfH13zn47vptnZo1JdUGCGSiVmtfkzz9NA");
 
 pub const FIRST_SEED: &[u8] = b"first";
 pub const SECOND_SEED: &[u8] = b"second";
@@ -42,13 +42,19 @@ pub mod create_and_update {
             crate::LIGHT_CPI_SIGNER,
         );
 
+        let address_tree_pubkey = address_tree_info
+            .get_tree_pubkey(&light_cpi_accounts)
+            .map_err(|_| ErrorCode::AccountNotEnoughKeys)?;
+        msg!("address_tree_pubkey: {:?}", address_tree_pubkey);
         let (address, address_seed) = derive_address(
             &[FIRST_SEED, ctx.accounts.signer.key().as_ref()],
-            &address_tree_info
-                .get_tree_pubkey(&light_cpi_accounts)
-                .map_err(|_| ErrorCode::AccountNotEnoughKeys)?,
+            &address_tree_pubkey,
             &crate::ID,
         );
+        msg!("first_seed: {:?}", FIRST_SEED);
+        msg!("signer_key: {:?}", ctx.accounts.signer.key().to_bytes());
+        msg!("address: {:?}", address);
+        msg!("address_seed: {:?}", address_seed);
 
         let mut data_account = LightAccount::<DataAccount>::new_init(
             &crate::ID,
@@ -61,6 +67,12 @@ pub mod create_and_update {
         msg!(
             "Created compressed account with message: {}",
             data_account.message
+        );
+        msg!("packed_address_tree_info: {:?}", address_tree_info);
+        msg!("output_state_tree_index: {:?}", output_state_tree_index);
+        msg!(
+            "light_cpi_accounts.tree_accounts: {:?}",
+            light_cpi_accounts.tree_accounts()
         );
         LightSystemProgramCpi::new_cpi(LIGHT_CPI_SIGNER, proof)
             .with_light_account(data_account)?
