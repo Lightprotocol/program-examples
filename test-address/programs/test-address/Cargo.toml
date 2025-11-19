@@ -1,0 +1,44 @@
+[package]
+name = "test-address"
+version = "0.1.0"
+description = "Created with Anchor"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "test_address"
+
+[features]
+default = []
+cpi = ["no-entrypoint"]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+test-sbf = []
+idl-build = ["anchor-lang/idl-build"]
+
+[dependencies]
+anchor-lang = "0.31.1"
+light-hasher = { version = "3.1.0", features = ["solana"] }
+light-sdk = { version = "0.13.0", features = ["anchor"] }
+light-sdk-types = { version = "0.13.0", features = ["anchor"] }
+
+
+[dev-dependencies]
+light-client = "0.14.0"
+litesvm = "0.6.1"
+solana-keypair = "2.2"
+solana-message = "2.2"
+solana-pubkey = { version = "2.2", features = ["curve25519", "sha2"] }
+solana-signer = "2.2"
+solana-transaction = "2.2"
+light-program-test = "0.14.0"
+tokio = "1.43.0"
+solana-sdk = "2.2"
+
+[lints.rust.unexpected_cfgs]
+level = "allow"
+check-cfg = [
+    'cfg(target_os, values("solana"))',
+    'cfg(feature, values("frozen-abi", "no-entrypoint"))',
+]
