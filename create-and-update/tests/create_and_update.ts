@@ -37,19 +37,11 @@ describe("create-and-update anchor", () => {
 
   it("creates and updates compressed accounts atomically", async () => {
     const signer = new web3.Keypair();
-    const rpc = createRpc(
-      "http://127.0.0.1:8899",
-      "http://127.0.0.1:8784",
-      "http://127.0.0.1:3001",
-      {
-        commitment: "confirmed",
-      }
-    );
+    const rpc = createRpc();
 
     await rpc.requestAirdrop(signer.publicKey, web3.LAMPORTS_PER_SOL);
     await sleep(2000);
 
-    // get tree infos
     const stateTreeInfos = await rpc.getStateTreeInfos();
     const stateTreeInfo = selectStateTreeInfo(stateTreeInfos);
 
@@ -91,7 +83,6 @@ describe("create-and-update anchor", () => {
     );
     assert.strictEqual(decoded.message, "Initial message");
 
-    // Derive second address
     const secondSeed = new TextEncoder().encode("second");
     const secondAddressSeed = deriveAddressSeedV2([
       secondSeed,
@@ -102,8 +93,6 @@ describe("create-and-update anchor", () => {
       addressTreeInfo.tree,
       program.programId
     );
-    console.log("secondAddress", Array.from(secondAddress.toBytes()));
-    console.log("secondAddressSeed", Array.from(secondAddressSeed));
 
     await createAndUpdateAccounts(
       rpc,
@@ -112,7 +101,6 @@ describe("create-and-update anchor", () => {
       firstAccount,
       secondAddress,
       addressTreeInfo,
-      "Initial message",
       "Hello from second account",
       "Updated first message"
     );
@@ -164,9 +152,6 @@ describe("create-and-update anchor", () => {
     });
 
     const remainingAccounts = packedAccounts.toAccountMetas().remainingAccounts;
-    for (const account of remainingAccounts) {
-      console.log("remainingAccount", account.pubkey.toBase58());
-    }
     const tx = await program.methods
       .createCompressedAccount(
         proof,
@@ -185,8 +170,7 @@ describe("create-and-update anchor", () => {
     const recentBlockhash = (await rpc.getRecentBlockhash()).blockhash;
 
     const signedTx = buildAndSignTx(tx.instructions, signer, recentBlockhash);
-    const sig = await sendAndConfirmTx(rpc, signedTx, { skipPreflight: true });
-    console.log("createCompressedAccount sig", sig);
+    const sig = await sendAndConfirmTx(rpc, signedTx);
     return sig;
   }
 
@@ -197,7 +181,6 @@ describe("create-and-update anchor", () => {
     existingAccount: CompressedAccountWithMerkleContext,
     newAddress: anchor.web3.PublicKey,
     addressTreeInfo: TreeInfo,
-    existingMessage: string,
     newAccountMessage: string,
     updatedMessage: string
   ) {
@@ -223,35 +206,38 @@ describe("create-and-update anchor", () => {
       ]
     );
 
-    console.log("existing hash", existingAccount.hash.toArray());
+    const coder = new anchor.BorshCoder(program.idl);
+    const currentAccountData = coder.types.decode(
+      "dataAccount",
+      existingAccount.data.data
+    );
 
     const config = SystemAccountMetaConfig.new(program.programId);
     const packedAccounts = PackedAccounts.newWithSystemAccountsV2(config);
 
-    const existingQueueIndex = packedAccounts.insertOrGet(
-      existingAccount.treeInfo.queue
-    );
-    const existingMerkleTreeIndex = packedAccounts.insertOrGet(
-      existingAccount.treeInfo.tree
-    );
-    const outputStateTreeIndex = packedAccounts.insertOrGet(
-      existingAccount.treeInfo.queue
-    );
-
     const existingAccountMeta = {
       treeInfo: {
-        merkleTreePubkeyIndex: existingMerkleTreeIndex,
-        queuePubkeyIndex: existingQueueIndex,
-        leafIndex: existingAccount.leafIndex,
-        proveByIndex: false,
         rootIndex: proofRpcResult.rootIndices[0],
+        // Note: set this to true for local testing.
+        proveByIndex: true,
+        merkleTreePubkeyIndex: packedAccounts.insertOrGet(
+          existingAccount.treeInfo.tree
+        ),
+        queuePubkeyIndex: packedAccounts.insertOrGet(
+          existingAccount.treeInfo.queue
+        ),
+        leafIndex: existingAccount.leafIndex,
       },
       address: existingAccount.address,
-      outputStateTreeIndex,
+      outputStateTreeIndex: packedAccounts.insertOrGet(
+        existingAccount.treeInfo.queue
+      ),
     };
 
+    // for new account's address
     const addressQueueIndex = packedAccounts.insertOrGet(addressTreeInfo.queue);
     const addressTreeIndex = packedAccounts.insertOrGet(addressTreeInfo.tree);
+
     const packedAddressTreeInfo: PackedAddressTreeInfo = {
       rootIndex: proofRpcResult.rootIndices[1],
       addressMerkleTreePubkeyIndex: addressTreeIndex,
@@ -266,15 +252,13 @@ describe("create-and-update anchor", () => {
     });
 
     const remainingAccounts = packedAccounts.toAccountMetas().remainingAccounts;
-    for (const account of remainingAccounts) {
-      console.log("remainingAccount", account.pubkey.toBase58());
-    }
+
     const tx = await program.methods
       .createAndUpdate(
         proof,
         {
           accountMeta: existingAccountMeta,
-          message: existingMessage,
+          message: currentAccountData.message,
           updateMessage: updatedMessage,
         },
         {
@@ -292,8 +276,7 @@ describe("create-and-update anchor", () => {
 
     const recentBlockhash = (await rpc.getRecentBlockhash()).blockhash;
     const signedTx = buildAndSignTx(tx.instructions, signer, recentBlockhash);
-    const sig = await sendAndConfirmTx(rpc, signedTx, { skipPreflight: false });
-    console.log("createAndUpdate sig", sig);
+    const sig = await sendAndConfirmTx(rpc, signedTx);
     return sig;
   }
 });

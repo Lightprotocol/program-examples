@@ -2,7 +2,6 @@
 #![allow(deprecated)]
 
 use anchor_lang::{prelude::*, AnchorDeserialize, AnchorSerialize};
-use borsh::BorshSerialize;
 use light_sdk::{
     account::LightAccount,
     address::v2::derive_address,
@@ -88,19 +87,12 @@ pub mod create_and_update {
             .get_tree_pubkey(&light_cpi_accounts)
             .map_err(|_| ErrorCode::AccountNotEnoughKeys)?;
 
-        msg!(
-            "new_account_address_tree_pubkey: {:?}",
-            new_account_address_tree_pubkey
-        );
         // Create new compressed account
         let (new_address, new_address_seed) = derive_address(
             &[SECOND_SEED, ctx.accounts.signer.key().as_ref()],
             new_account_address_tree_pubkey,
             &crate::ID,
         );
-
-        msg!("new_address: {:?}", new_address);
-        msg!("new_address_seed: {:?}", new_address_seed);
 
         let mut new_data_account = LightAccount::<DataAccount>::new_init(
             &crate::ID,
