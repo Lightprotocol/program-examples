@@ -260,9 +260,7 @@ pub struct GenericAnchorAccounts<'info> {
     pub signer: Signer<'info>,
 }
 
-// #[derive(Debug, Default, BorshSerialize, BorshDeserialize, LightDiscriminator, LightHasher)]
 #[derive(Clone, LightDiscriminator, Default, AnchorDeserialize, AnchorSerialize)]
-// #[account]
 pub struct DataAccount {
     pub owner: Pubkey,
     pub message: String,
@@ -287,7 +285,7 @@ pub struct NewCompressedAccountIxData {
     pub message: String,
 }
 
-// for idl generation.
+// stubs for idl.
 #[event]
 pub struct AccountTypes {
     pub data_account: DataAccount,
