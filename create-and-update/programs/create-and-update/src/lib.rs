@@ -2,14 +2,14 @@
 #![allow(deprecated)]
 
 use anchor_lang::{prelude::*, AnchorDeserialize, AnchorSerialize};
-use borsh::{BorshDeserialize, BorshSerialize};
+use borsh::BorshSerialize;
 use light_sdk::{
     account::LightAccount,
     address::v2::derive_address,
     cpi::{v2::CpiAccounts, CpiSigner},
     derive_light_cpi_signer,
     instruction::{account_meta::CompressedAccountMeta, PackedAddressTreeInfo, ValidityProof},
-    LightDiscriminator, LightHasher,
+    LightDiscriminator,
 };
 
 declare_id!("J6K7nvoVpJHfH13zn47vptnZo1JdUGCGSiVmtfkzz9NA");
@@ -45,16 +45,11 @@ pub mod create_and_update {
         let address_tree_pubkey = address_tree_info
             .get_tree_pubkey(&light_cpi_accounts)
             .map_err(|_| ErrorCode::AccountNotEnoughKeys)?;
-        msg!("address_tree_pubkey: {:?}", address_tree_pubkey);
         let (address, address_seed) = derive_address(
             &[FIRST_SEED, ctx.accounts.signer.key().as_ref()],
             &address_tree_pubkey,
             &crate::ID,
         );
-        msg!("first_seed: {:?}", FIRST_SEED);
-        msg!("signer_key: {:?}", ctx.accounts.signer.key().to_bytes());
-        msg!("address: {:?}", address);
-        msg!("address_seed: {:?}", address_seed);
 
         let mut data_account = LightAccount::<DataAccount>::new_init(
             &crate::ID,
@@ -64,16 +59,7 @@ pub mod create_and_update {
 
         data_account.owner = ctx.accounts.signer.key();
         data_account.message = message;
-        msg!(
-            "Created compressed account with message: {}",
-            data_account.message
-        );
-        msg!("packed_address_tree_info: {:?}", address_tree_info);
-        msg!("output_state_tree_index: {:?}", output_state_tree_index);
-        msg!(
-            "light_cpi_accounts.tree_accounts: {:?}",
-            light_cpi_accounts.tree_accounts()
-        );
+
         LightSystemProgramCpi::new_cpi(LIGHT_CPI_SIGNER, proof)
             .with_light_account(data_account)?
             .with_new_addresses(&[
@@ -97,15 +83,24 @@ pub mod create_and_update {
             crate::LIGHT_CPI_SIGNER,
         );
 
+        let new_account_address_tree_pubkey = &new_account
+            .address_tree_info
+            .get_tree_pubkey(&light_cpi_accounts)
+            .map_err(|_| ErrorCode::AccountNotEnoughKeys)?;
+
+        msg!(
+            "new_account_address_tree_pubkey: {:?}",
+            new_account_address_tree_pubkey
+        );
         // Create new compressed account
         let (new_address, new_address_seed) = derive_address(
             &[SECOND_SEED, ctx.accounts.signer.key().as_ref()],
-            &new_account
-                .address_tree_info
-                .get_tree_pubkey(&light_cpi_accounts)
-                .map_err(|_| ErrorCode::AccountNotEnoughKeys)?,
+            new_account_address_tree_pubkey,
             &crate::ID,
         );
+
+        msg!("new_address: {:?}", new_address);
+        msg!("new_address_seed: {:?}", new_address_seed);
 
         let mut new_data_account = LightAccount::<DataAccount>::new_init(
             &crate::ID,
@@ -273,21 +268,16 @@ pub struct GenericAnchorAccounts<'info> {
     pub signer: Signer<'info>,
 }
 
-#[derive(
-    Clone, Debug, Default, BorshSerialize, BorshDeserialize, LightDiscriminator, LightHasher,
-)]
+// #[derive(Debug, Default, BorshSerialize, BorshDeserialize, LightDiscriminator, LightHasher)]
+#[derive(Clone, LightDiscriminator, Default, AnchorDeserialize, AnchorSerialize)]
+// #[account]
 pub struct DataAccount {
-    #[hash]
     pub owner: Pubkey,
-    #[hash]
     pub message: String,
 }
 
-#[derive(
-    Clone, Debug, Default, BorshSerialize, BorshDeserialize, LightDiscriminator, LightHasher,
-)]
+#[derive(Clone, LightDiscriminator, Default, AnchorDeserialize, AnchorSerialize)]
 pub struct ByteDataAccount {
-    #[hash]
     pub owner: Pubkey,
     pub data: [u8; 31],
 }
@@ -303,4 +293,11 @@ pub struct ExistingCompressedAccountIxData {
 pub struct NewCompressedAccountIxData {
     pub address_tree_info: PackedAddressTreeInfo,
     pub message: String,
+}
+
+// for idl generation.
+#[event]
+pub struct AccountTypes {
+    pub data_account: DataAccount,
+    pub byte_data_account: ByteDataAccount,
 }
