@@ -27,6 +27,7 @@ jobs:
       matrix:
         example:
           - counter/anchor
+          - create-and-update
           - basic-operations/anchor/burn
           - basic-operations/anchor/create
           - basic-operations/anchor/update
@@ -42,7 +43,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           solana-cli-version: ${{ env.SOLANA_CLI_VERSION }}
           rust-toolchain: ${{ env.RUST_TOOLCHAIN }}
-          photon-indexer: 'true'
+          photon-indexer: "true"
 
       - name: Install dependencies
         working-directory: ${{ matrix.example }}

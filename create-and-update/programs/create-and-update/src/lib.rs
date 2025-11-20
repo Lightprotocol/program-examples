@@ -2,20 +2,19 @@
 #![allow(deprecated)]
 
 use anchor_lang::{prelude::*, AnchorDeserialize, AnchorSerialize};
-use borsh::{BorshDeserialize, BorshSerialize};
 use light_sdk::{
     account::LightAccount,
     address::v2::derive_address,
     cpi::{v2::CpiAccounts, CpiSigner},
     derive_light_cpi_signer,
     instruction::{account_meta::CompressedAccountMeta, PackedAddressTreeInfo, ValidityProof},
-    LightDiscriminator, LightHasher,
+    LightDiscriminator,
 };
 
-declare_id!("HNqStLMpNuNJqhBF1FbGTKHEFbBLJmq8RdJJmZKWz6jH");
+declare_id!("J6K7nvoVpJHfH13zn47vptnZo1JdUGCGSiVmtfkzz9NA");
 
 pub const LIGHT_CPI_SIGNER: CpiSigner =
-    derive_light_cpi_signer!("HNqStLMpNuNJqhBF1FbGTKHEFbBLJmq8RdJJmZKWz6jH");
+    derive_light_cpi_signer!("J6K7nvoVpJHfH13zn47vptnZo1JdUGCGSiVmtfkzz9NA");
 
 pub const FIRST_SEED: &[u8] = b"first";
 pub const SECOND_SEED: &[u8] = b"second";
@@ -42,11 +41,12 @@ pub mod create_and_update {
             crate::LIGHT_CPI_SIGNER,
         );
 
+        let address_tree_pubkey = address_tree_info
+            .get_tree_pubkey(&light_cpi_accounts)
+            .map_err(|_| ErrorCode::AccountNotEnoughKeys)?;
         let (address, address_seed) = derive_address(
             &[FIRST_SEED, ctx.accounts.signer.key().as_ref()],
-            &address_tree_info
-                .get_tree_pubkey(&light_cpi_accounts)
-                .map_err(|_| ErrorCode::AccountNotEnoughKeys)?,
+            &address_tree_pubkey,
             &crate::ID,
         );
 
@@ -58,10 +58,7 @@ pub mod create_and_update {
 
         data_account.owner = ctx.accounts.signer.key();
         data_account.message = message;
-        msg!(
-            "Created compressed account with message: {}",
-            data_account.message
-        );
+
         LightSystemProgramCpi::new_cpi(LIGHT_CPI_SIGNER, proof)
             .with_light_account(data_account)?
             .with_new_addresses(&[
@@ -85,13 +82,15 @@ pub mod create_and_update {
             crate::LIGHT_CPI_SIGNER,
         );
 
+        let new_account_address_tree_pubkey = &new_account
+            .address_tree_info
+            .get_tree_pubkey(&light_cpi_accounts)
+            .map_err(|_| ErrorCode::AccountNotEnoughKeys)?;
+
         // Create new compressed account
         let (new_address, new_address_seed) = derive_address(
             &[SECOND_SEED, ctx.accounts.signer.key().as_ref()],
-            &new_account
-                .address_tree_info
-                .get_tree_pubkey(&light_cpi_accounts)
-                .map_err(|_| ErrorCode::AccountNotEnoughKeys)?,
+            new_account_address_tree_pubkey,
             &crate::ID,
         );
 
@@ -261,21 +260,16 @@ pub struct GenericAnchorAccounts<'info> {
     pub signer: Signer<'info>,
 }
 
-#[derive(
-    Clone, Debug, Default, BorshSerialize, BorshDeserialize, LightDiscriminator, LightHasher,
-)]
+// #[derive(Debug, Default, BorshSerialize, BorshDeserialize, LightDiscriminator, LightHasher)]
+#[derive(Clone, LightDiscriminator, Default, AnchorDeserialize, AnchorSerialize)]
+// #[account]
 pub struct DataAccount {
-    #[hash]
     pub owner: Pubkey,
-    #[hash]
     pub message: String,
 }
 
-#[derive(
-    Clone, Debug, Default, BorshSerialize, BorshDeserialize, LightDiscriminator, LightHasher,
-)]
+#[derive(Clone, LightDiscriminator, Default, AnchorDeserialize, AnchorSerialize)]
 pub struct ByteDataAccount {
-    #[hash]
     pub owner: Pubkey,
     pub data: [u8; 31],
 }
@@ -291,4 +285,11 @@ pub struct ExistingCompressedAccountIxData {
 pub struct NewCompressedAccountIxData {
     pub address_tree_info: PackedAddressTreeInfo,
     pub message: String,
+}
+
+// for idl generation.
+#[event]
+pub struct AccountTypes {
+    pub data_account: DataAccount,
+    pub byte_data_account: ByteDataAccount,
 }

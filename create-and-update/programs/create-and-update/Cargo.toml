@@ -1,0 +1,42 @@
+[package]
+name = "create-and-update"
+version = "0.1.0"
+description = "Created with Anchor"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "create_and_update"
+
+[features]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+cpi = ["no-entrypoint"]
+default = ["idl-build"]
+test-sbf = []
+idl-build = ["anchor-lang/idl-build", "light-sdk/idl-build"]
+
+[dependencies]
+anchor-lang = "0.31.1"
+borsh = "0.10.4"
+light-sdk = { version = "0.16.0", features = ["anchor", "v2"] }
+light-hasher = "5.0.0"
+light-sdk-types = { version = "0.16.0", features = ["v2"] }
+
+[target.'cfg(not(target_os = "solana"))'.dependencies]
+solana-sdk = "2.2"
+
+[dev-dependencies]
+light-program-test = { version = "0.16.0", features = ["v2"] }
+light-client = { version = "0.16.0", features = ["v2"] }
+tokio = "1.43.0"
+serial_test = "3.2.0"
+
+[lints.rust.unexpected_cfgs]
+level = "allow"
+check-cfg = [
+    'cfg(target_os, values("solana"))',
+    'cfg(feature, values("frozen-abi", "no-entrypoint"))',
+]
+
