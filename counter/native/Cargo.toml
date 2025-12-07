@@ -19,17 +19,17 @@ test-sbf = []
 default = []
 
 [dependencies]
-light-sdk = "0.16.0"
-light-sdk-types = "0.16.0"
+light-sdk = "0.17.1"
+light-sdk-types = "0.17.1"
 light-hasher = { version = "5.0.0", features = ["solana"] }
 solana-program = "2.2"
-light-macros = "2.1.0"
+light-macros = "2.2.0"
 borsh = "0.10.4"
-light-compressed-account = { version = "0.6.0", features = ["solana"] }
+light-compressed-account = { version = "0.7.0", features = ["solana"] }
 
 [dev-dependencies]
-light-program-test = "0.16.0"
-light-client = "0.16.0"
+light-program-test = "0.17.1"
+light-client = "0.17.2"
 tokio = "1.43.0"
 solana-sdk = "2.2"
 
