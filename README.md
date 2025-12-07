@@ -42,7 +42,7 @@ Full compressed account lifecycle (create, increment, decrement, reset, close):
 
 - **[zk-id](./zk-id)** - A minimal zk id Solana program that uses zero-knowledge proofs for identity verification with compressed accounts.
 
-### Compressed Token (c-token) Examples
+### cToken Examples
 
 - **[c-token](./c-token/)** - Client examples for compressed tokens (cToken) including:
   - Create compressed mint (cMint) with metadata
