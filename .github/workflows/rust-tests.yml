@@ -30,7 +30,10 @@ jobs:
           - counter/pinocchio
           - account-comparison
           - zk-id
+          - c-token
         include:
+          - example: c-token
+            test-command: cargo test
           - example: basic-operations/native
             package: native-program-burn
           - example: basic-operations/native
@@ -60,8 +63,9 @@ jobs:
       - name: Build and test
         working-directory: ${{ matrix.example }}
         run: |
+          TEST_CMD="${{ matrix.test-command || 'cargo test-sbf' }}"
           if [ -n "${{ matrix.package }}" ]; then
-            cargo test-sbf -p ${{ matrix.package }}
+            $TEST_CMD -p ${{ matrix.package }}
           else
-            cargo test-sbf
+            $TEST_CMD
           fi

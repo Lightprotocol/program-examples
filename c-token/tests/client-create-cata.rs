@@ -4,7 +4,7 @@ use borsh::BorshDeserialize;
 use light_client::indexer::{AddressWithTree, Indexer};
 use light_client::rpc::Rpc;
 use light_ctoken_sdk::ctoken::{
-    derive_ctoken_ata, CreateAssociatedTokenAccount, CreateCMint,
+    derive_ctoken_ata, CreateAssociatedCTokenAccount, CreateCMint,
     CreateCMintParams,
 };
 use light_ctoken_interface::state::CToken;
@@ -29,7 +29,7 @@ async fn test_create_cata_client() {
     let (ata_address, _bump) = derive_ctoken_ata(&owner, &mint);
 
     // Step 4: Build instruction using SDK builder
-    let instruction = CreateAssociatedTokenAccount::new(
+    let instruction = CreateAssociatedCTokenAccount::new(
         payer.pubkey(),
         owner,
         mint,
@@ -60,13 +60,13 @@ pub async fn create_compressed_mint<R: Rpc + Indexer>(
     let output_queue = rpc.get_random_state_tree_info().unwrap().queue;
 
     // Derive compression address
-    let compression_address = light_ctoken_sdk::ctoken::derive_compressed_mint_address(
+    let compression_address = light_ctoken_sdk::ctoken::derive_cmint_compressed_address(
         &mint_signer.pubkey(),
         &address_tree.tree,
     );
 
     let mint_pda =
-        light_ctoken_sdk::ctoken::find_spl_mint_address(&mint_signer.pubkey()).0;
+        light_ctoken_sdk::ctoken::find_cmint_address(&mint_signer.pubkey()).0;
 
     // Get validity proof for the address
     let rpc_result = rpc

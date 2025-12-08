@@ -6,7 +6,10 @@ repository = "https://github.com/Lightprotocol/program-examples"
 license = "Apache-2.0"
 edition = "2021"
 
-# No lib - this is a test-only crate
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "c_token_examples"
+
 [[test]]
 name = "client-create-cmint"
 path = "tests/client-create-cmint.rs"
@@ -24,34 +27,48 @@ name = "client-mint-to-ctoken"
 path = "tests/client-mint-to-ctoken.rs"
 
 [[test]]
+name = "client-close-ctoken"
+path = "tests/client-close-ctoken.rs"
+
+[[test]]
 name = "client-transfer-interface"
 path = "tests/client-transfer-interface.rs"
 
 [[test]]
-name = "client-close-ctoken"
-path = "tests/client-close-ctoken.rs"
+name = "devnet-spl-ctoken-transfer"
+path = "tests/devnet-spl-ctoken-transfer.rs"
 
-[dev-dependencies]
-# Light Protocol dependencies (pinned to specific commit)
-light-ctoken-sdk = { git = "https://github.com/Lightprotocol/light-protocol", rev = "3b811efce9b1fe2a34e9fb4332bb65cf39dc4df1" }
-light-ctoken-interface = { git = "https://github.com/Lightprotocol/light-protocol", rev = "3b811efce9b1fe2a34e9fb4332bb65cf39dc4df1" }
-light-client = { git = "https://github.com/Lightprotocol/light-protocol", rev = "3b811efce9b1fe2a34e9fb4332bb65cf39dc4df1" }
-light-program-test = { git = "https://github.com/Lightprotocol/light-protocol", rev = "3b811efce9b1fe2a34e9fb4332bb65cf39dc4df1", features = ["devenv"] }
-light-test-utils = { git = "https://github.com/Lightprotocol/light-protocol", rev = "3b811efce9b1fe2a34e9fb4332bb65cf39dc4df1", features = ["devenv"] }
+[dependencies]
+# Light Protocol SDK dependencies
+light-ctoken-sdk = "0.2.1"
+light-ctoken-interface = "0.1.1"
+light-sdk = { version = "0.17.1", features = ["v2"] }
 
 # Solana dependencies
-solana-sdk = "2.2"
 solana-program = "2.2"
-
-# SPL dependencies
-anchor-spl = "0.31.1"
-spl-token-2022 = { version = "7.0.0", features = ["no-entrypoint"] }
 
 # Serialization
 borsh = "0.10.4"
 
+[dev-dependencies]
+# Light Protocol test dependencies
+light-program-test = { version = "0.17.1", features = ["v2"] }
+light-client = "0.17.2"
+
+# Solana dependencies
+solana-sdk = "2.2"
+
+# SPL dependencies
+spl-token = "7"
+spl-token-2022 = "7"
+spl-pod = "0.5"
+anchor-spl = "0.31"
+
 # Async runtime
-tokio = { version = "1.36.0", features = ["full"] }
+tokio = { version = "1.36", features = ["full"] }
+
+# Serialization
+serde_json = "1"
 
 [lints.rust.unexpected_cfgs]
 level = "allow"

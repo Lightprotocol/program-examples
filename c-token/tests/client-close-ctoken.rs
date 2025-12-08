@@ -4,7 +4,7 @@ use borsh::BorshDeserialize;
 use light_client::indexer::{AddressWithTree, Indexer};
 use light_client::rpc::Rpc;
 use light_ctoken_sdk::ctoken::{
-    CloseAccount, CreateCMint, CreateCMintParams, CreateCTokenAccount,
+    CloseCTokenAccount, CreateCMint, CreateCMintParams, CreateCTokenAccount,
     CTOKEN_PROGRAM_ID,
 };
 use light_ctoken_interface::state::CToken;
@@ -56,7 +56,7 @@ async fn test_close_ctoken_account() {
     assert_eq!(ctoken_state.amount, 0, "Account balance must be 0 to close");
 
     // Step 5: Build close instruction using SDK builder
-    let close_instruction = CloseAccount::new(
+    let close_instruction = CloseCTokenAccount::new(
         CTOKEN_PROGRAM_ID,
         account.pubkey(),
         payer.pubkey(), // Destination for remaining lamports
@@ -87,13 +87,13 @@ pub async fn create_compressed_mint<R: Rpc + Indexer>(
     let output_queue = rpc.get_random_state_tree_info().unwrap().queue;
 
     // Derive compression address
-    let compression_address = light_ctoken_sdk::ctoken::derive_compressed_mint_address(
+    let compression_address = light_ctoken_sdk::ctoken::derive_cmint_compressed_address(
         &mint_signer.pubkey(),
         &address_tree.tree,
     );
 
     let mint_pda =
-        light_ctoken_sdk::ctoken::find_spl_mint_address(&mint_signer.pubkey()).0;
+        light_ctoken_sdk::ctoken::find_cmint_address(&mint_signer.pubkey()).0;
 
     // Get validity proof for the address
     let rpc_result = rpc
