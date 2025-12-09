@@ -24,9 +24,11 @@ async fn test_close_ctoken_account() {
     // Step 2: Create compressed mint (prerequisite)
     let (mint, _compression_address) = create_compressed_mint(&mut rpc, &payer, 9).await;
 
+
     // Step 3: Create cToken account with 0 balance
     let account = Keypair::new();
     let owner = payer.pubkey();
+
 
     let create_instruction = CreateCTokenAccount::new(
         payer.pubkey(),
@@ -45,6 +47,7 @@ async fn test_close_ctoken_account() {
     .await
     .unwrap();
 
+
     // Step 4: Verify account exists before closing
     let account_before_close = rpc.get_account(account.pubkey()).await.unwrap();
     assert!(
@@ -53,6 +56,10 @@ async fn test_close_ctoken_account() {
     );
 
     let ctoken_state = CToken::deserialize(&mut &account_before_close.unwrap().data[..]).unwrap();
+    println!("\ncToken account state before closing:");
+    println!("  Mint: {:?}", ctoken_state.mint);
+    println!("  Owner: {:?}", ctoken_state.owner);
+    println!("  Amount: {}", ctoken_state.amount);
     assert_eq!(ctoken_state.amount, 0, "Account balance must be 0 to close");
 
     // Step 5: Build close instruction using SDK builder
@@ -66,9 +73,11 @@ async fn test_close_ctoken_account() {
     .unwrap();
 
     // Step 6: Send close transaction
-    rpc.create_and_send_transaction(&[close_instruction], &payer.pubkey(), &[&payer])
+    let close_tx_sig = rpc.create_and_send_transaction(&[close_instruction], &payer.pubkey(), &[&payer])
         .await
         .unwrap();
+
+    println!("\nClose transaction: {}", close_tx_sig);
 
     // Step 7: Verify account is closed
     let account_after_close = rpc.get_account(account.pubkey()).await.unwrap();
