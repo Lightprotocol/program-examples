@@ -29,7 +29,7 @@ async fn test_create_rent_free_mint_with_metadata() {
         .expect("Failed to initialize LightClient");
 
     // Create c-mint with metadata
-    let (mint, compression_address) = create_compressed_mint(&mut rpc, &payer, 9).await;
+    let (_mint, compression_address) = create_compressed_mint(&mut rpc, &payer, 9).await;
 
     println!("Mint Address: {}", bs58::encode(compression_address).into_string());
     println!("Decimals: 9");
