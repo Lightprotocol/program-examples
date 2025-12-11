@@ -1,42 +1,41 @@
-// Test for: client-create-cmint.mdx
-
 use light_client::indexer::{AddressWithTree, Indexer};
 use light_client::rpc::{LightClient, LightClientConfig, Rpc};
 use light_ctoken_sdk::ctoken::{CreateCMint, CreateCMintParams};
 use light_ctoken_interface::instructions::extensions::token_metadata::TokenMetadataInstructionData;
 use light_ctoken_interface::instructions::extensions::ExtensionInstructionData;
 use light_ctoken_interface::state::AdditionalMetadata;
-use solana_sdk::{pubkey::Pubkey, signature::Keypair, signer::Signer};
+use solana_sdk::{bs58, pubkey::Pubkey, signature::Keypair, signer::Signer};
 use std::env;
 use std::fs;
 use serde_json;
 use std::convert::TryFrom;
 
 
+
 #[tokio::test(flavor = "multi_thread")]
 async fn test_create_rent_free_mint_with_metadata() {
-    // Load environment variables from .env file
     dotenvy::dotenv().ok();
 
-    // Initialize LightClient on devnet with Photon indexer
     let keypair_path = env::var("KEYPAIR_PATH")
         .unwrap_or_else(|_| format!("{}/.config/solana/id.json", env::var("HOME").unwrap()));
     let payer = load_keypair(&keypair_path).expect("Failed to load keypair");
-
-    // Get Helius API key from environment
-    let helius_api_key = env::var("HELIUS_API_KEY")
-        .expect("HELIUS_API_KEY environment variable must be set. Create a .env file or set it in your environment.");
+    let api_key = env::var("api_key")
+        .expect("api_key environment variable must be set. Create a .env file or set it in your environment.");
 
     let photon_base = "https://devnet.helius-rpc.com".to_string();
-    let config = LightClientConfig::devnet(Some(photon_base), Some(helius_api_key));
+    let config = LightClientConfig::devnet(Some(photon_base), Some(api_key));
     let mut rpc = LightClient::new_with_retry(config, None)
         .await
         .expect("Failed to initialize LightClient");
 
     // Create c-mint with metadata
-    let (mint, _compression_address) = create_compressed_mint(&mut rpc, &payer, 9).await;
+    let (mint, compression_address) = create_compressed_mint(&mut rpc, &payer, 9).await;
 
-    println!("Created compressed mint: {}", mint);
+    println!("Mint Address: {}", bs58::encode(compression_address).into_string());
+    println!("Decimals: 9");
+    println!("Name: Rent Free Token");
+    println!("Symbol: RFT");
+    println!("URI: https://example.com/metadata.json");
 
 }
 pub async fn create_compressed_mint<R: Rpc + Indexer>(

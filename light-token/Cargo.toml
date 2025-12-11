@@ -9,34 +9,39 @@ edition = "2021"
 [lib]
 crate-type = ["cdylib", "lib"]
 name = "c_token_examples"
+path = "programs/src/lib.rs"
 
 [[test]]
 name = "client-create-cmint"
-path = "tests/client-create-cmint.rs"
+path = "programs/tests/client-create-cmint.rs"
 
 [[test]]
 name = "client-create-ctoken"
-path = "tests/client-create-ctoken.rs"
+path = "programs/tests/client-create-ctoken.rs"
 
 [[test]]
 name = "client-create-cata"
-path = "tests/client-create-cata.rs"
+path = "programs/tests/client-create-cata.rs"
 
 [[test]]
 name = "client-mint-to-ctoken"
-path = "tests/client-mint-to-ctoken.rs"
+path = "programs/tests/client-mint-to-ctoken.rs"
 
 [[test]]
 name = "client-close-ctoken"
-path = "tests/client-close-ctoken.rs"
+path = "programs/tests/client-close-ctoken.rs"
 
 [[test]]
 name = "client-transfer-interface"
-path = "tests/client-transfer-interface.rs"
+path = "programs/tests/client-transfer-interface.rs"
 
 [[test]]
 name = "devnet-spl-ctoken-transfer"
-path = "tests/devnet-spl-ctoken-transfer.rs"
+path = "programs/tests/devnet-spl-ctoken-transfer.rs"
+
+[[test]]
+name = "devnet-client-create-mint"
+path = "programs/tests/devnet-client-create-mint.rs"
 
 [dependencies]
 # Light Protocol SDK dependencies
@@ -52,7 +57,7 @@ borsh = "0.10.4"
 
 [dev-dependencies]
 # Light Protocol test dependencies
-light-program-test = { version = "0.16.0", features = ["v2"] }
+light-program-test = { version = "0.17.1", features = ["v2", "devenv"] }
 light-client = "0.17.2"
 
 # Solana dependencies
@@ -79,3 +84,10 @@ check-cfg = [
     'cfg(target_os, values("solana"))',
     'cfg(feature, values("frozen-abi", "no-entrypoint"))',
 ]
+
+[patch.crates-io]
+light-ctoken-sdk = { path = "../../light-protocol/sdk-libs/ctoken-sdk" }
+light-ctoken-interface = { path = "../../light-protocol/program-libs/ctoken-interface" }
+light-sdk = { path = "../../light-protocol/sdk-libs/sdk" }
+light-program-test = { path = "../../light-protocol/sdk-libs/program-test" }
+light-client = { path = "../../light-protocol/sdk-libs/client" }
