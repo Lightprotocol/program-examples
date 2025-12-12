@@ -1,7 +1,7 @@
 {
-  "name": "c-token-tests",
+  "name": "light-token-tests",
   "version": "1.0.0",
-  "description": "TypeScript tests for c-token SDK examples",
+  "description": "TypeScript tests for light-token SDK examples",
   "type": "module",
   "scripts": {
     "test": "vitest run --reporter=verbose",

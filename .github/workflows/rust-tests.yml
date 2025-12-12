@@ -30,9 +30,9 @@ jobs:
           - counter/pinocchio
           - account-comparison
           - zk-id
-          - c-token
+          - light-token
         include:
-          - example: c-token
+          - example: light-token
             test-command: cargo test
           - example: basic-operations/native
             package: native-program-burn
