@@ -1,5 +1,3 @@
-// Test for: client-mint-to-ctoken.mdx
-
 use borsh::BorshDeserialize;
 use light_client::indexer::{AddressWithTree, Indexer};
 use light_client::rpc::{LightClient, LightClientConfig, Rpc};
@@ -7,57 +5,52 @@ use light_ctoken_sdk::ctoken::{
     CreateCMint, CreateCMintParams, CreateCTokenAccount, MintToCToken, MintToCTokenParams,
 };
 use light_ctoken_interface::instructions::extensions::token_metadata::TokenMetadataInstructionData;
+use solana_sdk::compute_budget::ComputeBudgetInstruction;
 use light_ctoken_interface::instructions::extensions::ExtensionInstructionData;
 use light_ctoken_interface::instructions::mint_action::CompressedMintWithContext;
 use light_ctoken_interface::state::{AdditionalMetadata, CToken, CompressedMint};
+use serde_json;
 use solana_sdk::{bs58, pubkey::Pubkey, signature::Keypair, signer::Signer};
+use std::convert::TryFrom;
 use std::env;
 use std::fs;
-use serde_json;
-use std::convert::TryFrom;
-
 
 #[tokio::test(flavor = "multi_thread")]
-async fn test_create_rent_free_mint_with_metadata() {
-    // Load environment variables from .env file
+async fn test_mint_to_ctoken() {
     dotenvy::dotenv().ok();
 
-    // Initialize LightClient on devnet with Photon indexer
     let keypair_path = env::var("KEYPAIR_PATH")
         .unwrap_or_else(|_| format!("{}/.config/solana/id.json", env::var("HOME").unwrap()));
     let payer = load_keypair(&keypair_path).expect("Failed to load keypair");
+    let mint_authority = payer.pubkey();
 
-    // Get Helius API key from environment
-    let helius_api_key = env::var("HELIUS_API_KEY")
-        .expect("HELIUS_API_KEY environment variable must be set. Create a .env file or set it in your environment.");
+    let api_key = env::var("api_key")
+        .expect("api_key environment variable must be set");
 
-    let photon_base = "https://devnet.helius-rpc.com".to_string();
-    let config = LightClientConfig::devnet(Some(photon_base), Some(helius_api_key));
+    let config = LightClientConfig::devnet(
+        Some("https://devnet.helius-rpc.com".to_string()),
+        Some(api_key),
+    );
     let mut rpc = LightClient::new_with_retry(config, None)
         .await
         .expect("Failed to initialize LightClient");
 
-    // Create c-mint with metadata
+    // Step 1: Create compressed mint with metadata
     let (mint, compression_address) = create_compressed_mint(&mut rpc, &payer, 9).await;
     println!("\n=== Created Compressed Mint ===");
     println!("Mint PDA: {}", mint);
-    println!("Compression Address: {}", bs58::encode(compression_address).into_string());
-    println!("Decimals: 9");
-    println!("Name: Rent Free Token");
-    println!("Symbol: RFT");
-    println!("URI: https://example.com/metadata.json");
+    println!(
+        "Compression Address: {}",
+        bs58::encode(compression_address).into_string()
+    );
 
     // Step 2: Create ctoken account
     let ctoken_account = Keypair::new();
     let owner = payer.pubkey();
-    let create_account_ix = CreateCTokenAccount::new(
-        payer.pubkey(),
-        ctoken_account.pubkey(),
-        mint,
-        owner,
-    )
-    .instruction()
-    .unwrap();
+    let create_account_ix =
+        CreateCTokenAccount::new(payer.pubkey(), ctoken_account.pubkey(), mint, owner)
+            .instruction()
+            .unwrap();
 
     rpc.create_and_send_transaction(
         &[create_account_ix],
@@ -93,7 +86,7 @@ async fn test_create_rent_free_mint_with_metadata() {
     let compressed_mint_with_context = CompressedMintWithContext {
         address: compression_address,
         leaf_index: compressed_mint_account.leaf_index,
-        prove_by_index: true,
+        prove_by_index: false,
         root_index: rpc_result.accounts[0]
             .root_index
             .root_index()
@@ -103,7 +96,7 @@ async fn test_create_rent_free_mint_with_metadata() {
 
     let amount = 1_000_000_000u64; // 1 token with 9 decimals
 
-    // Step 7: Get active output queue for devnet (same pattern as create_compressed_mint)
+    // Step 7: Get active output queue for devnet
     let _ = rpc.get_latest_active_state_trees().await;
     let output_queue = match rpc
         .get_random_state_tree_info()
@@ -133,7 +126,7 @@ async fn test_create_rent_free_mint_with_metadata() {
     let params = MintToCTokenParams::new(
         compressed_mint_with_context,
         amount,
-        payer.pubkey(), // mint_authority
+        mint_authority,
         rpc_result.proof,
     );
 
@@ -142,7 +135,7 @@ async fn test_create_rent_free_mint_with_metadata() {
         params,
         payer.pubkey(),
         compressed_mint_account.tree_info.tree,
-        output_queue,
+        compressed_mint_account.tree_info.queue,
         output_queue,
         vec![ctoken_account.pubkey()],
     )
@@ -150,7 +143,8 @@ async fn test_create_rent_free_mint_with_metadata() {
     .unwrap();
 
     // Step 10: Send transaction
-    rpc.create_and_send_transaction(&[instruction], &payer.pubkey(), &[&payer])
+    let compute_unit_ix = ComputeBudgetInstruction::set_compute_unit_limit(300_000);
+    rpc.create_and_send_transaction(&[compute_unit_ix, instruction], &payer.pubkey(), &[&payer])
         .await
         .unwrap();
     println!("Minted {} tokens to ctoken account", amount);
@@ -169,6 +163,7 @@ async fn test_create_rent_free_mint_with_metadata() {
 
     println!("Successfully minted and verified {} tokens!", amount);
 }
+
 pub async fn create_compressed_mint<R: Rpc + Indexer>(
     rpc: &mut R,
     payer: &Keypair,
@@ -176,7 +171,8 @@ pub async fn create_compressed_mint<R: Rpc + Indexer>(
 ) -> (Pubkey, [u8; 32]) {
     let mint_signer = Keypair::new();
     let address_tree = rpc.get_address_tree_v2();
-    // Ensure state trees are fetched, then pick a valid one via helper
+
+    // Fetch active state trees for devnet
     let _ = rpc.get_latest_active_state_trees().await;
     let output_pubkey = match rpc
         .get_random_state_tree_info()
@@ -202,14 +198,13 @@ pub async fn create_compressed_mint<R: Rpc + Indexer>(
         }
     };
 
-    // Derive address
+    // Derive compression address
     let compression_address = light_ctoken_sdk::ctoken::derive_cmint_compressed_address(
         &mint_signer.pubkey(),
         &address_tree.tree,
     );
 
-    let mint_pda =
-        light_ctoken_sdk::ctoken::find_cmint_address(&mint_signer.pubkey()).0;
+    let mint_pda = light_ctoken_sdk::ctoken::find_cmint_address(&mint_signer.pubkey()).0;
 
     // Get validity proof for the address
     let rpc_result = rpc
@@ -237,8 +232,8 @@ pub async fn create_compressed_mint<R: Rpc + Indexer>(
         extensions: Some(vec![ExtensionInstructionData::TokenMetadata(
             TokenMetadataInstructionData {
                 update_authority: Some(payer.pubkey().to_bytes().into()),
-                name: b"Rent Free Token".to_vec(),
-                symbol: b"RFT".to_vec(),
+                name: b"Example Token".to_vec(),
+                symbol: b"EXT".to_vec(),
                 uri: b"https://example.com/metadata.json".to_vec(),
                 additional_metadata: Some(vec![AdditionalMetadata {
                     key: b"type".to_vec(),

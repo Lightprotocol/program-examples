@@ -195,7 +195,7 @@ pub fn process_create_cmint_with_pda_authority(
     accounts: &[AccountInfo],
     data: CreateCmintData,
 ) -> Result<(), ProgramError> {
-    use crate::mint_to_ctoken::MINT_AUTHORITY_SEED;
+    use crate::mint_to::MINT_AUTHORITY_SEED;
 
     if accounts.len() < 12 {
         return Err(ProgramError::NotEnoughAccountKeys);

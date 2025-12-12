@@ -1,20 +1,20 @@
 #![allow(unexpected_cfgs)]
 
 mod close;
-mod create_ata2;
-mod create_cmint;
+mod create_ata;
+mod create_mint;
 mod create_token_account;
-mod mint_to_ctoken;
+mod mint_to;
 mod transfer;
 mod transfer_interface;
-mod transfer_spl_ctoken;
+mod transfer_spl_to_light_token;
 
 // Re-export all instruction data types
 pub use close::{process_close_account_invoke, process_close_account_invoke_signed};
-pub use create_ata2::{
+pub use create_ata::{
     process_create_ata2_invoke, process_create_ata2_invoke_signed, CreateAta2Data,
 };
-pub use create_cmint::{
+pub use create_mint::{
     process_create_cmint, process_create_cmint_invoke_signed,
     process_create_cmint_with_pda_authority, CreateCmintData, MINT_SIGNER_SEED,
 };
@@ -22,7 +22,7 @@ pub use create_token_account::{
     process_create_token_account_invoke, process_create_token_account_invoke_signed,
     CreateTokenAccountData,
 };
-pub use mint_to_ctoken::{
+pub use mint_to::{
     process_mint_to_ctoken, process_mint_to_ctoken_invoke_signed, MintToCTokenData,
     MINT_AUTHORITY_SEED,
 };
@@ -34,7 +34,7 @@ pub use transfer_interface::{
     process_transfer_interface_invoke, process_transfer_interface_invoke_signed,
     TransferInterfaceData, TRANSFER_INTERFACE_AUTHORITY_SEED,
 };
-pub use transfer_spl_ctoken::{
+pub use transfer_spl_to_light_token::{
     process_ctoken_to_spl_invoke, process_ctoken_to_spl_invoke_signed,
     process_spl_to_ctoken_invoke, process_spl_to_ctoken_invoke_signed, TransferCtokenToSplData,
     TransferSplToCtokenData, TRANSFER_AUTHORITY_SEED,
