@@ -1,0 +1,5 @@
+# Ignore local environment and secrets
+.env
+.env*
+# Ignore build artifacts
+/target/
