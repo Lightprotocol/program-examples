@@ -7,10 +7,9 @@ use borsh::{BorshDeserialize, BorshSerialize};
 use light_macros::pubkey;
 use light_sdk::{
     account::sha::LightAccount,
-    address::v1::derive_address,
-    constants::ADDRESS_TREE_V1,
+    address::v2::derive_address,
     cpi::{
-        v1::{CpiAccounts, LightSystemProgramCpi},
+        v2::{CpiAccounts, LightSystemProgramCpi},
         CpiSigner, InvokeLightSystemProgram, LightCpiInstruction,
     },
     derive_light_cpi_signer,
@@ -18,6 +17,7 @@ use light_sdk::{
     instruction::{account_meta::CompressedAccountMetaBurn, PackedAddressTreeInfo, ValidityProof},
     LightDiscriminator,
 };
+use light_sdk_types::ADDRESS_TREE_V2;
 use solana_program::{
     account_info::AccountInfo, entrypoint, program_error::ProgramError, pubkey::Pubkey,
 };
@@ -87,7 +87,7 @@ fn create(accounts: &[AccountInfo], instruction_data: &[u8]) -> Result<(), Light
         .get_tree_pubkey(&light_cpi_accounts)
         .map_err(|_| ProgramError::NotEnoughAccountKeys)?;
 
-    if address_tree_pubkey.to_bytes() != ADDRESS_TREE_V1 {
+    if address_tree_pubkey.to_bytes() != ADDRESS_TREE_V2 {
         solana_program::msg!("Invalid address tree");
         return Err(LightSdkError::ProgramError(ProgramError::InvalidAccountData));
     }
@@ -100,7 +100,7 @@ fn create(accounts: &[AccountInfo], instruction_data: &[u8]) -> Result<(), Light
 
     let new_address_params = instruction_data
         .address_tree_info
-        .into_new_address_params_packed(address_seed);
+        .into_new_address_params_assigned_packed(address_seed, Some(0));
 
     let mut my_compressed_account = LightAccount::<MyCompressedAccount>::new_init(
         &ID,

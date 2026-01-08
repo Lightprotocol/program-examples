@@ -8,7 +8,6 @@ use light_sdk::cpi::{v2::LightSystemProgramCpi, InvokeLightSystemProgram, LightC
 use light_sdk::{
     account::LightAccount,
     address::v2::derive_address,
-    constants::ADDRESS_TREE_V2,
     cpi::{v2::CpiAccounts, CpiSigner},
     derive_light_cpi_signer,
     instruction::{
@@ -16,6 +15,7 @@ use light_sdk::{
     },
     LightDiscriminator,
 };
+use light_sdk_types::ADDRESS_TREE_V2;
 
 declare_id!("HNqStLMpNuNJqhBF1FbGTKHEFbBLJmq8RdJJmZKWz6jH");
 

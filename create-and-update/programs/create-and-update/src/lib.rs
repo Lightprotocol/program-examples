@@ -5,12 +5,12 @@ use anchor_lang::{prelude::*, AnchorDeserialize, AnchorSerialize};
 use light_sdk::{
     account::LightAccount,
     address::v2::derive_address,
-    constants::ADDRESS_TREE_V2,
     cpi::{v2::CpiAccounts, CpiSigner},
     derive_light_cpi_signer,
     instruction::{account_meta::CompressedAccountMeta, PackedAddressTreeInfo, ValidityProof},
     LightDiscriminator,
 };
+use light_sdk_types::ADDRESS_TREE_V2;
 
 declare_id!("J6K7nvoVpJHfH13zn47vptnZo1JdUGCGSiVmtfkzz9NA");
 

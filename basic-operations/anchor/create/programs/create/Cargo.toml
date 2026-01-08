@@ -19,9 +19,9 @@ idl-build = ["anchor-lang/idl-build", "light-sdk/idl-build"]
 
 [dependencies]
 anchor-lang = "0.31.1"
-light-sdk = { version = "0.17.1", features = ["anchor"] }
+light-sdk = { version = "0.17", features = ["anchor", "v2"] }
 light-hasher = { version = "5.0.0", features = ["solana"] }
-light-sdk-types = { version = "0.17.1", features = ["anchor"] }
+light-sdk-types = { version = "0.17.1", features = ["anchor", "v2"] }
 
 [target.'cfg(not(target_os = "solana"))'.dependencies]
 solana-sdk = "2.2"

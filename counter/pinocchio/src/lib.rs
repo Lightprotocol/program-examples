@@ -3,10 +3,9 @@
 use borsh::{BorshDeserialize, BorshSerialize};
 use light_macros::pubkey_array;
 use light_sdk_pinocchio::{
-    address::v1::derive_address,
-    constants::ADDRESS_TREE_V1,
+    address::v2::derive_address,
     cpi::{
-        v1::{CpiAccounts, LightSystemProgramCpi},
+        v2::{CpiAccounts, LightSystemProgramCpi},
         CpiAccountsConfig, CpiSigner, InvokeLightSystemProgram, LightCpiInstruction,
     },
     derive_light_cpi_signer,
@@ -14,6 +13,7 @@ use light_sdk_pinocchio::{
     instruction::{account_meta::CompressedAccountMeta, PackedAddressTreeInfo, ValidityProof},
     LightAccount, LightDiscriminator, LightHasher,
 };
+use light_sdk_types::ADDRESS_TREE_V2;
 use pinocchio::{
     account_info::AccountInfo, entrypoint, program_error::ProgramError, pubkey::Pubkey,
 };
@@ -175,8 +175,7 @@ pub fn create_counter(
     let signer = accounts.first().ok_or(ProgramError::NotEnoughAccountKeys)?;
 
     let config = CpiAccountsConfig::new(LIGHT_CPI_SIGNER);
-    let cpi_accounts = CpiAccounts::try_new_with_config(signer, &accounts[1..], config)
-        .map_err(to_custom_error_u32)?;
+    let cpi_accounts = CpiAccounts::new_with_config(signer, &accounts[1..], config);
 
     let tree_pubkey = cpi_accounts
         .get_tree_account_info(
@@ -187,7 +186,7 @@ pub fn create_counter(
         .map_err(to_custom_error_u32)?
         .key();
 
-    if *tree_pubkey != ADDRESS_TREE_V1 {
+    if *tree_pubkey != ADDRESS_TREE_V2 {
         pinocchio::log::sol_log("Invalid address tree");
         return Err(ProgramError::InvalidAccountData);
     }
@@ -201,7 +200,7 @@ pub fn create_counter(
 
     let new_address_params = instruction_data
         .address_tree_info
-        .into_new_address_params_packed(address_seed);
+        .into_new_address_params_assigned_packed(address_seed, Some(0));
 
     let mut counter = LightAccount::<CounterAccount>::new_init(
         &program_id,
@@ -239,8 +238,7 @@ pub fn increment_counter(
     counter.value = counter.value.checked_add(1).ok_or(CounterError::Overflow)?;
 
     let config = CpiAccountsConfig::new(LIGHT_CPI_SIGNER);
-    let cpi_accounts = CpiAccounts::try_new_with_config(signer, &accounts[1..], config)
-        .map_err(to_custom_error_u32)?;
+    let cpi_accounts = CpiAccounts::new_with_config(signer, &accounts[1..], config);
 
     LightSystemProgramCpi::new_cpi(LIGHT_CPI_SIGNER, instruction_data.proof)
         .with_light_account(counter)
@@ -271,8 +269,7 @@ pub fn decrement_counter(
         .ok_or(CounterError::Underflow)?;
 
     let config = CpiAccountsConfig::new(LIGHT_CPI_SIGNER);
-    let cpi_accounts = CpiAccounts::try_new_with_config(signer, &accounts[1..], config)
-        .map_err(to_custom_error_u32)?;
+    let cpi_accounts = CpiAccounts::new_with_config(signer, &accounts[1..], config);
 
     LightSystemProgramCpi::new_cpi(LIGHT_CPI_SIGNER, instruction_data.proof)
         .with_light_account(counter)
@@ -302,8 +299,7 @@ pub fn reset_counter(
     counter.value = 0;
 
     let config = CpiAccountsConfig::new(LIGHT_CPI_SIGNER);
-    let cpi_accounts = CpiAccounts::try_new_with_config(signer, &accounts[1..], config)
-        .map_err(to_custom_error_u32)?;
+    let cpi_accounts = CpiAccounts::new_with_config(signer, &accounts[1..], config);
 
     LightSystemProgramCpi::new_cpi(LIGHT_CPI_SIGNER, instruction_data.proof)
         .with_light_account(counter)
@@ -329,8 +325,7 @@ pub fn close_counter(
     .map_err(|e| ProgramError::Custom(u64::from(e) as u32))?;
 
     let config = CpiAccountsConfig::new(LIGHT_CPI_SIGNER);
-    let cpi_accounts = CpiAccounts::try_new_with_config(signer, &accounts[1..], config)
-        .map_err(to_custom_error_u32)?;
+    let cpi_accounts = CpiAccounts::new_with_config(signer, &accounts[1..], config);
 
     LightSystemProgramCpi::new_cpi(LIGHT_CPI_SIGNER, instruction_data.proof)
         .with_light_account(counter)

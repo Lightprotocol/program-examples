@@ -3,13 +3,13 @@
 use anchor_lang::prelude::*;
 use light_sdk::{
     account::LightAccount,
-    address::v1::derive_address,
-    constants::ADDRESS_TREE_V1,
-    cpi::{v1::CpiAccounts, CpiSigner},
+    address::v2::derive_address,
+    cpi::{v2::CpiAccounts, CpiSigner},
     derive_light_cpi_signer,
     instruction::{account_meta::CompressedAccountMeta, PackedAddressTreeInfo, ValidityProof},
     LightDiscriminator, LightHasher,
 };
+use light_sdk_types::ADDRESS_TREE_V2;
 
 #[error_code]
 pub enum CustomError {
@@ -25,7 +25,7 @@ const CPI_SIGNER: CpiSigner =
 #[program]
 pub mod account_comparison {
     use light_sdk::cpi::{
-        v1::LightSystemProgramCpi, InvokeLightSystemProgram, LightCpiInstruction,
+        v2::LightSystemProgramCpi, InvokeLightSystemProgram, LightCpiInstruction,
     };
     use light_sdk::error::LightSdkError;
 
@@ -63,7 +63,7 @@ pub mod account_comparison {
             .get_tree_pubkey(&light_cpi_accounts)
             .map_err(|err| ProgramError::from(LightSdkError::from(err)))?;
 
-        if address_tree_pubkey.to_bytes() != ADDRESS_TREE_V1 {
+        if address_tree_pubkey.to_bytes() != ADDRESS_TREE_V2 {
             msg!("Invalid address tree");
             return Err(ProgramError::InvalidAccountData.into());
         }
@@ -89,7 +89,8 @@ pub mod account_comparison {
         compressed_account.name = name;
         compressed_account.data = [1u8; 128];
 
-        let new_address_params = address_tree_info.into_new_address_params_packed(address_seed);
+        let new_address_params =
+            address_tree_info.into_new_address_params_assigned_packed(address_seed, Some(0));
 
         LightSystemProgramCpi::new_cpi(CPI_SIGNER, proof)
             .with_light_account(compressed_account)?
