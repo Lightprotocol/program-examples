@@ -8,6 +8,7 @@ use light_sdk::cpi::{v2::LightSystemProgramCpi, InvokeLightSystemProgram, LightC
 use light_sdk::{
     account::LightAccount,
     address::v2::derive_address,
+    constants::ADDRESS_TREE_V2,
     cpi::{v2::CpiAccounts, CpiSigner},
     derive_light_cpi_signer,
     instruction::{
@@ -42,11 +43,18 @@ pub mod read_only {
             crate::LIGHT_CPI_SIGNER,
         );
 
+        let address_tree_pubkey = address_tree_info
+            .get_tree_pubkey(&light_cpi_accounts)
+            .map_err(|_| ErrorCode::AccountNotEnoughKeys)?;
+
+        if address_tree_pubkey.to_bytes() != ADDRESS_TREE_V2 {
+            msg!("Invalid address tree");
+            return Err(ProgramError::InvalidAccountData.into());
+        }
+
         let (address, address_seed) = derive_address(
             &[FIRST_SEED, ctx.accounts.signer.key().as_ref()],
-            &address_tree_info
-                .get_tree_pubkey(&light_cpi_accounts)
-                .map_err(|_| ErrorCode::AccountNotEnoughKeys)?,
+            &address_tree_pubkey,
             &crate::ID,
         );
 

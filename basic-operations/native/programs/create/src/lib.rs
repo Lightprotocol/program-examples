@@ -8,6 +8,7 @@ use light_macros::pubkey;
 use light_sdk::{
     account::sha::LightAccount,
     address::v1::derive_address,
+    constants::ADDRESS_TREE_V1,
     cpi::{
         v1::{CpiAccounts, LightSystemProgramCpi},
         CpiSigner, InvokeLightSystemProgram, LightCpiInstruction,
@@ -93,12 +94,19 @@ pub fn create(
 
     let light_cpi_accounts = CpiAccounts::new(signer, &accounts[1..], LIGHT_CPI_SIGNER);
 
+    let address_tree_pubkey = instruction_data
+        .address_tree_info
+        .get_tree_pubkey(&light_cpi_accounts)
+        .map_err(|_| ProgramError::NotEnoughAccountKeys)?;
+
+    if address_tree_pubkey.to_bytes() != ADDRESS_TREE_V1 {
+        solana_program::msg!("Invalid address tree");
+        return Err(ProgramError::InvalidAccountData);
+    }
+
     let (address, address_seed) = derive_address(
         &[b"message", signer.key.as_ref()],
-        &instruction_data
-            .address_tree_info
-            .get_tree_pubkey(&light_cpi_accounts)
-            .map_err(|_| ProgramError::NotEnoughAccountKeys)?,
+        &address_tree_pubkey,
         &ID,
     );
 

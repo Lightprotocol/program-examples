@@ -4,6 +4,7 @@ use borsh::{BorshDeserialize, BorshSerialize};
 use light_macros::pubkey_array;
 use light_sdk_pinocchio::{
     address::v1::derive_address,
+    constants::ADDRESS_TREE_V1,
     cpi::{
         v1::{CpiAccounts, LightSystemProgramCpi},
         CpiAccountsConfig, CpiSigner, InvokeLightSystemProgram, LightCpiInstruction,
@@ -24,11 +25,11 @@ pub const LIGHT_CPI_SIGNER: CpiSigner =
 entrypoint!(process_instruction);
 
 fn to_custom_error<E: Into<u64>>(e: E) -> ProgramError {
-    ProgramError::Custom(u64::from(e.into()) as u32)
+    ProgramError::Custom(e.into() as u32)
 }
 
 fn to_custom_error_u32<E: Into<u32>>(e: E) -> ProgramError {
-    ProgramError::Custom(u32::from(e.into()))
+    ProgramError::Custom(e.into())
 }
 
 #[repr(u8)]
@@ -186,10 +187,15 @@ pub fn create_counter(
         .map_err(to_custom_error_u32)?
         .key();
 
+    if *tree_pubkey != ADDRESS_TREE_V1 {
+        pinocchio::log::sol_log("Invalid address tree");
+        return Err(ProgramError::InvalidAccountData);
+    }
+
     let program_id = Pubkey::from(ID);
     let (address, address_seed) = derive_address(
         &[b"counter", signer.key().as_ref()],
-        &tree_pubkey,
+        tree_pubkey,
         &program_id,
     );
 
