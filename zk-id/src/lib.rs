@@ -53,11 +53,18 @@ pub mod zk_id {
             crate::LIGHT_CPI_SIGNER,
         );
 
+        let address_tree_pubkey = address_tree_info
+            .get_tree_pubkey(&light_cpi_accounts)
+            .map_err(|_| ErrorCode::AccountNotEnoughKeys)?;
+
+        if address_tree_pubkey.to_bytes() != light_sdk::constants::ADDRESS_TREE_V2 {
+            msg!("Invalid address tree");
+            return Err(ProgramError::InvalidAccountData.into());
+        }
+
         let (address, address_seed) = derive_address(
             &[ISSUER, ctx.accounts.signer.key().as_ref()],
-            &address_tree_info
-                .get_tree_pubkey(&light_cpi_accounts)
-                .map_err(|_| ErrorCode::AccountNotEnoughKeys)?,
+            &address_tree_pubkey,
             &crate::ID,
         );
         msg!("address {:?}", address);
@@ -116,11 +123,18 @@ pub mod zk_id {
             .checked_add(1)
             .ok_or(ProgramError::ArithmeticOverflow)?;
 
+        let address_tree_pubkey = address_tree_info
+            .get_tree_pubkey(&light_cpi_accounts)
+            .map_err(|_| ErrorCode::AccountNotEnoughKeys)?;
+
+        if address_tree_pubkey.to_bytes() != light_sdk::constants::ADDRESS_TREE_V2 {
+            msg!("Invalid address tree");
+            return Err(ProgramError::InvalidAccountData.into());
+        }
+
         let (address, address_seed) = derive_address(
             &[CREDENTIAL, credential_pubkey.as_ref()],
-            &address_tree_info
-                .get_tree_pubkey(&light_cpi_accounts)
-                .map_err(|_| ErrorCode::AccountNotEnoughKeys)?,
+            &address_tree_pubkey,
             &crate::ID,
         );
 

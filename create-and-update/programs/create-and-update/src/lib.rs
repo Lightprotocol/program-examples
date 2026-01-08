@@ -5,6 +5,7 @@ use anchor_lang::{prelude::*, AnchorDeserialize, AnchorSerialize};
 use light_sdk::{
     account::LightAccount,
     address::v2::derive_address,
+    constants::ADDRESS_TREE_V2,
     cpi::{v2::CpiAccounts, CpiSigner},
     derive_light_cpi_signer,
     instruction::{account_meta::CompressedAccountMeta, PackedAddressTreeInfo, ValidityProof},
@@ -44,6 +45,12 @@ pub mod create_and_update {
         let address_tree_pubkey = address_tree_info
             .get_tree_pubkey(&light_cpi_accounts)
             .map_err(|_| ErrorCode::AccountNotEnoughKeys)?;
+
+        if address_tree_pubkey.to_bytes() != ADDRESS_TREE_V2 {
+            msg!("Invalid address tree");
+            return Err(ProgramError::InvalidAccountData.into());
+        }
+
         let (address, address_seed) = derive_address(
             &[FIRST_SEED, ctx.accounts.signer.key().as_ref()],
             &address_tree_pubkey,
@@ -86,6 +93,11 @@ pub mod create_and_update {
             .address_tree_info
             .get_tree_pubkey(&light_cpi_accounts)
             .map_err(|_| ErrorCode::AccountNotEnoughKeys)?;
+
+        if new_account_address_tree_pubkey.to_bytes() != ADDRESS_TREE_V2 {
+            msg!("Invalid address tree");
+            return Err(ProgramError::InvalidAccountData.into());
+        }
 
         // Create new compressed account
         let (new_address, new_address_seed) = derive_address(
@@ -199,12 +211,19 @@ pub mod create_and_update {
             crate::LIGHT_CPI_SIGNER,
         );
 
+        let address_tree_pubkey = address_tree_info
+            .get_tree_pubkey(&light_cpi_accounts)
+            .map_err(|_| ErrorCode::AccountNotEnoughKeys)?;
+
+        if address_tree_pubkey.to_bytes() != ADDRESS_TREE_V2 {
+            msg!("Invalid address tree");
+            return Err(ProgramError::InvalidAccountData.into());
+        }
+
         // Create first compressed account
         let (first_address, first_address_seed) = derive_address(
             &[FIRST_SEED, ctx.accounts.signer.key().as_ref()],
-            &address_tree_info
-                .get_tree_pubkey(&light_cpi_accounts)
-                .map_err(|_| ErrorCode::AccountNotEnoughKeys)?,
+            &address_tree_pubkey,
             &crate::ID,
         );
 
@@ -219,9 +238,7 @@ pub mod create_and_update {
         // Create second compressed account
         let (second_address, second_address_seed) = derive_address(
             &[SECOND_SEED, ctx.accounts.signer.key().as_ref()],
-            &address_tree_info
-                .get_tree_pubkey(&light_cpi_accounts)
-                .map_err(|_| ErrorCode::AccountNotEnoughKeys)?,
+            &address_tree_pubkey,
             &crate::ID,
         );
 

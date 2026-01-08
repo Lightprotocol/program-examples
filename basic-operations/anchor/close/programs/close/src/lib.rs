@@ -5,6 +5,7 @@ use anchor_lang::{prelude::*, AnchorDeserialize, AnchorSerialize};
 use light_sdk::{
     account::LightAccount,
     address::v1::derive_address,
+    constants::ADDRESS_TREE_V1,
     cpi::{v1::CpiAccounts, CpiSigner},
     derive_light_cpi_signer,
     instruction::{account_meta::CompressedAccountMeta, PackedAddressTreeInfo, ValidityProof},
@@ -38,11 +39,18 @@ pub mod close {
             crate::LIGHT_CPI_SIGNER,
         );
 
+        let address_tree_pubkey = address_tree_info
+            .get_tree_pubkey(&light_cpi_accounts)
+            .map_err(|_| ErrorCode::AccountNotEnoughKeys)?;
+
+        if address_tree_pubkey.to_bytes() != ADDRESS_TREE_V1 {
+            msg!("Invalid address tree");
+            return Err(ProgramError::InvalidAccountData.into());
+        }
+
         let (address, address_seed) = derive_address(
             &[b"message", ctx.accounts.signer.key().as_ref()],
-            &address_tree_info
-                .get_tree_pubkey(&light_cpi_accounts)
-                .map_err(|_| ErrorCode::AccountNotEnoughKeys)?,
+            &address_tree_pubkey,
             &crate::ID,
         );
 
