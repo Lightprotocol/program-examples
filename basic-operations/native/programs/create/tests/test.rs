@@ -2,7 +2,7 @@ use borsh::{BorshDeserialize, BorshSerialize};
 use light_program_test::{
     program_test::LightProgramTest, AddressWithTree, Indexer, ProgramTestConfig, Rpc, RpcError,
 };
-use light_sdk::address::v1::derive_address;
+use light_sdk::address::v2::derive_address;
 use light_sdk::instruction::{PackedAccounts, SystemAccountMetaConfig};
 use native_program_create::{CreateInstructionData, InstructionType, MyCompressedAccount, ID};
 use solana_sdk::{
@@ -17,7 +17,7 @@ async fn test_create() {
     let mut rpc = LightProgramTest::new(config).await.unwrap();
     let payer = rpc.get_payer().insecure_clone();
 
-    let address_tree_info = rpc.get_address_tree_v1();
+    let address_tree_info = rpc.get_address_tree_v2();
     let address_tree_pubkey = address_tree_info.tree;
 
     // Create compressed account
@@ -49,9 +49,10 @@ async fn test_create() {
     assert_eq!(compressed_account.address.unwrap(), address);
 
     // Deserialize and verify the account data
-    let my_account =
-        MyCompressedAccount::deserialize(&mut compressed_account.data.as_ref().unwrap().data.as_slice())
-            .unwrap();
+    let my_account = MyCompressedAccount::deserialize(
+        &mut compressed_account.data.as_ref().unwrap().data.as_slice(),
+    )
+    .unwrap();
     assert_eq!(my_account.owner, payer.pubkey());
     assert_eq!(my_account.message, "Hello, compressed world!");
 }
@@ -67,7 +68,7 @@ pub async fn create_compressed_account(
     let system_account_meta_config = SystemAccountMetaConfig::new(ID);
     let mut accounts = PackedAccounts::default();
     accounts.add_pre_accounts_signer(payer.pubkey());
-    accounts.add_system_accounts(system_account_meta_config)?;
+    accounts.add_system_accounts_v2(system_account_meta_config)?;
 
     let rpc_result = rpc
         .get_validity_proof(
@@ -96,11 +97,7 @@ pub async fn create_compressed_account(
     let instruction = Instruction {
         program_id: ID,
         accounts: account_metas,
-        data: [
-            &[InstructionType::Create as u8][..],
-            &inputs[..],
-        ]
-        .concat(),
+        data: [&[InstructionType::Create as u8][..], &inputs[..]].concat(),
     };
 
     rpc.create_and_send_transaction(&[instruction], &payer.pubkey(), &[payer])

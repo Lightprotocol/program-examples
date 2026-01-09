@@ -3,7 +3,7 @@ use light_client::indexer::CompressedAccount;
 use light_program_test::{
     program_test::LightProgramTest, Indexer, ProgramTestConfig, Rpc, RpcError,
 };
-use light_sdk::address::v1::derive_address;
+use light_sdk::address::v2::derive_address;
 use light_sdk::instruction::{
     account_meta::CompressedAccountMeta, PackedAccounts, SystemAccountMetaConfig,
 };
@@ -15,13 +15,11 @@ use solana_sdk::{
 
 #[tokio::test]
 async fn test_close() {
-    let config = ProgramTestConfig::new(true, Some(vec![
-        ("native_program_close", ID),
-    ]));
+    let config = ProgramTestConfig::new(true, Some(vec![("native_program_close", ID)]));
     let mut rpc = LightProgramTest::new(config).await.unwrap();
     let payer = rpc.get_payer().insecure_clone();
 
-    let address_tree_info = rpc.get_address_tree_v1();
+    let address_tree_info = rpc.get_address_tree_v2();
     let address_tree_pubkey = address_tree_info.tree;
 
     // Create compressed account
@@ -75,7 +73,7 @@ pub async fn close_compressed_account(
     let system_account_meta_config = SystemAccountMetaConfig::new(ID);
     let mut accounts = PackedAccounts::default();
     accounts.add_pre_accounts_signer(payer.pubkey());
-    accounts.add_system_accounts(system_account_meta_config)?;
+    accounts.add_system_accounts_v2(system_account_meta_config)?;
 
     let hash = compressed_account.hash;
 
@@ -89,9 +87,10 @@ pub async fn close_compressed_account(
         .state_trees
         .unwrap();
 
-    let current_account =
-        MyCompressedAccount::deserialize(&mut compressed_account.data.as_ref().unwrap().data.as_slice())
-            .unwrap();
+    let current_account = MyCompressedAccount::deserialize(
+        &mut compressed_account.data.as_ref().unwrap().data.as_slice(),
+    )
+    .unwrap();
 
     let meta = CompressedAccountMeta {
         tree_info: packed_accounts.packed_tree_infos[0],
@@ -110,11 +109,7 @@ pub async fn close_compressed_account(
     let instruction = Instruction {
         program_id: ID,
         accounts: account_metas,
-        data: [
-            &[InstructionType::Close as u8][..],
-            &inputs[..],
-        ]
-        .concat(),
+        data: [&[InstructionType::Close as u8][..], &inputs[..]].concat(),
     };
 
     rpc.create_and_send_transaction(&[instruction], &payer.pubkey(), &[payer])

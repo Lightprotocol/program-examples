@@ -4,13 +4,13 @@
 use anchor_lang::{prelude::*, AnchorDeserialize, Discriminator};
 use light_sdk::{
     account::LightAccount,
-    address::v1::derive_address,
-    constants::ADDRESS_TREE_V1,
-    cpi::{v1::CpiAccounts, CpiSigner},
+    address::v2::derive_address,
+    cpi::{v2::CpiAccounts, CpiSigner},
     derive_light_cpi_signer,
     instruction::{account_meta::CompressedAccountMeta, PackedAddressTreeInfo, ValidityProof},
     LightDiscriminator, LightHasher,
 };
+use light_sdk_types::ADDRESS_TREE_V2;
 
 declare_id!("GRLu2hKaAiMbxpkAM1HeXzks9YeGuz18SEgXEizVvPqX");
 
@@ -22,7 +22,7 @@ pub mod counter {
 
     use super::*;
     use light_sdk::cpi::{
-        v1::LightSystemProgramCpi, InvokeLightSystemProgram, LightCpiInstruction,
+        v2::LightSystemProgramCpi, InvokeLightSystemProgram, LightCpiInstruction,
     };
 
     pub fn create_counter<'info>(
@@ -46,7 +46,7 @@ pub mod counter {
             .get_tree_pubkey(&light_cpi_accounts)
             .map_err(|_| ErrorCode::AccountNotEnoughKeys)?;
 
-        if address_tree_pubkey.to_bytes() != ADDRESS_TREE_V1 {
+        if address_tree_pubkey.to_bytes() != ADDRESS_TREE_V2 {
             msg!("Invalid address tree");
             return Err(ProgramError::InvalidAccountData.into());
         }
@@ -57,7 +57,8 @@ pub mod counter {
             &crate::ID,
         );
 
-        let new_address_params = address_tree_info.into_new_address_params_packed(address_seed);
+        let new_address_params =
+            address_tree_info.into_new_address_params_assigned_packed(address_seed, Some(0));
 
         let mut counter = LightAccount::<CounterAccount>::new_init(
             &crate::ID,

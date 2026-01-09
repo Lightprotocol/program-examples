@@ -7,10 +7,9 @@ use borsh::{BorshDeserialize, BorshSerialize};
 use light_macros::pubkey;
 use light_sdk::{
     account::sha::LightAccount,
-    address::v1::derive_address,
-    constants::ADDRESS_TREE_V1,
+    address::v2::derive_address,
     cpi::{
-        v1::{CpiAccounts, LightSystemProgramCpi},
+        v2::{CpiAccounts, LightSystemProgramCpi},
         CpiSigner, InvokeLightSystemProgram, LightCpiInstruction,
     },
     derive_light_cpi_signer,
@@ -18,6 +17,7 @@ use light_sdk::{
     instruction::{PackedAddressTreeInfo, ValidityProof},
     LightDiscriminator,
 };
+use light_sdk_types::ADDRESS_TREE_V2;
 use solana_program::{
     account_info::AccountInfo, entrypoint, program_error::ProgramError, pubkey::Pubkey,
 };
@@ -45,9 +45,7 @@ impl TryFrom<u8> for InstructionType {
     }
 }
 
-#[derive(
-    Debug, Default, Clone, BorshSerialize, BorshDeserialize, LightDiscriminator,
-)]
+#[derive(Debug, Default, Clone, BorshSerialize, BorshDeserialize, LightDiscriminator)]
 pub struct MyCompressedAccount {
     pub owner: Pubkey,
     pub message: String,
@@ -78,9 +76,8 @@ pub fn process_instruction(
 
     match discriminator {
         InstructionType::Create => {
-            let instruction_data =
-                CreateInstructionData::try_from_slice(&instruction_data[1..])
-                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+            let instruction_data = CreateInstructionData::try_from_slice(&instruction_data[1..])
+                .map_err(|_| ProgramError::InvalidInstructionData)?;
             create(accounts, instruction_data)
         }
     }
@@ -99,7 +96,7 @@ pub fn create(
         .get_tree_pubkey(&light_cpi_accounts)
         .map_err(|_| ProgramError::NotEnoughAccountKeys)?;
 
-    if address_tree_pubkey.to_bytes() != ADDRESS_TREE_V1 {
+    if address_tree_pubkey.to_bytes() != ADDRESS_TREE_V2 {
         solana_program::msg!("Invalid address tree");
         return Err(ProgramError::InvalidAccountData);
     }
@@ -112,7 +109,7 @@ pub fn create(
 
     let new_address_params = instruction_data
         .address_tree_info
-        .into_new_address_params_packed(address_seed);
+        .into_new_address_params_assigned_packed(address_seed, Some(0));
 
     let mut my_compressed_account = LightAccount::<MyCompressedAccount>::new_init(
         &ID,

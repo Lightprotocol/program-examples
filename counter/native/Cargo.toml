@@ -19,8 +19,8 @@ test-sbf = []
 default = []
 
 [dependencies]
-light-sdk = "0.17.1"
-light-sdk-types = "0.17.1"
+light-sdk = { version = "0.17", features = ["v2"] }
+light-sdk-types = { version = "0.17.1", features = ["v2"] }
 light-hasher = { version = "5.0.0", features = ["solana"] }
 solana-program = "2.2"
 light-macros = "2.2.0"

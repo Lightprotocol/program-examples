@@ -4,13 +4,13 @@
 use anchor_lang::{prelude::*, AnchorDeserialize, AnchorSerialize};
 use light_sdk::{
     account::LightAccount,
-    address::v1::derive_address,
-    constants::ADDRESS_TREE_V1,
-    cpi::{v1::CpiAccounts, CpiSigner},
+    address::v2::derive_address,
+    cpi::{v2::CpiAccounts, CpiSigner},
     derive_light_cpi_signer,
     instruction::{account_meta::CompressedAccountMeta, PackedAddressTreeInfo, ValidityProof},
     LightDiscriminator,
 };
+use light_sdk_types::ADDRESS_TREE_V2;
 
 declare_id!("Cj3DxyqB7wJh511VKexsjKt7Hx1kvPvCBMrbLuL8grKc");
 
@@ -22,7 +22,7 @@ pub mod update {
 
     use super::*;
     use light_sdk::cpi::{
-        v1::LightSystemProgramCpi, InvokeLightSystemProgram, LightCpiInstruction,
+        v2::LightSystemProgramCpi, InvokeLightSystemProgram, LightCpiInstruction,
     };
 
     /// Setup: Creates a compressed account
@@ -43,7 +43,7 @@ pub mod update {
             .get_tree_pubkey(&light_cpi_accounts)
             .map_err(|_| ErrorCode::AccountNotEnoughKeys)?;
 
-        if address_tree_pubkey.to_bytes() != ADDRESS_TREE_V1 {
+        if address_tree_pubkey.to_bytes() != ADDRESS_TREE_V2 {
             msg!("Invalid address tree");
             return Err(ProgramError::InvalidAccountData.into());
         }
@@ -70,7 +70,7 @@ pub mod update {
 
         LightSystemProgramCpi::new_cpi(LIGHT_CPI_SIGNER, proof)
             .with_light_account(my_compressed_account)?
-            .with_new_addresses(&[address_tree_info.into_new_address_params_packed(address_seed)])
+            .with_new_addresses(&[address_tree_info.into_new_address_params_assigned_packed(address_seed, Some(0))])
             .invoke(light_cpi_accounts)?;
 
         Ok(())

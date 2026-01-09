@@ -8,16 +8,20 @@ import {
   confirmTx,
   createRpc,
   defaultTestStateTreeAccounts,
-  deriveAddress,
-  deriveAddressSeed,
-  LightSystemProgram,
+  deriveAddressV2,
+  deriveAddressSeedV2,
+  batchAddressTree,
   PackedAccounts,
   Rpc,
   sleep,
   SystemAccountMetaConfig,
+  featureFlags,
+  VERSION,
 } from "@lightprotocol/stateless.js";
 import { assert } from "chai";
 
+// Force V2 mode by overwriting the featureFlags
+(featureFlags as any).version = VERSION.V2;
 const path = require("path");
 const os = require("os");
 require("dotenv").config();
@@ -44,20 +48,19 @@ describe("test-anchor", () => {
     await sleep(2000);
 
     const outputMerkleTree = defaultTestStateTreeAccounts().merkleTree;
-    const addressTree = defaultTestStateTreeAccounts().addressTree;
-    const addressQueue = defaultTestStateTreeAccounts().addressQueue;
+    const addressTree = new web3.PublicKey(batchAddressTree);
 
     const counterSeed = new TextEncoder().encode("counter");
-    const seed = deriveAddressSeed(
-      [counterSeed, signer.publicKey.toBytes()],
+    const seed = deriveAddressSeedV2([counterSeed, signer.publicKey.toBytes()]);
+    const address = deriveAddressV2(
+      seed,
+      addressTree,
       new web3.PublicKey(program.idl.address)
     );
-    const address = deriveAddress(seed, addressTree);
     // Create counter compressed account.
     await CreateCounterCompressedAccount(
       rpc,
       addressTree,
-      addressQueue,
       address,
       program,
       outputMerkleTree,
@@ -116,7 +119,6 @@ describe("test-anchor", () => {
 async function CreateCounterCompressedAccount(
   rpc: Rpc,
   addressTree: anchor.web3.PublicKey,
-  addressQueue: anchor.web3.PublicKey,
   address: anchor.web3.PublicKey,
   program: anchor.Program<Counter>,
   outputMerkleTree: anchor.web3.PublicKey,
@@ -128,18 +130,18 @@ async function CreateCounterCompressedAccount(
       [
         {
           tree: addressTree,
-          queue: addressQueue,
+          queue: addressTree,
           address: bn(address.toBytes()),
         },
       ]
     );
     const systemAccountConfig = SystemAccountMetaConfig.new(program.programId);
     let remainingAccounts =
-      PackedAccounts.newWithSystemAccounts(systemAccountConfig);
+      PackedAccounts.newWithSystemAccountsV2(systemAccountConfig);
 
     const addressMerkleTreePubkeyIndex =
       remainingAccounts.insertOrGet(addressTree);
-    const addressQueuePubkeyIndex = remainingAccounts.insertOrGet(addressQueue);
+    const addressQueuePubkeyIndex = addressMerkleTreePubkeyIndex;
     const packedAddreesMerkleContext = {
       rootIndex: proofRpcResult.rootIndices[0],
       addressMerkleTreePubkeyIndex,
@@ -194,7 +196,7 @@ async function incrementCounterCompressedAccount(
     );
     const systemAccountConfig = SystemAccountMetaConfig.new(program.programId);
     let remainingAccounts =
-      PackedAccounts.newWithSystemAccounts(systemAccountConfig);
+      PackedAccounts.newWithSystemAccountsV2(systemAccountConfig);
 
     const merkleTreePubkeyIndex = remainingAccounts.insertOrGet(
       counterAccount.treeInfo.tree
@@ -262,7 +264,7 @@ async function deleteCounterCompressedAccount(
     );
     const systemAccountConfig = SystemAccountMetaConfig.new(program.programId);
     let remainingAccounts =
-      PackedAccounts.newWithSystemAccounts(systemAccountConfig);
+      PackedAccounts.newWithSystemAccountsV2(systemAccountConfig);
 
     const merkleTreePubkeyIndex = remainingAccounts.insertOrGet(
       counterAccount.treeInfo.tree

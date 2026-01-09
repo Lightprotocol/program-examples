@@ -19,7 +19,7 @@ pub async fn create_compressed_account(
     let system_account_meta_config = SystemAccountMetaConfig::new(ID);
     let mut accounts = PackedAccounts::default();
     accounts.add_pre_accounts_signer(payer.pubkey());
-    accounts.add_system_accounts(system_account_meta_config)?;
+    accounts.add_system_accounts_v2(system_account_meta_config)?;
 
     let rpc_result = rpc
         .get_validity_proof(

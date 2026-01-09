@@ -4,8 +4,9 @@ use light_client::indexer::CompressedAccount;
 use light_program_test::{
     program_test::LightProgramTest, Indexer, ProgramTestConfig, Rpc, RpcError,
 };
-use light_sdk::instruction::{
-    account_meta::CompressedAccountMeta, PackedAccounts, SystemAccountMetaConfig,
+use light_sdk::{
+    address::v2::derive_address,
+    instruction::{account_meta::CompressedAccountMeta, PackedAccounts, SystemAccountMetaConfig},
 };
 use solana_sdk::{
     instruction::{AccountMeta, Instruction},
@@ -20,8 +21,8 @@ async fn test_close() {
     let mut rpc = LightProgramTest::new(config).await.unwrap();
     let payer = rpc.get_payer().insecure_clone();
 
-    let address_tree_info = rpc.get_address_tree_v1();
-    let (address, _) = light_sdk::address::v1::derive_address(
+    let address_tree_info = rpc.get_address_tree_v2();
+    let (address, _) = derive_address(
         &[b"message", payer.pubkey().as_ref()],
         &address_tree_info.tree,
         &close::ID,
@@ -64,7 +65,7 @@ async fn close_compressed_account(
     let mut remaining_accounts = PackedAccounts::default();
 
     let config = SystemAccountMetaConfig::new(close::ID);
-    remaining_accounts.add_system_accounts(config)?;
+    remaining_accounts.add_system_accounts_v2(config)?;
     let hash = compressed_account.hash;
 
     let rpc_result = rpc
@@ -113,9 +114,9 @@ async fn create_compressed_account(
 ) -> Result<Signature, RpcError> {
     let config = SystemAccountMetaConfig::new(close::ID);
     let mut remaining_accounts = PackedAccounts::default();
-    remaining_accounts.add_system_accounts(config)?;
+    remaining_accounts.add_system_accounts_v2(config)?;
 
-    let address_tree_info = rpc.get_address_tree_v1();
+    let address_tree_info = rpc.get_address_tree_v2();
 
     let rpc_result = rpc
         .get_validity_proof(

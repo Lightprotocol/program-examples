@@ -9,7 +9,7 @@ use light_client::indexer::CompressedAccount;
 use light_program_test::{
     program_test::LightProgramTest, AddressWithTree, Indexer, ProgramTestConfig, Rpc, RpcError,
 };
-use light_sdk::address::v1::derive_address;
+use light_sdk::address::v2::derive_address;
 use light_sdk::instruction::{
     account_meta::CompressedAccountMeta, PackedAccounts, SystemAccountMetaConfig,
 };
@@ -25,7 +25,7 @@ async fn test_counter() {
     let mut rpc = LightProgramTest::new(config).await.unwrap();
     let payer = rpc.get_payer().insecure_clone();
 
-    let address_tree_info = rpc.get_address_tree_v1();
+    let address_tree_info = rpc.get_address_tree_v2();
     let address_tree_pubkey = address_tree_info.tree;
 
     // Create counter
@@ -116,7 +116,7 @@ pub async fn create_counter(
     let system_account_meta_config = SystemAccountMetaConfig::new(counter::ID);
     let mut accounts = PackedAccounts::default();
     accounts.add_pre_accounts_signer(payer.pubkey());
-    accounts.add_system_accounts(system_account_meta_config)?;
+    accounts.add_system_accounts_v2(system_account_meta_config)?;
 
     let rpc_result = rpc
         .get_validity_proof(
@@ -164,7 +164,7 @@ pub async fn increment_counter(
     let system_account_meta_config = SystemAccountMetaConfig::new(counter::ID);
     let mut accounts = PackedAccounts::default();
     accounts.add_pre_accounts_signer(payer.pubkey());
-    accounts.add_system_accounts(system_account_meta_config)?;
+    accounts.add_system_accounts_v2(system_account_meta_config)?;
 
     let hash = compressed_account.hash;
 
@@ -219,7 +219,7 @@ pub async fn decrement_counter(
     let system_account_meta_config = SystemAccountMetaConfig::new(counter::ID);
     let mut accounts = PackedAccounts::default();
     accounts.add_pre_accounts_signer(payer.pubkey());
-    accounts.add_system_accounts(system_account_meta_config)?;
+    accounts.add_system_accounts_v2(system_account_meta_config)?;
 
     let hash = compressed_account.hash;
 
@@ -274,7 +274,7 @@ pub async fn reset_counter(
     let system_account_meta_config = SystemAccountMetaConfig::new(counter::ID);
     let mut accounts = PackedAccounts::default();
     accounts.add_pre_accounts_signer(payer.pubkey());
-    accounts.add_system_accounts(system_account_meta_config)?;
+    accounts.add_system_accounts_v2(system_account_meta_config)?;
 
     let hash = compressed_account.hash;
 
@@ -329,7 +329,7 @@ pub async fn close_counter(
     let system_account_meta_config = SystemAccountMetaConfig::new(counter::ID);
     let mut accounts = PackedAccounts::default();
     accounts.add_pre_accounts_signer(payer.pubkey());
-    accounts.add_system_accounts(system_account_meta_config)?;
+    accounts.add_system_accounts_v2(system_account_meta_config)?;
 
     let hash = compressed_account.hash;
 
