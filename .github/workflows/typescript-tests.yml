@@ -30,6 +30,7 @@ jobs:
           - create-and-update
           - basic-operations/anchor/burn
           - basic-operations/anchor/create
+          - basic-operations/anchor/create-nullifier
           - basic-operations/anchor/update
           - basic-operations/anchor/close
           - basic-operations/anchor/reinit
