@@ -15,9 +15,8 @@ Advanced Implementation: distributor - Distributes SPL tokens, uses compressed P
 
 ## Cost
 
-|  | simple-claim | distributor | Regular |
-|--|-------------:|------------:|--------:|
-| Setup | ~0.5 SOL | ~0.002 SOL | ~0.002 SOL |
-| Per-claim | ~0.00001 SOL | ~0.00005 SOL | ~0.002 SOL |
-| 100k claims | ~1 SOL | ~5 SOL | ~200 SOL |
-| **Total** | **~1.5 SOL** | **~5 SOL** | **~200 SOL** |
+|                          |    Per-claim | 100k claims |
+|--------------------------|-------------:|------------:|
+| simple-claim             | ~0.00001 SOL |      ~1 SOL |
+| distributor (compressed) | ~0.00005 SOL |      ~5 SOL |
+| distributor (original)   |   ~0.002 SOL |    ~200 SOL |
