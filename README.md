@@ -4,7 +4,7 @@
 
 ## Examples
 
-## Airdrop Claim Reference Implementations
+### Airdrop Claim Reference Implementations
 
 * **Basic**: [**simple-claim**](https://github.com/Lightprotocol/program-examples-airdrop-implementations/simple-claim) - Distributes compressed tokens that get decompressed to SPL on claim.
 * **Advanced**: [**merkle-distributor**](https://github.com/Lightprotocol/distributor) - Distributes SPL tokens, uses compressed PDAs to track claims with linear vesting, partial claims, clawback and admin controls.
