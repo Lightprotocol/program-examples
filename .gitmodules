@@ -1,0 +1,3 @@
+[submodule "airdrop-implementations/distributor"]
+	path = airdrop-implementations/distributor
+	url = https://github.com/Lightprotocol/distributor.git
