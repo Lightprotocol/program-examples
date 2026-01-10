@@ -1,0 +1,53 @@
+[package]
+name = "light-token-examples"
+version = "0.1.0"
+description = "Client examples for compressed tokens (cToken) using Light Protocol"
+repository = "https://github.com/Lightprotocol/program-examples"
+license = "Apache-2.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "light_token_examples"
+path = "src/lib.rs"
+
+[dependencies]
+# Light Protocol SDK dependencies
+light-ctoken-sdk = "0.2.1"
+light-ctoken-interface = "0.1.1"
+light-sdk = { version = "0.17.1", features = ["v2"] }
+
+# Solana dependencies
+solana-program = "2.2"
+
+# Serialization
+borsh = "0.10.4"
+
+[dev-dependencies]
+# Light Protocol client
+light-client = "0.17.2"
+
+# Solana dependencies
+solana-sdk = "2.2"
+
+# SPL dependencies
+spl-token = "7"
+spl-token-2022 = "7"
+spl-pod = "0.5"
+anchor-spl = "0.31"
+
+# Async runtime
+tokio = { version = "1.36", features = ["full"] }
+
+# Serialization
+serde_json = "1"
+
+# Environment variables
+dotenvy = "0.15"
+
+[lints.rust.unexpected_cfgs]
+level = "allow"
+check-cfg = [
+    'cfg(target_os, values("solana"))',
+    'cfg(feature, values("frozen-abi", "no-entrypoint"))',
+]

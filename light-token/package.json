@@ -1,0 +1,28 @@
+{
+  "name": "light-token-tests",
+  "version": "1.0.0",
+  "description": "TypeScript tests for light-token SDK examples",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run --reporter=verbose",
+    "test:create-mint": "vitest run tests/create-mint.test.ts --reporter=verbose",
+    "test:mint-to": "vitest run tests/mint-to.test.ts --reporter=verbose",
+    "test:create-ata": "vitest run tests/create-ata-interface.test.ts --reporter=verbose",
+    "test:transfer": "vitest run tests/transfer-interface.test.ts --reporter=verbose"
+  },
+  "dependencies": {
+    "@lightprotocol/compressed-token": "file:../../light-protocol/js/compressed-token",
+    "@lightprotocol/hasher.rs": "file:../../light-protocol/js/hasher.rs",
+    "@lightprotocol/stateless.js": "file:../../light-protocol/js/stateless.js",
+    "@solana/spl-token": "0.4.8",
+    "@solana/web3.js": "1.98.4"
+  },
+  "devDependencies": {
+    "@coral-xyz/borsh": "^0.29.0",
+    "@types/bn.js": "^5.1.5",
+    "@types/node": "^22.5.5",
+    "bn.js": "^5.2.1",
+    "typescript": "^5.6.2",
+    "vitest": "^2.1.1"
+  }
+}
