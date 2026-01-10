@@ -13,10 +13,11 @@ Advanced Implementation: distributor - Distributes SPL tokens, uses compressed P
 | Clawback | No | Yes |
 | Admin controls | No | Yes |
 
-## Cost (100k recipients)
+## Cost
 
 |  | simple-claim | distributor | Regular |
 |--|-------------:|------------:|--------:|
 | Setup | ~0.5 SOL | ~0.002 SOL | ~0.002 SOL |
-| Per-claim | ~1 SOL | ~5 SOL | ~200 SOL |
+| Per-claim | ~0.00001 SOL | ~0.00005 SOL | ~0.002 SOL |
+| 100k claims | ~1 SOL | ~5 SOL | ~200 SOL |
 | **Total** | **~1.5 SOL** | **~5 SOL** | **~200 SOL** |
