@@ -1,0 +1,28 @@
+{
+  "name": "lowlevel-zk-circuits",
+  "version": "1.0.0",
+  "description": "ZK circuits for compressed account Merkle proof verification",
+  "main": "index.js",
+  "scripts": {
+    "setup": "./scripts/setup.sh",
+    "clean": "./scripts/clean.sh",
+    "compile": "circom circuits/compressed_account_merkle_proof.circom --r1cs --wasm --sym -o build",
+    "generate-zkey": "snarkjs groth16 setup build/compressed_account_merkle_proof.r1cs pot/powersOfTau28_hez_final_16.ptau build/circuit_0000.zkey",
+    "contribute": "snarkjs zkey contribute build/circuit_0000.zkey build/circuit_final.zkey --name='First contribution' -v",
+    "export-vkey": "snarkjs zkey export verificationkey build/circuit_final.zkey build/verification_key.json",
+    "test": "mocha test/**/*.test.js --timeout 100000"
+  },
+  "dependencies": {
+    "circomlib": "2.0.5",
+    "circomlibjs": "0.1.7"
+  },
+  "devDependencies": {
+    "@types/chai": "^4.3.4",
+    "@types/mocha": "^10.0.1",
+    "chai": "^4.3.7",
+    "circom_tester": "^0.0.19",
+    "mocha": "^10.8.2",
+    "snarkjs": "^0.7.0",
+    "typescript": "^5.0.4"
+  }
+}
