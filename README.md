@@ -6,8 +6,8 @@
 
 ### Airdrop Claim Reference Implementations
 
-* **Basic**: [**simple-claim**](https://github.com/Lightprotocol/program-examples-airdrop-implementations/simple-claim) - Distributes compressed tokens that get decompressed to SPL on claim.
-* **Advanced**: [**merkle-distributor**](https://github.com/Lightprotocol/distributor) - Distributes SPL tokens, uses compressed PDAs to track claims with linear vesting, partial claims, clawback and admin controls.
+* **Basic**: [**simple-claim**](https://github.com/Lightprotocol/program-examples-airdrop-implementations/simple-claim) - Distributes compressed tokens that get decompressed to SPL on claim with cliff.
+* **Advanced**: [**merkle-distributor**](https://github.com/Lightprotocol/distributor) - Distributes SPL tokens, uses compressed PDAs to track claims with linear vesting, partial claims and clawback. Based on Jito Merkle distributor and optimized with rent-free PDAs.
 
 For simple client side distribution visit [this example](https://github.com/Lightprotocol/example-token-distribution).
 
