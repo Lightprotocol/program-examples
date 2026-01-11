@@ -30,6 +30,7 @@ jobs:
           - counter/pinocchio
           - account-comparison
           - zk-id
+          - airdrop-implementations/simple-claim/program
         include:
           - example: basic-operations/native
             package: native-program-burn
