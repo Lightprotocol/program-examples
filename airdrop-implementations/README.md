@@ -20,5 +20,3 @@ Advanced Implementation: [distributor](./distributor) - Distributes SPL tokens, 
 | simple-claim             | ~0.00001 SOL |      ~1 SOL |
 | distributor (compressed) | ~0.00005 SOL |      ~5 SOL |
 | distributor (original)   |   ~0.002 SOL |    ~200 SOL |
-
-```
