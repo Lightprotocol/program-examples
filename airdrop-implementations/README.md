@@ -12,6 +12,7 @@ Advanced Implementation: [distributor](./distributor) - Distributes SPL tokens, 
 | Partial claims | No | Yes |
 | Clawback | No | Yes |
 | Admin controls | No | Yes |
+| Frontend | None | REST API + CLI |
 
 ## Cost
 
