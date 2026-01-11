@@ -2,7 +2,7 @@
 
 Simple Implementation: [simple-claim](./simple-claim) - Distributes compressed tokens that get decompressed on claim
 
-Advanced Implementation: [distributor](./distributor) - Distributes SPL tokens, uses compressed PDAs to track claims
+Advanced Implementation: [distributor](./distributor) - Distributes SPL tokens, uses compressed PDAs to track claims. Based on jito Merkle distributor.
 
 ## Quick comparison
 
