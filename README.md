@@ -41,7 +41,7 @@ Full compressed account lifecycle (create, increment, decrement, reset, close):
 - **[read-only](./read-only)** - Create a new compressed account and read it onchain.
 
 
-### Compare uncompressed vs compressed accounts Program
+### Compare Program with Solana vs Compressed Accounts
 
 - **[account-comparison](./account-comparison/)** - Compare compressed vs regular Solana accounts.
 
