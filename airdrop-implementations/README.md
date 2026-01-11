@@ -8,7 +8,7 @@ Advanced Implementation: [distributor](./distributor) - Distributes SPL tokens, 
 
 |  | simple-claim | distributor |
 |--|--------------|-------------|
-| Time-lock | Slot-based (all-or-nothing) | Timestamp-based (linear vesting) |
+| Vesting | Cliff at Slot X	 | Linear Vesting |
 | Partial claims | No | Yes |
 | Clawback | No | Yes |
 | Admin controls | No | Yes |
