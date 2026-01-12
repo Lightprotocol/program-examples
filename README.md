@@ -12,7 +12,7 @@
 For simple client side distribution visit [this example](https://github.com/Lightprotocol/example-token-distribution).
 
 ### Basic Operations
-
+- **[create-nullifier](./basic-operations/anchor/create-nullifier)** - Basic Anchor example to create nullifiers.
 - **[basic-operations/anchor](./basic-operations/anchor/)** - Anchor program with Rust and TypeScript tests
 - **[basic-operations/native-rust](./basic-operations/native-rust/)** - Native Solana program with light-sdk and Rust tests.
 
