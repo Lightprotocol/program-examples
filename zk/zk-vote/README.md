@@ -1,28 +1,42 @@
 
-# ZK-ID Program
+# ZK-Vote Program
 
-A minimal zk id Solana program that uses zero-knowledge proofs for identity verification with compressed accounts.
-Note this is an example how to verify a zk inclusion proof, not a full zk identity protocol and not production-ready.
-For examples of zk identity protocols, see:
-- [Iden3](https://github.com/iden3) - Full decentralized identity protocol with claims, revocation, and recovery
-- [Semaphore](https://github.com/semaphore-protocol/semaphore) - Privacy-preserving group signaling with nullifiers
+An anonymous voting Solana program that uses zero-knowledge proofs with compressed accounts. Voters prove credential ownership without revealing their identity. Vote choices are public, voter identity is hidden.
+
+Note: This is an example of ZK-based anonymous voting, not a production-ready voting system.
 
 ## Program Instructions
 
-### 1. `create_issuer`
-Creates a compressed account for an issuer entity who can credential other users, storing their pubkey and initializing their credential issuance counter.
+### 1. `create_poll`
 
-### 2. `add_credential`
-Issues a new credential by creating a compressed account that binds a user's pubkey to an issuer, incrementing the issuer's credential counter in the process.
+Creates a Poll PDA with a question and 3 voting options. The authority who creates the poll can register voters.
 
-### 3. `zk_verify_credential`
-Verifies a zero-knowledge proof of credential ownership using Groth16 verification and creates an encrypted event account to store the verification result on-chain.
+### 2. `register_voter`
 
-**Properties:**
-- Credential verification is private. The credential is not exposed during zk proof verification.
-  (The transaction payer is not private, for full privacy a relayer or freshly funded keypair should be used.)
-- Each credential can only be used once per `verification_id`. (The event account address serves as a nullifier.)
-- Only the credential owner can produce a valid proof.
+Registers an eligible voter by creating a compressed VoterCredential. Only the poll authority can register voters. The credential stores a Poseidon-hashed poll ID and credential pubkey for ZK compatibility.
+
+### 3. `vote`
+
+Submits a vote with a ZK proof of credential ownership. The proof verifies:
+
+- The voter owns a valid credential for this poll
+- The nullifier is correctly derived from the credential
+
+Creates a VoteRecord at a nullifier-derived address (prevents double-voting) and increments the poll's vote count.
+
+### 4. `close_poll`
+
+Closes the poll and emits the winner.
+
+## Privacy Properties
+
+| Property | Value |
+|----------|-------|
+| Voter identity | Hidden (ZK proof hides which credential was used) |
+| Vote choice | Public (visible on-chain) |
+| Vote counts | Public (updated in real-time) |
+| Double-vote prevention | Nullifier-derived address (cryptographic) |
+| Trust model | Trustless (cryptographic proofs, no MPC nodes) |
 
 ## Requirements
 
@@ -51,7 +65,7 @@ npm install -g snarkjs
 
 ## Setup
 
-Before building and testing, you need to compile the ZK circuits and generate the proving/verification keys:
+Before building and testing, compile the ZK circuits and generate the proving/verification keys:
 
 ```bash
 # Run the setup script to compile circuits and generate keys
@@ -71,25 +85,30 @@ This script will:
 # Build the program
 cargo build-sbf
 
-# Run tests and see tx
+# Run tests
 RUST_BACKTRACE=1 cargo test-sbf -- --nocapture
 ```
 
 ## Structure
 
 ```
-zk-id/
-├── circuits/                 # Circom circuit definitions
-│   └── compressed_account_merkle_proof.circom
-├── build/                   # Generated circuit artifacts (after setup)
+zk-vote/
+├── circuits/
+│   ├── vote_proof.circom           # Main voting circuit (26 levels for v1 trees)
+│   ├── credential.circom           # Keypair derivation (Poseidon hash)
+│   ├── merkle_proof.circom         # Merkle proof verification
+│   └── compressed_account.circom   # Account hash computation
+├── build/                          # Generated circuit artifacts (after setup)
 │   ├── verification_key.json
 │   └── *.zkey, *.wasm, etc.
 ├── scripts/
-│   └── setup.sh            # Circuit compilation and setup script
+│   └── setup.sh                    # Circuit compilation and setup script
 ├── src/
-│   └── lib.rs             # Solana program implementation
+│   ├── lib.rs                      # Program with Poll, VoterCredential, VoteRecord
+│   └── verifying_key.rs            # Groth16 verification key
 └── tests/
-    └── test.rs            # Integration tests
+    ├── circuit.rs                  # Circuit unit tests
+    └── test.rs                     # Integration tests
 ```
 
 ## Cleaning Build Artifacts

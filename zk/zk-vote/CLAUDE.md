@@ -320,14 +320,3 @@ cargo test
 - circomlib (Poseidon, comparators)
 - snarkjs (circuit compilation, trusted setup)
 
-## Comparison: Arcium Election vs ZK Vote
-
-| Aspect | Arcium Election | ZK Vote |
-|--------|-----------------|---------|
-| Vote storage | Encrypted ciphertexts | Plaintext counts |
-| Voter privacy | MPC encryption | ZK proof (nullifier) |
-| Tally visibility | Hidden until reveal | Public real-time |
-| Double-vote prevention | MPC state tracking | Nullifier address |
-| Trust model | MPC nodes honest | Cryptographic (trustless) |
-| Reveal mechanism | Authority calls reveal | Always visible |
-| Compute model | Homomorphic-like | Proof verification |

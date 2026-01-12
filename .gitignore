@@ -8,3 +8,10 @@ test-ledger
 .claude
 build
 pot
+zk/zk-infra.md
+
+# ZK circuit artifacts (sensitive - do not commit)
+*.zkey
+*.ptau
+*.r1cs
+*_js/

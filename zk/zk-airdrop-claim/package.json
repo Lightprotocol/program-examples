@@ -1,0 +1,14 @@
+{
+  "name": "anonymous-airdrop-circuits",
+  "version": "1.0.0",
+  "description": "ZK circuits for anonymous airdrop claims",
+  "scripts": {
+    "setup": "./scripts/setup.sh",
+    "clean": "./scripts/clean.sh"
+  },
+  "dependencies": {
+    "circomlib": "^2.0.5",
+    "snarkjs": "^0.7.0"
+  }
+}
+

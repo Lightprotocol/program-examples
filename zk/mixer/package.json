@@ -1,0 +1,28 @@
+{
+  "name": "mixer-zk-circuits",
+  "version": "1.0.0",
+  "description": "ZK circuits for Solana mixer with Light Protocol integration",
+  "main": "index.js",
+  "scripts": {
+    "setup": "./scripts/setup.sh",
+    "clean": "./scripts/clean.sh",
+    "compile": "circom circuits/withdraw.circom --r1cs --wasm --sym -o build",
+    "generate-zkey": "snarkjs groth16 setup build/withdraw.r1cs pot/powersOfTau28_hez_final_16.ptau build/circuit_0000.zkey",
+    "contribute": "snarkjs zkey contribute build/circuit_0000.zkey build/withdraw_final.zkey --name='First contribution' -v",
+    "export-vkey": "snarkjs zkey export verificationkey build/withdraw_final.zkey build/verification_key.json"
+  },
+  "dependencies": {
+    "circomlib": "2.0.5",
+    "circomlibjs": "0.1.7"
+  },
+  "devDependencies": {
+    "@types/chai": "^4.3.4",
+    "@types/mocha": "^10.0.1",
+    "chai": "^4.3.7",
+    "circom_tester": "^0.0.19",
+    "mocha": "^10.8.2",
+    "snarkjs": "^0.7.0",
+    "typescript": "^5.0.4"
+  }
+}
+

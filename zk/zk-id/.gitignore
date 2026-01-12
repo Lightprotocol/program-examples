@@ -1,0 +1,10 @@
+node_modules/
+build/
+pot/
+*.sym
+*.r1cs
+*.wasm
+*.zkey
+*.wtns
+proof.json
+public.json

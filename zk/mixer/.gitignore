@@ -1,0 +1,55 @@
+# Dependencies
+node_modules
+
+# Build outputs
+build
+dist
+out
+*.tgz
+target
+.next
+
+# Anchor / Solana
+.anchor
+anchor/target
+test-ledger
+*.so
+
+# Logs
+logs
+*.log
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Caches
+.eslintcache
+.cache
+*.tsbuildinfo
+
+# IDEs
+.idea
+.vscode
+.cursor
+
+# OS
+.DS_Store
+
+# Lock files (bun only)
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# ZK artifacts
+pot/
+*.ptau
+*.zkey
+*.wtns
+*.r1cs
+*.sym
+
+# Keypairs
+*-keypair.json
+*.keypair.json
