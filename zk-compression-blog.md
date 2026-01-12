@@ -1,11 +1,13 @@
 # ZK Compression for ZK Applications
 
-Every transaction on Solana is public. This lack of privacy prevents mainstream adoption of many use cases.
+Every transaction on Solana is public. This lack of privacy prevents mainstream adoption for many use cases.
 
-Zero knowledge proofs allow to build private applications in Solana programs, such as private transactions, private voting, and private identity verification.
+Zero knowledge proofs allow to build privacy into Solana programs, such as private transactions, private voting, and private identity verification.
 
-The key building blocks for private Solana programs are: Zero Knowledge Proofs (ZKPs) to prove application logic privately, Poseidon Merkle Trees to store data in a format that can be efficiently proven in a ZK circuit, and Nullifiers to prevent double spending.
-Let's dive in.
+The key building blocks for private Solana programs are:
+1. Zero Knowledge Proofs (ZKPs) to prove application logic privately.
+2. Poseidon Merkle Trees to store data in a format that can be efficiently proven in a ZK circuit.
+3. Nullifiers to prevent double spending.
 
 ### Zero Knowledge Proofs
 Zero knowledge proofs allow to prove ownership of data and application logic without revealing the data itself.
@@ -22,11 +24,11 @@ A Poseidon Merkle tree is a binary tree where each node is the hash of its child
 Poseidon is designed for ZK circuits - it uses fewer constraints than SHA256, making proofs faster and cheaper to generate.
 
 ### Nullifier
-A nullifier is a hash derived from your secret and the leaf you're spending.
-When you spend, you publish the nullifier. The contract stores it in a set.
+A nullifier is a hash derived from your secret and the leaf the transaction is using.
+When you use private state (stored in a Merkle tree leaf), you publish the nullifier. The program stores it in a set.
 If anyone tries to spend the same leaf again, the nullifier would match one already stored, so the transaction fails.
-But here's the key: the nullifier reveals nothing about which leaf was spent.
-Different secrets produce different nullifiers, so observers can't link a nullifier back to its source leaf.
+The nullifier reveals nothing about which leaf was spent.
+Different state produces different nullifiers, so observers can't link a nullifier back to its source leaf.
 
 ## Zk Id example
 
@@ -70,7 +72,6 @@ The credential private key never touches the blockchain. Only the user knows it.
     |  - watches chain |  <----------------------  |  [credential leaves]   |
     |  - builds tree   |                           |                        |
     +------------------+                           +------------------------+
-
 ```
 
 The issuer registers once, then creates credentials for users. Each credential is a compressed account containing the issuer's pubkey and the user's credential pubkey. The account is Poseidon-hashed and stored as a leaf in the state tree. The user's private key never touches the chain.
@@ -122,26 +123,26 @@ The user fetches a Merkle proof from the indexer, computes a nullifier from thei
 
 The indexer watches the blockchain and maintains a local copy of the Merkle tree. Users query it for Merkle proofs. The indexer sees which addresses exist but cannot link them to specific credentials.
 
-## Implementation Design Choices
+## Implementation
 
-A zk Solana program similar to zk-id requires a Merkle tree, nullifier storage, and an indexer for the Merkle tree.
+Building a ZK program on Solana requires a Merkle tree to store state, a way to track nullifiers, and an indexer to serve Merkle proofs.
 
-**Compressed accounts as credentials**: Store credential data in Poseidon-hashed compressed accounts. The account data becomes a leaf in Zk compression's 26-level Merkle tree. Standard Solana RPCs serve Merkle proofs.
+**Nullifier storage: PDAs vs compressed addresses**
 
-**Compressed addresses as nullifiers**: Derive the event account address from the nullifier hash. Addresses can only be created once. Attempting to create a duplicate fails automatically.
+PDAs are the straightforward choice. Derive an address from the nullifier hash, create an account there. If the account exists, the nullifier was used. The cost is ~899k lamports per nullifier for rent exemption.
 
-The zk-id program combines both patterns. `add_credential` stores credentials as Poseidon-hashed compressed accounts. `zk_verify_credential` creates event accounts at nullifier-derived addresses.
+Compressed addresses work the same way but cost ~10k lamports. The tradeoff: you need an additional ZK proof to create the account and a CPI to the Light system program. If you're already generating a ZK proof for your application logic, the marginal cost of the extra proof is low. If not, PDAs are simpler.
 
-Design choices for your own ZK Solana Program:
-1. Merkle tree storage:
-  Light's state trees with RPC indexing, or a custom sparse Merkle tree
-2. Nullifier storage: compressed addresses (10k lamports) or PDAs (899k lamports)
-3. Proof generation: snarkjs (TypeScript), mopro (mobile), or ark-circom (Rust)
+**Merkle tree: custom vs state trees**
+
+A custom sparse Merkle tree gives you full control. You design the leaf structure and proof format to match your circuit exactly. The cost: you build and run your own indexer to track the tree and serve Merkle proofs.
+
+State trees handle indexing for you. Standard Solana RPCs serve Merkle proofs. The tradeoff: your circuit must prove inclusion of your data inside the compressed account structure, a Poseidon hash of account fields plus metadata. This adds constraints to your circuit but eliminates infrastructure overhead.
 
 ## Tools & Resources
 
 **Circuits**
-- **circom** - Domain-specific language for writing ZK constraints
+- **circom** - Domain-specific language for writing ZK circuits
 - **circomlib** - Standard library (Poseidon hash, comparators, binary operations)
 - **noir** - Rust-like circuit language
 - **ark-works** - Rust cryptography library for circuits
@@ -151,6 +152,6 @@ Design choices for your own ZK Solana Program:
 - **circomlibjs** - Offchain implementations of circomlib functions
 - **groth16-solana** - Verifies Groth16 proofs onchain (~200k compute units)
 
-**Light Protocol**
+**Zk compression**
 - **light-hasher** - Poseidon/SHA256 implementations matching circuit behavior
 - **light-sdk** - Compressed accounts, state trees, address derivation
