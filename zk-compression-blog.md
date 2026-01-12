@@ -2,7 +2,7 @@
 
 Every transaction on Solana is public. This lack of privacy prevents mainstream adoption for many use cases.
 
-Zero knowledge proofs allow to build privacy into Solana programs, such as private transactions, private voting, and private identity verification.
+Zero knowledge proofs enable privacy in Solana programs, such as private transactions, private voting, and private identity verification.
 
 The key building blocks for private Solana programs are:
 1. Zero Knowledge Proofs (ZKPs) to prove application logic privately.
@@ -10,9 +10,13 @@ The key building blocks for private Solana programs are:
 3. Nullifiers to prevent double spending.
 
 ### Zero Knowledge Proofs
-Zero knowledge proofs allow to prove ownership of data and application logic without revealing the data itself.
-To start you need to select a proof system. Different proof systems trade off proof size, proving time, and setup requirements. Groth16 produces small proofs (256 bytes, compressed 128 bytes) and verifies cheaply onchain, but requires a trusted setup per circuit. Plonk, Halo2, and Plonky3 skip the trusted setup and prove faster, but produce larger proofs. For Solana, Groth16's small proof size and fast verification (~200k compute units) make it the practical choice.
-A ZK proof is generated from a circuit - a program that defines what you're proving. Circuits are written in languages like circom or noir. Every circuit has two types of inputs:
+Zero knowledge proofs enable proving ownership of data and application logic without revealing the data itself.
+First, select a proof system.
+Different proof systems trade off proof size, proving time, and setup requirements. Groth16 produces small proofs (256 bytes, compressed 128 bytes) and verifies cheaply onchain, but requires a trusted setup (TODO: add reference) per circuit.
+Other established proof systems avoid trusted setups or prove faster, but produce larger proofs (kilobytes instead of bytes).
+For Solana, Groth16's small proof size and fast verification (~200k compute units) make it the practical choice.
+A ZK proof is generated from a circuit - a program that defines what you're proving.
+Circuits are written in languages like circom or noir. Every circuit has two types of inputs:
 1. Private inputs - the secret data only the prover knows.
 2. Public inputs - values visible to the verifier that anchor the proof to onchain state.
 
@@ -21,7 +25,32 @@ For example, in a private KYC program, the private input is your credential, the
 ### Poseidon Merkle Tree
 
 A Poseidon Merkle tree is a binary tree where each node is the hash of its children.
-Poseidon is designed for ZK circuits - it uses fewer constraints than SHA256, making proofs faster and cheaper to generate.
+Poseidon is designed for ZK circuits - it uses fewer constraints (TODO: add reference) than SHA256, making proofs faster and cheaper to generate.
+
+**Merkle tree: custom vs state trees**
+
+A custom sparse Merkle tree gives you full control. You design the leaf structure and proof format to match your circuit exactly. The tradeoff: you build and run your own indexer to track the tree and serve Merkle proofs.
+
+State trees handle indexing for you. Standard Solana RPCs serve Merkle proofs. The tradeoff: your circuit must prove inclusion of your data inside the compressed account (accounts stored in Poseidon Merkle trees with Solana RPC support) structure. This adds constraints to your circuit but eliminates infrastructure overhead.
+
+```
+Compressed Account Hash:
++----------------------------------------------------------+
+|  Poseidon(                                               |
+|    owner_hash,                                           |
+|    leaf_index,                                           |
+|    merkle_tree_pubkey,                                   |
+|    address,                                              |
+|    discriminator,                                        |
+|    data_hash  <-- developer-defined, hash anything here  |
+|  )                                                       |
++----------------------------------------------------------+
+```
+
+The `data_hash` is entirely yours. Hash whatever structure your application needs. The outer fields are protocol overhead, but they don't limit what you store inside.
+
+Note, for offchain privacy a user client should fetch a complete (sub)tree not Merkle proof from an indexer. If only onchain privacy is sufficient fetching Merkle proofs from an indexer is more efficient.
+
 
 ### Nullifier
 A nullifier is a hash derived from your secret and the leaf the transaction is using.
@@ -30,17 +59,34 @@ If anyone tries to spend the same leaf again, the nullifier would match one alre
 The nullifier reveals nothing about which leaf was spent.
 Different state produces different nullifiers, so observers can't link a nullifier back to its source leaf.
 
+**Nullifier storage: PDAs vs compressed addresses**
+
+PDAs are the straightforward choice. Derive an address from the nullifier hash, create an account there. If the account exists, the nullifier was used. The cost is ~899k lamports per nullifier for rent exemption.
+
+Compressed addresses work the same way but cost ~10k lamports. The tradeoff: you need an additional ZK proof to create the account and a CPI to the Light system program. If you're already generating a ZK proof for your application logic, the marginal cost of the extra proof is low. If not, PDAs are simpler.
+
+
 ## Zk Id example
+
+zk-id is a proof of concept credential system built with zk compression and the following tools:
+
+| Component | Implementation |
+|-----------|----------------|
+| Merkle leaves | compressed accounts (light-sdk) |
+| Nullifiers | compressed addresses (light-sdk) |
+| Circuit | circom |
+| Proof generation | circom-prover (Rust) |
+| On-chain verification | groth16-solana |
 
 ### Creating a Credential
 
 An issuer registers with the system by calling `create_issuer`. This creates a compressed account storing the issuer's public key and a credential counter.
 
-The issuer then calls `add_credential` for each user. The user generates a credential keypair: a private key (random 248-bit value) and a public key (Poseidon hash of the private key). The issuer creates a compressed account containing:
+The issuer then calls `add_credential` for each user. The user generates a credential keypair: a private key (random 248-bit value, sized to fit the BN254 field) and a public key (Poseidon hash of the private key). The issuer creates a compressed account containing:
 - The issuer's public key
 - The user's credential public key
 
-The account uses Poseidon hashing. This stores the credential as a leaf in a 26-level Merkle tree. The tree root lives onchain. The indexer maintains a full copy of the tree.
+The account uses Poseidon hashing. This stores the credential as a leaf in a 26-level Merkle tree (supporting ~67 million leaves). The tree root lives onchain. An indexer (a server that indexes Solana transactions, in this case leaves) maintains a full copy of the tree.
 
 The credential private key never touches the blockchain. Only the user knows it. The public key is a one-way hash, so even though the credential account is onchain, no one can reverse it to obtain the private key.
 
@@ -89,7 +135,7 @@ The ZK circuit takes the private key as private input. Public inputs include the
 
 The user submits the proof and nullifier to `zk_verify_credential`. The program verifies the Groth16 proof against the onchain root. It creates an event account at an address derived from the nullifier and verification_id.
 
-The address derivation is the double-spend check. Compressed addresses can only be created once. If the nullifier was already used for this verification_id, the address exists, and the transaction fails.
+The address derivation is the double-spend check. Compressed addresses can only be created once (the Light system program rejects duplicates). If the nullifier was already used for this verification_id, the address exists, and the transaction fails.
 
 Same credential, different verification_id means different nullifier, different address. A credential can verify across multiple contexts. Within any single context, exactly once.
 
@@ -123,23 +169,7 @@ The user fetches a Merkle proof from the indexer, computes a nullifier from thei
 
 The indexer watches the blockchain and maintains a local copy of the Merkle tree. Users query it for Merkle proofs. The indexer sees which addresses exist but cannot link them to specific credentials.
 
-## Implementation
-
-Building a ZK program on Solana requires a Merkle tree to store state, a way to track nullifiers, and an indexer to serve Merkle proofs.
-
-**Nullifier storage: PDAs vs compressed addresses**
-
-PDAs are the straightforward choice. Derive an address from the nullifier hash, create an account there. If the account exists, the nullifier was used. The cost is ~899k lamports per nullifier for rent exemption.
-
-Compressed addresses work the same way but cost ~10k lamports. The tradeoff: you need an additional ZK proof to create the account and a CPI to the Light system program. If you're already generating a ZK proof for your application logic, the marginal cost of the extra proof is low. If not, PDAs are simpler.
-
-**Merkle tree: custom vs state trees**
-
-A custom sparse Merkle tree gives you full control. You design the leaf structure and proof format to match your circuit exactly. The cost: you build and run your own indexer to track the tree and serve Merkle proofs.
-
-State trees handle indexing for you. Standard Solana RPCs serve Merkle proofs. The tradeoff: your circuit must prove inclusion of your data inside the compressed account structure, a Poseidon hash of account fields plus metadata. This adds constraints to your circuit but eliminates infrastructure overhead.
-
-## Tools & Resources
+## Resources
 
 **Circuits**
 - **circom** - Domain-specific language for writing ZK circuits
