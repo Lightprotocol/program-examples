@@ -8,3 +8,7 @@ test-ledger
 .claude
 build
 pot
+
+# ZK examples - TypeScript tests not ready
+zk/**/*.ts
+zk/**/tsconfig.json

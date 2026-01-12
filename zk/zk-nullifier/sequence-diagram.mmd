@@ -1,0 +1,17 @@
+sequenceDiagram
+    participant U as User
+    participant C as Client
+    participant P as Program
+    participant L as Light Protocol
+
+    U->>C: secret + verification_id
+    C->>C: nullifier = Poseidon(vid, secret)
+    C->>C: proof = Groth16.prove(...)
+    C->>P: create_nullifier(proof, vid, nullifier)
+    P->>P: Groth16.verify(proof)
+    P->>L: derive_address(nullifier, vid)
+    L-->>P: address
+    P->>L: create_account(address)
+    L-->>P: success/fail
+    P-->>U: tx result
+

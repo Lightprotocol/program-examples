@@ -67,11 +67,13 @@ This script will:
 
 ## Build and Test
 
+**Build:**
 ```bash
-# Build the program
 cargo build-sbf
+```
 
-# Run tests and see tx
+**Rust tests** (full ZK verification flow):
+```bash
 RUST_BACKTRACE=1 cargo test-sbf -- --nocapture
 ```
 
@@ -89,7 +91,7 @@ zk-id/
 ├── src/
 │   └── lib.rs             # Solana program implementation
 └── tests/
-    └── test.rs            # Integration tests
+    └── test.rs            # Rust integration tests
 ```
 
 ## Cleaning Build Artifacts

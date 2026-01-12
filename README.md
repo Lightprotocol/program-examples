@@ -12,16 +12,18 @@
 For simple client side distribution visit [this example](https://github.com/Lightprotocol/example-token-distribution).
 
 ### Basic Operations
-- **[create-nullifier](./basic-operations/anchor/create-nullifier)** - Basic Anchor example to create nullifiers.
-- **[basic-operations/anchor](./basic-operations/anchor/)** - Anchor program with Rust and TypeScript tests
-- **[basic-operations/native-rust](./basic-operations/native-rust/)** - Native Solana program with light-sdk and Rust tests.
 
-Basic Operations include:
-- **create** - Initialize a new compressed account.
-- **update** - Modify data in an existing compressed account.
-- **close** - Clear account data and preserve its address.
-- **reinit** - Reinitialize a closed account with the same address.
-- **burn** - Permanently delete a compressed account.
+- **[create-nullifier](./basic-operations/anchor/create-nullifier)** - Basic Anchor example to create nullifiers for payments.
+- **create** - Initialize a new compressed account
+  - [Anchor](./basic-operations/anchor/create) | [Native](./basic-operations/native/programs/create)
+- **update** - Modify data in an existing compressed account
+  - [Anchor](./basic-operations/anchor/update) | [Native](./basic-operations/native/programs/update)
+- **close** - Clear account data and preserve its address
+  - [Anchor](./basic-operations/anchor/close) | [Native](./basic-operations/native/programs/close)
+- **reinit** - Reinitialize a closed account with the same address
+  - [Anchor](./basic-operations/anchor/reinit) | [Native](./basic-operations/native/programs/reinit)
+- **burn** - Permanently delete a compressed account
+  - [Anchor](./basic-operations/anchor/burn) | [Native](./basic-operations/native/programs/burn)
 
 ### Counter Program
 
@@ -45,9 +47,16 @@ Full compressed account lifecycle (create, increment, decrement, reset, close):
 
 - **[account-comparison](./account-comparison/)** - Compare compressed vs regular Solana accounts.
 
-### zk-id Program
+### ZK Programs
 
-- **[zk-id](./zk-id)** - A minimal zk id Solana program that uses zero-knowledge proofs for identity verification with compressed accounts.
+**Full Examples:**
+
+- **[zk-id](./zk/zk-id)** - Identity verification using Groth16 proofs. Issuers create credentials; users prove ownership without revealing the credential.
+
+**Basic Examples:**
+
+- **[zk-nullifier](./zk/zk-nullifier)** - Creates one or four nullifiers. Uses Groth16 proofs and compressed accounts.
+- **[zk-merkle-proof](./zk/zk-merkle-proof)** - Creates compressed accounts and verifies with Groth16 proofs (without nullifier).
 
   
 ## Light Protocol dependencies
