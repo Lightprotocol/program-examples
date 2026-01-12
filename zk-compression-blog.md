@@ -24,59 +24,47 @@ For example, in a private KYC program, the private input is your credential, the
 
 ### Poseidon Merkle Tree
 
-A Poseidon Merkle tree is a binary tree where each node is the hash of its children.
+Merkle trees store zk application state.
+Specifically, a Poseidon Merkle tree is a binary tree where each node is the hash of its children.
 Poseidon is designed for ZK circuits - it uses fewer constraints (TODO: add reference) than SHA256, making proofs faster and cheaper to generate.
 
-**Merkle tree: custom vs state trees**
+**Merkle trees on Solana:**
 
-A custom sparse Merkle tree gives you full control. You design the leaf structure and proof format to match your circuit exactly. The tradeoff: you build and run your own indexer to track the tree and serve Merkle proofs.
+A **custom sparse Merkle tree** gives you full control. You design the leaf structure and proof format to match your circuit exactly. Create Solana accounts with your program to store a sparse Merkle tree and its roots.
+The tradeoff: you build and run your own indexer to track the tree and serve Merkle proofs.
 
-State trees handle indexing for you. Standard Solana RPCs serve Merkle proofs. The tradeoff: your circuit must prove inclusion of your data inside the compressed account (accounts stored in Poseidon Merkle trees with Solana RPC support) structure. This adds constraints to your circuit but eliminates infrastructure overhead.
-
-```
-Compressed Account Hash:
-+----------------------------------------------------------+
-|  Poseidon(                                               |
-|    owner_hash,                                           |
-|    leaf_index,                                           |
-|    merkle_tree_pubkey,                                   |
-|    address,                                              |
-|    discriminator,                                        |
-|    data_hash  <-- developer-defined, hash anything here  |
-|  )                                                       |
-+----------------------------------------------------------+
-```
-
-The `data_hash` is entirely yours. Hash whatever structure your application needs. The outer fields are protocol overhead, but they don't limit what you store inside.
+**Zk compression state Merkle trees** Solana RPCs handle indexing for you and serve Merkle proofs. The Light Protocol programs create and maintain Poseidon state Merkle trees for you in Solana accounts. Once a state Merkle tree fills up the protocol creates a new one. 
+The tradeoff: your circuit must prove inclusion of your data inside the compressed account structure. Compressed accounts are stored as hashes in Poseidon Merkle trees with Solana RPC support. This adds constraints to your circuit but RPCs index the Merkle tree for you.
 
 Note, for offchain privacy a user client should fetch a complete (sub)tree not Merkle proof from an indexer. If only onchain privacy is sufficient fetching Merkle proofs from an indexer is more efficient.
 
 
 ### Nullifier
-A nullifier is a hash derived from your secret and the leaf the transaction is using.
+Nullifiers prevent double spending.
+In detail, a nullifier is a hash derived from your secret and the leaf the transaction is using.
 When you use private state (stored in a Merkle tree leaf), you publish the nullifier. The program stores it in a set.
 If anyone tries to spend the same leaf again, the nullifier would match one already stored, so the transaction fails.
 The nullifier reveals nothing about which leaf was spent.
 Different state produces different nullifiers, so observers can't link a nullifier back to its source leaf.
 
-**Nullifier storage: PDAs vs compressed addresses**
+**Nullifiers on Solana:**
 
-PDAs are the straightforward choice. Derive an address from the nullifier hash, create an account there. If the account exists, the nullifier was used. The cost is ~899k lamports per nullifier for rent exemption.
+**PDAs** are a straightforward choice. Derive an address from the nullifier hash, create an account there. If the account exists, the nullifier was used. The cost is ~899k lamports per nullifier for rent exemption.
 
-Compressed addresses work the same way but cost ~10k lamports. The tradeoff: you need an additional ZK proof to create the account and a CPI to the Light system program. If you're already generating a ZK proof for your application logic, the marginal cost of the extra proof is low. If not, PDAs are simpler.
+**Compressed addresses** work the same way but cost ~10k lamports. The tradeoff: you need an additional ZK proof to create the account and a CPI to the Light system program. If you're already generating a ZK proof for your application logic, the marginal cost of the extra proof is low. If not, PDAs are simpler.
 
 
 ## Zk Id example
 
-zk-id is a proof of concept credential system built with zk compression and the following tools:
+[zk-id](https://github.com/Lightprotocol/program-examples/tree/main/zk-id) is a proof of concept credential system built with zk compression and the following tools:
 
 | Component | Implementation |
 |-----------|----------------|
-| Merkle leaves | compressed accounts (light-sdk) |
-| Nullifiers | compressed addresses (light-sdk) |
-| Circuit | circom |
-| Proof generation | circom-prover (Rust) |
-| On-chain verification | groth16-solana |
+| Merkle leaves | [compressed accounts](https://github.com/Lightprotocol/program-examples/blob/main/zk-id/src/lib.rs#L141) (light-sdk) |
+| Nullifiers | [compressed addresses](https://github.com/Lightprotocol/program-examples/blob/main/zk-id/src/lib.rs#L192) (light-sdk) |
+| Circuit | [circom](https://github.com/Lightprotocol/program-examples/tree/main/zk-id/circuits) |
+| Proof generation | [circom-prover](https://github.com/Lightprotocol/program-examples/blob/main/zk-id/tests/test.rs#L575) (Rust) |
+| On-chain verification | [groth16-solana](https://github.com/Lightprotocol/program-examples/blob/main/zk-id/src/lib.rs#L269) |
 
 ### Creating a Credential
 
@@ -185,3 +173,22 @@ The indexer watches the blockchain and maintains a local copy of the Merkle tree
 **Zk compression**
 - **light-hasher** - Poseidon/SHA256 implementations matching circuit behavior
 - **light-sdk** - Compressed accounts, state trees, address derivation
+
+## Appendix
+
+1. Compressed Account Hashing:
+```
+Compressed Account Hash:
++----------------------------------------------------------+
+|  Poseidon(                                               |
+|    owner_hash,                                           |
+|    leaf_index,                                           |
+|    merkle_tree_pubkey,                                   |
+|    address,                                              |
+|    discriminator,                                        |
+|    data_hash  <-- developer-defined, hash anything here  |
+|  )                                                       |
++----------------------------------------------------------+
+```
+
+The `data_hash` is entirely yours. Hash whatever structure your application needs. The outer fields are protocol overhead, but they don't limit what you store inside.
