@@ -25,8 +25,8 @@ pub const NULLIFIER_PREFIX: &[u8] = b"nullifier";
 // Max nullifiers per tx: 1 (single) or 4 (batch)
 pub const BATCH_SIZE: usize = 4;
 
-pub mod verifying_key;
-pub mod batch_verifying_key;
+pub mod nullifier_1;
+pub mod nullifier_batch_4;
 
 #[program]
 pub mod zk_nullifier {
@@ -80,7 +80,7 @@ pub mod zk_nullifier {
             &proof_b,
             &proof_c,
             &public_inputs,
-            &crate::verifying_key::VERIFYINGKEY,
+            &crate::nullifier_1::VERIFYINGKEY,
         )
         .map_err(|e| {
             let code: u32 = e.into();
@@ -169,7 +169,7 @@ pub mod zk_nullifier {
             &proof_b,
             &proof_c,
             &public_inputs,
-            &crate::batch_verifying_key::VERIFYINGKEY,
+            &crate::nullifier_batch_4::VERIFYINGKEY,
         )
         .map_err(|e| {
             let code: u32 = e.into();
