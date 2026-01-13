@@ -60,7 +60,7 @@ echo ""
 
 # Single nullifier circuit
 echo -e "${BLUE}[5/9]${NC} Compiling nullifier.circom..."
-circom circuits/nullifier.circom \
+circom circuits/nullifier_main.circom \
     --r1cs --wasm --sym -o build
 echo -e "${GREEN}✓${NC} Single circuit compiled"
 echo ""

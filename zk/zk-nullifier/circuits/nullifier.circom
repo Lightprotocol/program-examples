@@ -14,4 +14,3 @@ template Nullifier() {
     nullifier === hasher.out;
 }
 
-component main { public [verification_id, nullifier] } = Nullifier();
