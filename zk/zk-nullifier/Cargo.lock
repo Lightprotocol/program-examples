@@ -8803,7 +8803,6 @@ name = "zk-nullifier"
 version = "0.1.0"
 dependencies = [
  "anchor-lang",
- "blake3",
  "borsh 0.10.4",
  "circom-prover",
  "groth16-solana",

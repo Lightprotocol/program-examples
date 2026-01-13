@@ -13,7 +13,6 @@ test-sbf = []
 idl-build = ["anchor-lang/idl-build"]
 
 [dependencies]
-blake3 = "=1.5.5"
 anchor-lang = "0.31.1"
 borsh = "0.10.4"
 light-sdk = { version = "0.17.1", features = ["anchor"] }

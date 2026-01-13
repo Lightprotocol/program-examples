@@ -1,7 +1,7 @@
 #![allow(unexpected_cfgs)]
 #![allow(deprecated)]
 
-use anchor_lang::{prelude::*, AnchorDeserialize, AnchorSerialize};
+use anchor_lang::prelude::*;
 use borsh::{BorshDeserialize, BorshSerialize};
 use groth16_solana::groth16::Groth16Verifier;
 use light_hasher::to_byte_array::ToByteArray;
