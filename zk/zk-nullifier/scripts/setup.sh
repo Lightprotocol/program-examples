@@ -59,57 +59,57 @@ fi
 echo ""
 
 # Single nullifier circuit
-echo -e "${BLUE}[5/9]${NC} Compiling nullifier.circom..."
-circom circuits/nullifier_main.circom \
+echo -e "${BLUE}[5/9]${NC} Compiling nullifier_1.circom..."
+circom circuits/nullifier_1.circom \
     --r1cs --wasm --sym -o build
 echo -e "${GREEN}✓${NC} Single circuit compiled"
 echo ""
 
-echo -e "${BLUE}[6/9]${NC} Generating nullifier zkey..."
+echo -e "${BLUE}[6/9]${NC} Generating nullifier_1 zkey..."
 npx snarkjs groth16 setup \
-    build/nullifier.r1cs \
+    build/nullifier_1.r1cs \
     "$PTAU_FILE" \
-    build/nullifier_0000.zkey
+    build/nullifier_1_0000.zkey
 
 RANDOM_ENTROPY=$(head -c 32 /dev/urandom | xxd -p -c 256)
 npx snarkjs zkey contribute \
-    build/nullifier_0000.zkey \
-    build/nullifier_final.zkey \
+    build/nullifier_1_0000.zkey \
+    build/nullifier_1_final.zkey \
     --name="contribution" -v -e="$RANDOM_ENTROPY"
 
 npx snarkjs zkey export verificationkey \
-    build/nullifier_final.zkey \
-    build/verification_key.json
+    build/nullifier_1_final.zkey \
+    build/nullifier_1_verification_key.json
 echo -e "${GREEN}✓${NC} Single nullifier zkey done"
 echo ""
 
 # Batch nullifier circuit (4 nullifiers)
-echo -e "${BLUE}[7/9]${NC} Compiling batchnullifier.circom..."
-circom circuits/batchnullifier.circom \
+echo -e "${BLUE}[7/9]${NC} Compiling nullifier_4.circom..."
+circom circuits/nullifier_4.circom \
     --r1cs --wasm --sym -o build
 echo -e "${GREEN}✓${NC} Batch circuit compiled"
 echo ""
 
-echo -e "${BLUE}[8/9]${NC} Generating batchnullifier zkey..."
+echo -e "${BLUE}[8/9]${NC} Generating nullifier_4 zkey..."
 npx snarkjs groth16 setup \
-    build/batchnullifier.r1cs \
+    build/nullifier_4.r1cs \
     "$PTAU_FILE" \
-    build/batchnullifier_0000.zkey
+    build/nullifier_4_0000.zkey
 
 RANDOM_ENTROPY=$(head -c 32 /dev/urandom | xxd -p -c 256)
 npx snarkjs zkey contribute \
-    build/batchnullifier_0000.zkey \
-    build/batchnullifier_final.zkey \
+    build/nullifier_4_0000.zkey \
+    build/nullifier_4_final.zkey \
     --name="contribution" -v -e="$RANDOM_ENTROPY"
 
 npx snarkjs zkey export verificationkey \
-    build/batchnullifier_final.zkey \
-    build/batch_verification_key.json
+    build/nullifier_4_final.zkey \
+    build/nullifier_4_verification_key.json
 echo -e "${GREEN}✓${NC} Batch nullifier zkey done"
 echo ""
 
 echo -e "${BLUE}[9/9]${NC} Cleanup intermediate files..."
-rm -f build/nullifier_0000.zkey build/batchnullifier_0000.zkey
+rm -f build/nullifier_1_0000.zkey build/nullifier_4_0000.zkey
 echo -e "${GREEN}✓${NC} Cleanup done"
 echo ""
 
@@ -118,11 +118,11 @@ echo -e "${GREEN}Setup Complete!${NC}"
 echo -e "${GREEN}======================================${NC}"
 echo ""
 echo "Single nullifier:"
-echo "  - build/nullifier_final.zkey"
-echo "  - build/verification_key.json"
+echo "  - build/nullifier_1_final.zkey"
+echo "  - build/nullifier_1_verification_key.json"
 echo ""
 echo "Batch nullifier (4x):"
-echo "  - build/batchnullifier_final.zkey"
-echo "  - build/batch_verification_key.json"
+echo "  - build/nullifier_4_final.zkey"
+echo "  - build/nullifier_4_verification_key.json"
 echo ""
 echo "Next: cargo build-sbf && cargo test-sbf"
