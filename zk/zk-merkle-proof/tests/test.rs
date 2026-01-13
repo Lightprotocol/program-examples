@@ -16,7 +16,7 @@ use solana_sdk::{
     signature::{Keypair, Signature, Signer},
 };
 use std::collections::HashMap;
-use zk_merkle_proof::DATA_ACCOUNT;
+use zk_merkle_proof::ZK_ACCOUNT;
 
 #[link(name = "circuit", kind = "static")]
 extern "C" {}
@@ -40,7 +40,7 @@ async fn test_create_and_verify_account() {
     let address_tree_info = rpc.get_address_tree_v2();
 
     let (account_address, _) = derive_address(
-        &[DATA_ACCOUNT, &data_hash],
+        &[ZK_ACCOUNT, &data_hash],
         &address_tree_info.tree,
         &zk_merkle_proof::ID,
     );

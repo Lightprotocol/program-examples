@@ -22,7 +22,7 @@ use zk_nullifier::{BATCH_SIZE, NULLIFIER_PREFIX};
 #[link(name = "circuit_batch", kind = "static")]
 extern "C" {}
 
-rust_witness::witness!(batchnullifier);
+rust_witness::witness!(nullifier4);
 
 #[tokio::test]
 async fn test_create_batch_nullifier() {
@@ -191,7 +191,7 @@ fn generate_batch_zk_proof(
     nullifiers: &[[u8; 32]; BATCH_SIZE],
     secrets: &[[u8; 32]; BATCH_SIZE],
 ) -> light_compressed_account::instruction_data::compressed_proof::CompressedProof {
-    let zkey_path = "./build/batchnullifier_final.zkey".to_string();
+    let zkey_path = "./build/nullifier_4_final.zkey".to_string();
 
     let mut proof_inputs = HashMap::new();
     proof_inputs.insert(
@@ -214,7 +214,7 @@ fn generate_batch_zk_proof(
     let circuit_inputs = serde_json::to_string(&proof_inputs).unwrap();
     let proof = CircomProver::prove(
         ProofLib::Arkworks,
-        WitnessFn::RustWitness(batchnullifier_witness),
+        WitnessFn::RustWitness(nullifier4_witness),
         circuit_inputs,
         zkey_path.clone(),
     )

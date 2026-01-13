@@ -1,6 +1,6 @@
-# Merkle Proof Circuit
+# Compressed Account Merkle Proof Circuit
 
-Zero-knowledge circuit that proves a compressed account exists in a Merkle tree without revealing private account details.
+Zero-knowledge circuit that proves ownership of a compressed account in a Merkle tree without revealing the account details.
 
 ## What It Does
 
@@ -41,9 +41,9 @@ cargo test-sbf
 Single file `merkle_proof.circom` contains all templates:
 
 ```
-AccountMerkleProof (main)
+CompressedAccountMerkleProof (main)
 ├── CompressedAccountHash
 │   └── Poseidon hash of 6 account fields
-└── MerkleProof (Tornado Cash Nova pattern)
-    └── 26-level binary tree verification using Switcher
+└── MerkleProof 
+    └── 26-level binary tree verification  
 ```

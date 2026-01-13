@@ -22,7 +22,7 @@ use zk_nullifier::NULLIFIER_PREFIX;
 #[link(name = "circuit_single", kind = "static")]
 extern "C" {}
 
-rust_witness::witness!(nullifier);
+rust_witness::witness!(nullifier1);
 
 #[tokio::test]
 async fn test_create_nullifier() {
@@ -168,7 +168,7 @@ fn generate_zk_proof(
     nullifier: &[u8; 32],
     secret: &[u8; 32],
 ) -> light_compressed_account::instruction_data::compressed_proof::CompressedProof {
-    let zkey_path = "./build/nullifier_final.zkey".to_string();
+    let zkey_path = "./build/nullifier_1_final.zkey".to_string();
 
     let mut proof_inputs = HashMap::new();
     proof_inputs.insert(
@@ -187,7 +187,7 @@ fn generate_zk_proof(
     let circuit_inputs = serde_json::to_string(&proof_inputs).unwrap();
     let proof = CircomProver::prove(
         ProofLib::Arkworks,
-        WitnessFn::RustWitness(nullifier_witness),
+        WitnessFn::RustWitness(nullifier1_witness),
         circuit_inputs,
         zkey_path.clone(),
     )

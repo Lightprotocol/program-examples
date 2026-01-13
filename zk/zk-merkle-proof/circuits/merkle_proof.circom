@@ -4,6 +4,8 @@ include "../node_modules/circomlib/circuits/poseidon.circom";
 include "../node_modules/circomlib/circuits/bitify.circom";
 include "../node_modules/circomlib/circuits/switcher.circom";
 
+// Merkle Proof Verification Template
+// Verifies that a leaf is in a Merkle tree with a given root
 template MerkleProof(levels) {
     signal input leaf;
     signal input pathElements[levels];
@@ -48,7 +50,7 @@ template CompressedAccountHash() {
     hash <== poseidon.out;
 }
 
-template AccountMerkleProof(levels) {
+template CompressedCompressedAccountMerkleProof(levels) {
     signal input owner_hashed;
     signal input merkle_tree_hashed;
     signal input discriminator;
@@ -77,4 +79,4 @@ template AccountMerkleProof(levels) {
 
 component main {
     public [owner_hashed, merkle_tree_hashed, discriminator, data_hash, expectedRoot]
-} = AccountMerkleProof(26);
+} = CompressedAccountMerkleProof(26);

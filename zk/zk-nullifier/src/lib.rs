@@ -22,7 +22,7 @@ pub const LIGHT_CPI_SIGNER: CpiSigner =
 
 pub const NULLIFIER_PREFIX: &[u8] = b"nullifier";
 
-// Max nullifiers per tx: 1 (single) or 4 (batch)
+// Customize nullifiers per tx, e.g. 1 (single) or 4 (batch)
 pub const BATCH_SIZE: usize = 4;
 
 pub mod nullifier_1;

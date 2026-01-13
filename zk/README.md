@@ -12,7 +12,9 @@ You can use Light to:
 
 **Full Examples:**
 
-- **[zk-id](./zk/zk-id)** - Identity verification using Groth16 proofs. Issuers create credentials; users prove ownership without revealing the credential.
+- **[zk-id](./zk-id)** - Identity verification using Groth16 proofs. Issuers create credentials; users prove ownership without revealing the credential.
+- **[shielded-pool](./shielded-pool)** - Privacy-preserving SOL pool (Tornado Nova port). UTXO model with arbitrary amounts, encrypted outputs, and relayer support.
+- **[mixer](./mixer)** - Fixed-denomination privacy mixer (Tornado Core port). Deposit/withdraw fixed amounts to break on-chain transaction links.
 
 **Basic Examples:**
 

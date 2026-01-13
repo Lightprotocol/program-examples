@@ -12,3 +12,7 @@ pot
 # ZK examples - TypeScript tests not ready
 zk/**/*.ts
 zk/**/tsconfig.json
+
+# ZK examples - not ready
+zk/mixer/
+zk/shielded-pool/

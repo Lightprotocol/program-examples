@@ -23,7 +23,7 @@ declare_id!("MPzkYomvQc4VQPwMr6bFduyWRQZVCh5CofgDC4dFqJp");
 pub const LIGHT_CPI_SIGNER: CpiSigner =
     derive_light_cpi_signer!("MPzkYomvQc4VQPwMr6bFduyWRQZVCh5CofgDC4dFqJp");
 
-pub const DATA_ACCOUNT: &[u8] = b"data_account";
+pub const ZK_ACCOUNT: &[u8] = b"zk_account";
 
 pub mod verifying_key;
 
@@ -52,12 +52,12 @@ pub mod zk_merkle_proof {
             .map_err(|_| ProgramError::InvalidAccountData)?;
 
         let (address, address_seed) = derive_address(
-            &[DATA_ACCOUNT, &data_hash],
+            &[ZK_ACCOUNT, &data_hash],
             &address_tree_pubkey,
             &crate::ID,
         );
 
-        let mut account = LightAccountPoseidon::<DataAccount>::new_init(
+        let mut account = LightAccountPoseidon::<ZkAccount>::new_init(
             &crate::ID,
             Some(address),
             output_state_tree_index,
@@ -94,7 +94,7 @@ pub mod zk_merkle_proof {
                 .unwrap();
 
         let mut discriminator = [0u8; 32];
-        discriminator[24..].copy_from_slice(DataAccount::LIGHT_DISCRIMINATOR_SLICE);
+        discriminator[24..].copy_from_slice(ZkAccount::LIGHT_DISCRIMINATOR_SLICE);
 
         let public_inputs: [[u8; 32]; 5] = [
             owner_hashed,
@@ -155,7 +155,7 @@ pub struct VerifyAccountAccounts<'info> {
 }
 
 #[derive(Clone, Debug, Default, BorshSerialize, BorshDeserialize, LightDiscriminator, LightHasher)]
-pub struct DataAccount {
+pub struct ZkAccount {
     pub data_hash: DataHash,
 }
 

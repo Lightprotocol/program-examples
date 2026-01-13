@@ -1,29 +1,33 @@
 use groth16_solana::vk_parser::generate_vk_file;
 
 fn main() {
-    println!("cargo:rerun-if-changed=build/verification_key.json");
-    println!("cargo:rerun-if-changed=build/batch_verification_key.json");
-    println!("cargo:rerun-if-changed=build/nullifier_js");
-    println!("cargo:rerun-if-changed=build/batchnullifier_js");
+    println!("cargo:rerun-if-changed=build/nullifier_1_verification_key.json");
+    println!("cargo:rerun-if-changed=build/nullifier_4_verification_key.json");
+    println!("cargo:rerun-if-changed=build/nullifier_1_js");
+    println!("cargo:rerun-if-changed=build/nullifier_4_js");
 
     // Single nullifier verifying key
-    if std::path::Path::new("./build/verification_key.json").exists() {
-        generate_vk_file("./build/verification_key.json", "./src", "verifying_key.rs")
-            .expect("Failed to generate verifying_key.rs");
+    if std::path::Path::new("./build/nullifier_1_verification_key.json").exists() {
+        generate_vk_file(
+            "./build/nullifier_1_verification_key.json",
+            "./src",
+            "nullifier_1.rs",
+        )
+        .expect("Failed to generate nullifier_1.rs");
     } else {
-        println!("cargo:warning=verification_key.json not found. Run './scripts/setup.sh'");
+        println!("cargo:warning=nullifier_1_verification_key.json not found. Run './scripts/setup.sh'");
     }
 
     // Batch nullifier verifying key
-    if std::path::Path::new("./build/batch_verification_key.json").exists() {
+    if std::path::Path::new("./build/nullifier_4_verification_key.json").exists() {
         generate_vk_file(
-            "./build/batch_verification_key.json",
+            "./build/nullifier_4_verification_key.json",
             "./src",
-            "batch_verifying_key.rs",
+            "nullifier_batch_4.rs",
         )
-        .expect("Failed to generate batch_verifying_key.rs");
+        .expect("Failed to generate nullifier_batch_4.rs");
     } else {
-        println!("cargo:warning=batch_verification_key.json not found. Run './scripts/setup.sh'");
+        println!("cargo:warning=nullifier_4_verification_key.json not found. Run './scripts/setup.sh'");
     }
 
     // Transpile witness generators for non-Solana targets
@@ -33,8 +37,8 @@ fn main() {
         let out_dir = std::env::var("OUT_DIR").unwrap();
 
         // Transpile single nullifier circuit
-        if std::path::Path::new("./build/nullifier_js").exists() {
-            rust_witness::transpile::transpile_wasm("./build/nullifier_js".to_string());
+        if std::path::Path::new("./build/nullifier_1_js").exists() {
+            rust_witness::transpile::transpile_wasm("./build/nullifier_1_js".to_string());
             // Rename libcircuit.a → libcircuit_single.a
             let src = format!("{}/libcircuit.a", out_dir);
             let dst = format!("{}/libcircuit_single.a", out_dir);
@@ -44,8 +48,8 @@ fn main() {
         }
 
         // Transpile batch nullifier circuit
-        if std::path::Path::new("./build/batchnullifier_js").exists() {
-            rust_witness::transpile::transpile_wasm("./build/batchnullifier_js".to_string());
+        if std::path::Path::new("./build/nullifier_4_js").exists() {
+            rust_witness::transpile::transpile_wasm("./build/nullifier_4_js".to_string());
             // Rename libcircuit.a → libcircuit_batch.a
             let src = format!("{}/libcircuit.a", out_dir);
             let dst = format!("{}/libcircuit_batch.a", out_dir);
