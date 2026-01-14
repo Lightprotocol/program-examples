@@ -8,9 +8,9 @@ use light_hasher::to_byte_array::ToByteArray;
 use light_hasher::HasherError;
 use light_sdk::account::poseidon::LightAccount as LightAccountPoseidon;
 use light_sdk::address::v2::derive_address;
-use light_sdk::cpi::v1::CpiAccounts;
+use light_sdk::cpi::v2::CpiAccounts;
 use light_sdk::{
-    cpi::{v1::LightSystemProgramCpi, InvokeLightSystemProgram, LightCpiInstruction},
+    cpi::{v2::LightSystemProgramCpi, InvokeLightSystemProgram, LightCpiInstruction},
     derive_light_cpi_signer,
     instruction::{CompressedProof, PackedAddressTreeInfo, ValidityProof},
     merkle_tree::v1::read_state_merkle_tree_root,
@@ -18,10 +18,10 @@ use light_sdk::{
 };
 use light_sdk_types::CpiSigner;
 
-declare_id!("MPzkYomvQc4VQPwMr6bFduyWRQZVCh5CofgDC4dFqJp");
+declare_id!("CT5kZp1rZ4LVhZ9PsJy2i9PFrmaP7FThig5CAJAM8v8z");
 
 pub const LIGHT_CPI_SIGNER: CpiSigner =
-    derive_light_cpi_signer!("MPzkYomvQc4VQPwMr6bFduyWRQZVCh5CofgDC4dFqJp");
+    derive_light_cpi_signer!("CT5kZp1rZ4LVhZ9PsJy2i9PFrmaP7FThig5CAJAM8v8z");
 
 pub const ZK_ACCOUNT: &[u8] = b"zk_account";
 
@@ -39,11 +39,12 @@ pub mod zk_merkle_proof {
         proof: ValidityProof,
         address_tree_info: PackedAddressTreeInfo,
         output_state_tree_index: u8,
+        system_accounts_offset: u8,
         data_hash: [u8; 32],
     ) -> Result<()> {
         let light_cpi_accounts = CpiAccounts::new(
             ctx.accounts.signer.as_ref(),
-            ctx.remaining_accounts,
+            &ctx.remaining_accounts[system_accounts_offset as usize..],
             crate::LIGHT_CPI_SIGNER,
         );
 
@@ -67,7 +68,7 @@ pub mod zk_merkle_proof {
 
         LightSystemProgramCpi::new_cpi(LIGHT_CPI_SIGNER, proof)
             .with_light_account_poseidon(account)?
-            .with_new_addresses(&[address_tree_info.into_new_address_params_packed(address_seed)])
+            .with_new_addresses(&[address_tree_info.into_new_address_params_assigned_packed(address_seed, Some(0))])
             .invoke(light_cpi_accounts)?;
 
         Ok(())

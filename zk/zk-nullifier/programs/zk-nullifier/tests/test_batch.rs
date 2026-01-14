@@ -17,49 +17,64 @@ use solana_sdk::{
     signature::{Keypair, Signer},
 };
 use std::collections::HashMap;
-use zk_nullifier::NULLIFIER_PREFIX;
+use zk_nullifier::{BATCH_SIZE, NULLIFIER_PREFIX};
 
-#[link(name = "circuit_single", kind = "static")]
+#[link(name = "circuit_batch", kind = "static")]
 extern "C" {}
 
-rust_witness::witness!(nullifier1);
+rust_witness::witness!(nullifier4);
 
 #[tokio::test]
-async fn test_create_nullifier() {
+async fn test_create_batch_nullifier() {
     let config = ProgramTestConfig::new(true, Some(vec![("zk_nullifier", zk_nullifier::ID)]));
     let mut rpc = LightProgramTest::new(config).await.unwrap();
     let payer = rpc.get_payer().insecure_clone();
 
     let address_tree_info = rpc.get_address_tree_v2();
 
-    let secret = generate_random_secret();
+    let secrets: [[u8; 32]; BATCH_SIZE] = [
+        generate_random_secret(),
+        generate_random_secret(),
+        generate_random_secret(),
+        generate_random_secret(),
+    ];
     let verification_id = Pubkey::new_unique().to_bytes();
-    let nullifier = compute_nullifier(&verification_id, &secret);
+    let nullifiers: [[u8; 32]; BATCH_SIZE] = [
+        compute_nullifier(&verification_id, &secrets[0]),
+        compute_nullifier(&verification_id, &secrets[1]),
+        compute_nullifier(&verification_id, &secrets[2]),
+        compute_nullifier(&verification_id, &secrets[3]),
+    ];
 
-    let (nullifier_address, _) = derive_address(
-        &[
-            NULLIFIER_PREFIX,
-            nullifier.as_slice(),
-            verification_id.as_slice(),
-        ],
-        &address_tree_info.tree,
-        &zk_nullifier::ID,
-    );
+    let mut addresses = Vec::with_capacity(BATCH_SIZE);
+    for i in 0..BATCH_SIZE {
+        let (addr, _) = derive_address(
+            &[
+                NULLIFIER_PREFIX,
+                nullifiers[i].as_slice(),
+                verification_id.as_slice(),
+            ],
+            &address_tree_info.tree,
+            &zk_nullifier::ID,
+        );
+        addresses.push(addr);
+    }
 
-    let instruction = build_create_nullifier_instruction(
+    let instruction = build_create_batch_nullifier_instruction(
         &mut rpc,
         &payer,
-        &nullifier_address,
+        &addresses,
         address_tree_info.clone(),
         &verification_id,
-        &nullifier,
-        &secret,
+        &nullifiers,
+        &secrets,
     )
     .await
     .unwrap();
 
     let cu = simulate_cu(&mut rpc, &payer, &instruction).await;
-    println!("=== Single nullifier CU: {} ===", cu);
+    println!("=== Batch (4 nullifiers) CU: {} ===", cu);
+    println!("=== CU per nullifier (batch): {} ===", cu / 4);
 
     rpc.create_and_send_transaction(&[instruction], &payer.pubkey(), &[&payer])
         .await
@@ -69,17 +84,17 @@ async fn test_create_nullifier() {
         .get_compressed_accounts_by_owner(&zk_nullifier::ID, None, None)
         .await
         .unwrap();
-    assert_eq!(nullifier_accounts.value.items.len(), 1);
+    assert_eq!(nullifier_accounts.value.items.len(), BATCH_SIZE);
 
-    // Duplicate should fail
-    let dup_instruction = build_create_nullifier_instruction(
+    // Duplicate batch should fail
+    let dup_instruction = build_create_batch_nullifier_instruction(
         &mut rpc,
         &payer,
-        &nullifier_address,
+        &addresses,
         address_tree_info,
         &verification_id,
-        &nullifier,
-        &secret,
+        &nullifiers,
+        &secrets,
     )
     .await
     .unwrap();
@@ -101,31 +116,33 @@ fn compute_nullifier(verification_id: &[u8; 32], secret: &[u8; 32]) -> [u8; 32] 
     Poseidon::hashv(&[verification_id, secret]).unwrap()
 }
 
-async fn build_create_nullifier_instruction<R>(
+async fn build_create_batch_nullifier_instruction<R>(
     rpc: &mut R,
     payer: &Keypair,
-    address: &[u8; 32],
+    addresses: &[[u8; 32]],
     address_tree_info: light_client::indexer::TreeInfo,
     verification_id: &[u8; 32],
-    nullifier: &[u8; 32],
-    secret: &[u8; 32],
+    nullifiers: &[[u8; 32]; BATCH_SIZE],
+    secrets: &[[u8; 32]; BATCH_SIZE],
 ) -> Result<Instruction, RpcError>
 where
     R: Rpc + Indexer,
 {
     let mut remaining_accounts = PackedAccounts::default();
+    remaining_accounts.add_pre_accounts_signer(payer.pubkey());
     let config = SystemAccountMetaConfig::new(zk_nullifier::ID);
-    remaining_accounts.add_system_accounts(config)?;
+    remaining_accounts.add_system_accounts_v2(config)?;
+
+    let address_with_trees: Vec<AddressWithTree> = addresses
+        .iter()
+        .map(|addr| AddressWithTree {
+            address: *addr,
+            tree: address_tree_info.tree,
+        })
+        .collect();
 
     let rpc_result = rpc
-        .get_validity_proof(
-            vec![],
-            vec![AddressWithTree {
-                address: *address,
-                tree: address_tree_info.tree,
-            }],
-            None,
-        )
+        .get_validity_proof(vec![], address_with_trees, None)
         .await?
         .value;
 
@@ -137,15 +154,25 @@ where
         .get_random_state_tree_info()?
         .pack_output_tree_index(&mut remaining_accounts)?;
 
-    let zk_proof = generate_zk_proof(verification_id, nullifier, secret);
+    let zk_proof = generate_batch_zk_proof(verification_id, nullifiers, secrets);
 
-    let instruction_data = zk_nullifier::instruction::CreateNullifier {
+    let address_tree_infos: [_; BATCH_SIZE] = [
+        packed_address_tree_accounts[0],
+        packed_address_tree_accounts[1],
+        packed_address_tree_accounts[2],
+        packed_address_tree_accounts[3],
+    ];
+
+    let (remaining_accounts_metas, system_accounts_offset, _) = remaining_accounts.to_account_metas();
+
+    let instruction_data = zk_nullifier::instruction::CreateBatchNullifier {
         proof: rpc_result.proof,
-        address_tree_info: packed_address_tree_accounts[0],
+        address_tree_infos,
         output_state_tree_index,
+        system_accounts_offset: system_accounts_offset as u8,
         zk_proof,
         verification_id: *verification_id,
-        nullifier: *nullifier,
+        nullifiers: *nullifiers,
     };
 
     let accounts = zk_nullifier::accounts::CreateNullifierAccounts {
@@ -156,38 +183,44 @@ where
         program_id: zk_nullifier::ID,
         accounts: [
             accounts.to_account_metas(None),
-            remaining_accounts.to_account_metas().0,
+            remaining_accounts_metas,
         ]
         .concat(),
         data: instruction_data.data(),
     })
 }
 
-fn generate_zk_proof(
+fn generate_batch_zk_proof(
     verification_id: &[u8; 32],
-    nullifier: &[u8; 32],
-    secret: &[u8; 32],
+    nullifiers: &[[u8; 32]; BATCH_SIZE],
+    secrets: &[[u8; 32]; BATCH_SIZE],
 ) -> light_compressed_account::instruction_data::compressed_proof::CompressedProof {
-    let zkey_path = "./build/nullifier_1_final.zkey".to_string();
+    // CARGO_MANIFEST_DIR = programs/zk-nullifier, build is at workspace root
+    let manifest_dir = env!("CARGO_MANIFEST_DIR");
+    let zkey_path = format!("{}/../../build/nullifier_4_final.zkey", manifest_dir);
 
     let mut proof_inputs = HashMap::new();
     proof_inputs.insert(
         "verification_id".to_string(),
         vec![BigUint::from_bytes_be(verification_id).to_string()],
     );
-    proof_inputs.insert(
-        "nullifier".to_string(),
-        vec![BigUint::from_bytes_be(nullifier).to_string()],
-    );
-    proof_inputs.insert(
-        "secret".to_string(),
-        vec![BigUint::from_bytes_be(secret).to_string()],
-    );
+
+    let nullifier_strings: Vec<String> = nullifiers
+        .iter()
+        .map(|n| BigUint::from_bytes_be(n).to_string())
+        .collect();
+    proof_inputs.insert("nullifier".to_string(), nullifier_strings);
+
+    let secret_strings: Vec<String> = secrets
+        .iter()
+        .map(|s| BigUint::from_bytes_be(s).to_string())
+        .collect();
+    proof_inputs.insert("secret".to_string(), secret_strings);
 
     let circuit_inputs = serde_json::to_string(&proof_inputs).unwrap();
     let proof = CircomProver::prove(
         ProofLib::Arkworks,
-        WitnessFn::RustWitness(nullifier1_witness),
+        WitnessFn::RustWitness(nullifier4_witness),
         circuit_inputs,
         zkey_path.clone(),
     )

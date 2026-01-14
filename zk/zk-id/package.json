@@ -10,7 +10,7 @@
     "generate-zkey": "snarkjs groth16 setup build/compressed_account_merkle_proof.r1cs pot/powersOfTau28_hez_final_16.ptau build/circuit_0000.zkey",
     "contribute": "snarkjs zkey contribute build/circuit_0000.zkey build/circuit_final.zkey --name='First contribution' -v",
     "export-vkey": "snarkjs zkey export verificationkey build/circuit_final.zkey build/verification_key.json",
-    "test": "ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
+    "test:ts": "ts-mocha -p ./tsconfig.json -t 1000000 ts-tests/*.test.ts"
   },
   "dependencies": {
     "@coral-xyz/borsh": "^0.30.1",

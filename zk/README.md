@@ -13,10 +13,47 @@ You can use Light to:
 **Full Examples:**
 
 - **[zk-id](./zk-id)** - Identity verification using Groth16 proofs. Issuers create credentials; users prove ownership without revealing the credential.
-- **[shielded-pool](./shielded-pool)** - Privacy-preserving SOL pool (Tornado Nova port). UTXO model with arbitrary amounts, encrypted outputs, and relayer support.
-- **[mixer](./mixer)** - Fixed-denomination privacy mixer (Tornado Core port). Deposit/withdraw fixed amounts to break on-chain transaction links.
 
 **Basic Examples:**
 
-- **[zk-nullifier](./zk/zk-nullifier)** - Creates one or four nullifiers. Uses Groth16 proofs and compressed accounts.
-- **[zk-merkle-proof](./zk/zk-merkle-proof)** - Creates compressed accounts and verifies with Groth16 proofs (without nullifier).
+- **[zk-nullifier](./zk-nullifier)** - Creates one or four nullifiers. Uses Groth16 proofs and compressed accounts.
+- **[zk-merkle-proof](./zk-merkle-proof)** - Creates compressed accounts and verifies with Groth16 proofs (without nullifier).
+
+## Building and Testing
+
+A Makefile is provided for building, deploying, and testing all examples:
+
+```bash
+# Build all programs
+make build
+
+# Deploy all programs to local validator
+make deploy
+
+# Run Rust tests (cargo test-sbf)
+make test-rust
+
+# Run TypeScript tests (deploys programs first)
+make test-ts
+
+# Build and run all tests
+make all
+
+# Individual examples
+make zk-nullifier
+make zk-id
+make zk-merkle-proof
+
+# Show all available commands
+make help
+```
+
+## Light Protocol V2 API
+
+These examples use Light Protocol SDK v0.17+ with the V2 accounts layout:
+
+- `light_sdk::cpi::v2::CpiAccounts` - V2 CPI accounts builder
+- `light_sdk::cpi::v2::LightSystemProgramCpi` - V2 system program CPI
+- `PackedAddressTreeInfo::into_new_address_params_assigned_packed()` - V2 address parameters
+
+The V2 layout requires a `system_accounts_offset` parameter to locate system accounts in remaining accounts.

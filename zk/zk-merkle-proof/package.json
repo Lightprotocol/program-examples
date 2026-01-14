@@ -5,13 +5,14 @@
   "scripts": {
     "setup": "./scripts/setup.sh",
     "compile": "circom circuits/merkle_proof.circom --r1cs --wasm --sym -o build",
-    "test": "ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
+    "test:ts": "ts-mocha -p ./tsconfig.json -t 1000000 ts-tests/*.test.ts"
   },
   "dependencies": {
-    "circomlib": "2.0.5",
-    "circomlibjs": "0.1.7",
     "@coral-xyz/anchor": "0.31.1",
-    "@lightprotocol/stateless.js": "0.22.1-alpha.1"
+    "@lightprotocol/stateless.js": "0.22.1-alpha.1",
+    "@noble/hashes": "^1.3.2",
+    "circomlib": "2.0.5",
+    "circomlibjs": "0.1.7"
   },
   "devDependencies": {
     "snarkjs": "^0.7.0",

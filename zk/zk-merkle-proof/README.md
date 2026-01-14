@@ -91,6 +91,22 @@ This script will:
 
 ## Build and Test
 
+### Using Makefile
+
+From the parent `zk/` directory:
+
+```bash
+# Build, deploy, and test this example
+make zk-merkle-proof
+
+# Or run individual steps
+make build      # Build all programs
+make deploy     # Deploy to local validator
+make test-ts    # Run TypeScript tests
+```
+
+### Manual commands
+
 **Build:**
 
 ```bash
@@ -103,6 +119,16 @@ cargo build-sbf
 cargo test-sbf -- --nocapture
 ```
 
+**TypeScript tests:**
+
+Requires a running local validator with Light Protocol:
+
+```bash
+light test-validator  # In separate terminal
+npm install
+npm run test:ts
+```
+
 ## Structure
 
 ```
@@ -110,12 +136,23 @@ zk-merkle-proof/
 ├── circuits/
 │   └── merkle_proof.circom          # All circuit templates (Tornado Cash Nova pattern)
 ├── src/
-│   └── lib.rs                       # Solana program with Groth16 verification
+│   ├── lib.rs                       # Solana program with Groth16 verification
+│   └── verifying_key.rs             # Generated Groth16 verifying key
 ├── tests/
 │   └── test.rs                      # Rust integration tests
+├── ts-tests/
+│   └── merkle-proof.test.ts         # TypeScript tests
 └── scripts/
     └── setup.sh                     # Circuit compilation and setup
 ```
+
+## Light Protocol V2 API
+
+This example uses Light SDK v0.17+ with the V2 accounts layout:
+
+- `system_accounts_offset` parameter to locate system accounts in remaining accounts
+- `CpiAccounts::new()` from `light_sdk::cpi::v2`
+- `into_new_address_params_assigned_packed(seed, Some(index))` for address parameters
 
 ## Cleaning build artifacts
 

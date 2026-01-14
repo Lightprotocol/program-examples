@@ -6,7 +6,7 @@
     "setup": "./scripts/setup.sh",
     "clean": "./scripts/clean.sh",
     "compile": "circom circuits/nullifier.circom --r1cs --wasm --sym -o build",
-    "test": "ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
+    "test:ts": "ts-mocha -p ./tsconfig.json -t 1000000 ts-tests/*.test.ts"
   },
   "dependencies": {
     "circomlib": "2.0.5",

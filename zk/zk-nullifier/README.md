@@ -136,7 +136,23 @@ This script will:
 8. Generate batch nullifier proving key
 9. Clean intermediate files
 
-## Build and test
+## Build and Test
+
+### Using Makefile (recommended)
+
+From the parent `zk/` directory:
+
+```bash
+# Build, deploy, and test this example
+make zk-nullifier
+
+# Or run individual steps
+make build      # Build all programs
+make deploy     # Deploy to local validator
+make test-ts    # Run TypeScript tests
+```
+
+### Manual commands
 
 **Build:**
 
@@ -152,9 +168,12 @@ cargo test-sbf
 
 **TypeScript tests:**
 
+Requires a running local validator with Light Protocol:
+
 ```bash
+light test-validator  # In separate terminal
 npm install
-npm test
+npm run test:ts
 ```
 
 ## Structure
@@ -162,14 +181,27 @@ npm test
 ```
 zk-nullifier/
 ├── circuits/
-│   ├── nullifier.circom        # Single
-│   └── batchnullifier.circom   # Batch (4x)
-├── src/lib.rs
+│   ├── nullifier_1.circom      # Single nullifier circuit
+│   └── nullifier_4.circom      # Batch (4x) nullifier circuit
+├── programs/zk-nullifier/src/
+│   ├── lib.rs                  # Solana program
+│   ├── nullifier_1.rs          # Single verifying key
+│   └── nullifier_batch_4.rs    # Batch verifying key
 ├── tests/
-│   ├── test.rs                 # Rust tests
-│   └── zk-nullifier.ts         # TypeScript tests
+│   ├── test_single.rs          # Rust tests for single nullifier
+│   └── test_batch.rs           # Rust tests for batch nullifier
+├── ts-tests/
+│   └── nullifier.test.ts       # TypeScript tests
 └── scripts/setup.sh
 ```
+
+## Light Protocol V2 API
+
+This example uses Light SDK v0.17+ with the V2 accounts layout:
+
+- `system_accounts_offset` parameter to locate system accounts in remaining accounts
+- `CpiAccounts::new()` from `light_sdk::cpi::v2`
+- `into_new_address_params_assigned_packed(seed, Some(index))` for address parameters
 
 ## Cleaning build artifacts
 
