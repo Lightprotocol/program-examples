@@ -1,0 +1,3 @@
+[target.sbf-solana-solana.dependencies.std]
+features = []
+

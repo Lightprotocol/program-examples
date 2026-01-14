@@ -67,12 +67,39 @@ This script will:
 
 ## Build and Test
 
-```bash
-# Build the program
-cargo build-sbf
+### Using Makefile (recommended)
 
-# Run tests and see tx
+From the parent `zk/` directory:
+
+```bash
+# Build, deploy, and test this example
+make zk-id
+
+# Or run individual steps
+make build      # Build all programs
+make deploy     # Deploy to local validator
+make test-ts    # Run TypeScript tests
+```
+
+### Manual commands
+
+**Build:**
+```bash
+cargo build-sbf
+```
+
+**Rust tests** (full ZK verification flow):
+```bash
 RUST_BACKTRACE=1 cargo test-sbf -- --nocapture
+```
+
+**TypeScript tests:**
+
+Requires a running local validator with Light Protocol:
+```bash
+light test-validator  # In separate terminal
+npm install
+npm run test:ts
 ```
 
 ## Structure
@@ -87,10 +114,23 @@ zk-id/
 ├── scripts/
 │   └── setup.sh            # Circuit compilation and setup script
 ├── src/
-│   └── lib.rs             # Solana program implementation
-└── tests/
-    └── test.rs            # Integration tests
+│   ├── lib.rs             # Solana program implementation
+│   └── verifying_key.rs   # Generated Groth16 verifying key
+├── tests/
+│   └── test.rs            # Rust integration tests
+└── ts-tests/
+    └── zk-id.test.ts      # TypeScript tests
 ```
+
+## Light Protocol V2 API
+
+This example uses Light SDK v0.17+ with the V2 accounts layout:
+
+- `system_accounts_offset` parameter to locate system accounts in remaining accounts
+- `CpiAccounts::new()` from `light_sdk::cpi::v2`
+- `into_new_address_params_assigned_packed(seed, Some(index))` for address parameters
+- `sha::LightAccount` for accounts with Vec fields (uses SHA256 flat hashing)
+- `poseidon::LightAccount` for accounts with fixed-size fields (uses Poseidon hashing)
 
 ## Cleaning Build Artifacts
 

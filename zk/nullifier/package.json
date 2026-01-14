@@ -1,0 +1,30 @@
+{
+  "name": "nullifier",
+  "version": "1.0.0",
+  "description": "Minimal ZK nullifier example for privacy-preserving applications",
+  "scripts": {
+    "setup": "./scripts/setup.sh",
+    "clean": "./scripts/clean.sh",
+    "compile": "circom circuits/nullifier.circom --r1cs --wasm --sym -o build",
+    "test:ts": "ts-mocha -p ./tsconfig.json -t 1000000 ts-tests/*.test.ts",
+    "test": "ts-mocha -p ./tsconfig.json -t 1000000 ts-tests/*.test.ts"
+  },
+  "dependencies": {
+    "circomlib": "2.0.5",
+    "circomlibjs": "0.1.7",
+    "@coral-xyz/anchor": "0.31.1",
+    "@lightprotocol/stateless.js": "0.22.1-alpha.1",
+    "dotenv": "^16.5.0"
+  },
+  "devDependencies": {
+    "snarkjs": "^0.7.0",
+    "@types/bn.js": "^5.1.0",
+    "@types/chai": "^4.3.0",
+    "@types/mocha": "^10.0.1",
+    "chai": "^4.3.7",
+    "ffjavascript": "^0.3.0",
+    "mocha": "^10.8.2",
+    "ts-mocha": "^10.1.0",
+    "typescript": "^5.0.0"
+  }
+}

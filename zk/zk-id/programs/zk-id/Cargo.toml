@@ -10,6 +10,7 @@ name = "zk_id"
 [features]
 default = []
 test-sbf = []
+idl-build = ["anchor-lang/idl-build"]
 
 [dependencies]
 anchor-lang = "0.31.1"
@@ -37,3 +38,6 @@ groth16-solana = { git = "https://github.com/Lightprotocol/groth16-solana", feat
 [target.'cfg(not(target_os = "solana"))'.build-dependencies]
 rust-witness = "0.1"
 groth16-solana = { git = "https://github.com/Lightprotocol/groth16-solana", features = ["vk"], rev = "66c0dc87d0808c4d2aadb53c61435b6edb8ddfd9" }
+
+[profile.release]
+overflow-checks = true

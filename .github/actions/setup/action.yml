@@ -78,6 +78,7 @@ runs:
 
     - name: Cache Photon indexer
       if: inputs.photon-indexer == 'true'
+      id: cache-photon
       uses: actions/cache@v4
       with:
         path: ~/.cargo/bin/photon
@@ -137,7 +138,7 @@ runs:
       run: npm install -g snarkjs
 
     - name: Install Photon indexer
-      if: inputs.photon-indexer == 'true'
+      if: inputs.photon-indexer == 'true' && steps.cache-photon.outputs.cache-hit != 'true'
       shell: bash
       env:
         RUSTFLAGS: "-A dead-code"
