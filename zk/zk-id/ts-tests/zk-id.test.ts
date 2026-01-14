@@ -241,16 +241,12 @@ describe("zk-id", () => {
 
       const accounts = await rpc.getCompressedAccountsByOwner(PROGRAM_ID);
       assert.ok(accounts.items.length > 0, "Issuer account should be created");
-      console.log("Issuer account created");
     });
   });
 
   describe("Credential lifecycle", () => {
     it("should generate credential keypair correctly", () => {
       const { privateKey, publicKey } = generateCredentialKeypair();
-
-      console.log("Credential private key:", Buffer.from(privateKey).toString("hex").slice(0, 16) + "...");
-      console.log("Credential public key:", Buffer.from(publicKey).toString("hex").slice(0, 16) + "...");
 
       const hash = poseidon([BigInt("0x" + Buffer.from(privateKey).toString("hex"))]);
       const computedPublicKey = bigintToBytes32(poseidon.F.toObject(hash));
@@ -260,17 +256,12 @@ describe("zk-id", () => {
         Array.from(computedPublicKey),
         "Public key should be Poseidon(privateKey)"
       );
-
-      console.log("Keypair verified: publicKey = Poseidon(privateKey)");
     });
 
     it("should compute nullifier correctly", () => {
       const { privateKey } = generateCredentialKeypair();
       const verificationId = generateFieldElement();
       const nullifier = computeNullifier(verificationId, privateKey);
-
-      console.log("Verification ID:", Buffer.from(verificationId).toString("hex").slice(0, 16) + "...");
-      console.log("Nullifier:", Buffer.from(nullifier).toString("hex").slice(0, 16) + "...");
 
       const hash = poseidon([
         BigInt("0x" + Buffer.from(verificationId).toString("hex")),
@@ -283,15 +274,12 @@ describe("zk-id", () => {
         Array.from(computedNullifier),
         "Nullifier should be Poseidon(verification_id, privateKey)"
       );
-
-      console.log("Nullifier verified: nullifier = Poseidon(verification_id, credentialPrivateKey)");
     });
   });
 
   describe("ZK credential verification", () => {
     it("should demonstrate full ZK credential proof flow", async () => {
       const { privateKey: credentialPrivateKey, publicKey: credentialPubkey } = generateCredentialKeypair();
-      console.log("\n=== Step 1: Credential keypair generated ===");
 
       const ownerHashed = hashToBn254Field(PROGRAM_ID.toBytes());
       const merkleTreeHashed = hashToBn254Field(
@@ -304,7 +292,6 @@ describe("zk-id", () => {
 
       const verificationId = generateFieldElement();
       const nullifier = computeNullifier(verificationId, credentialPrivateKey);
-      console.log("\n=== Step 2: Nullifier computed ===");
 
       const encryptedDataHash = generateFieldElement();
       const address = generateFieldElement();
@@ -329,9 +316,6 @@ describe("zk-id", () => {
       }
       const expectedRoot = bigintToBytes32(current);
 
-      console.log("\n=== Step 3: Public inputs prepared ===");
-      console.log("\n=== Step 4: Generating ZK proof ===");
-
       const zkProof = await generateCredentialProof({
         ownerHashed,
         merkleTreeHashed,
@@ -352,9 +336,6 @@ describe("zk-id", () => {
       assert.ok(zkProof.a.length === 32, "Proof A should be 32 bytes");
       assert.ok(zkProof.b.length === 64, "Proof B should be 64 bytes");
       assert.ok(zkProof.c.length === 32, "Proof C should be 32 bytes");
-
-      console.log("\n=== ZK Proof generated successfully! ===");
-      console.log("Proof size: 128 bytes (compressed Groth16)");
     });
 
     it("should verify nullifier uniqueness property", () => {
@@ -371,8 +352,6 @@ describe("zk-id", () => {
         Array.from(nullifier2),
         "Different verification IDs should produce different nullifiers"
       );
-
-      console.log("Nullifier uniqueness verified");
     });
   });
 });

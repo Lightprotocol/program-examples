@@ -1,45 +1,37 @@
-# Nullifier Registry
+# Nullifier for ZK 
 
-Creates nullifier accounts using compressed addresses. Prevents double-spend by failing if a nullifier already exists.
+Program with single instruction to create nullifiers to prevent double-spending.
 
-Light uses rent-free PDAs in an address Merkle tree indexed by Helius. No custom indexing required.
+Can be added to your custom program without requiring a custom circuit.
+
+* On Solana nullifiers require a data structure that ensures the nullifier is only created once.
+* A straight forward way is to derive a PDA with the nullifier as seed for the PDA account.
+* Nullifier accounts must remain active, hence lock ~0.001 SOL in rent per nullifier PDA permanently.
+* Compressed addresses are rent-free, provide similar functionality and derivation.
 
 | Storage | Cost per nullifier |
 |---------|-------------------|
 | PDA | ~0.001 SOL |
-| Compressed PDA | ~0.000005 SOL |
+| Compressed PDA | ~0.000015 SOL |
 
-## Requirements
+In detail, a nullifier is a hash derived from your secret and the leaf the transaction is using.
+When you use private state (stored in a Merkle tree leaf), you publish the nullifier. The program stores it in a set.
+If anyone tries to spend the same leaf again, the nullifier would match one already stored, so the transaction fails.
+The nullifier reveals nothing about which leaf was spent.
+Different state produces different nullifiers, so observers can't link a nullifier back to its source leaf.
+
+## Flow
+1. Client computes nullifier values (typically `hash(secret, context)`) and fetches validity proof from RPC for the derived addresses to prove it does not exist.
+3. Client calls `create_nullifier` with data, nullifiers and validity proof
+4. Program derives addresses, creates compressed accounts via CPI to Light system program
+5. If any address exists, Light system program rejects the CPI
+
+## Build and Test
 
 - **Rust** (1.90.0 or later)
 - **Node.js** (v22 or later)
 - **Solana CLI** (2.3.11 or later)
 - **Light CLI**: `npm install -g @lightprotocol/zk-compression-cli`
-
-## Flow
-
-1. Client derives nullifier addresses from `[NULLIFIER_PREFIX, nullifier_value]`
-2. Client requests validity proof from RPC
-3. On-chain: derive addresses, create compressed accounts
-4. If any address exists, tx fails
-
-## Program instruction
-
-### `create_nullifier`
-
-Creates nullifier accounts for provided values.
-
-**Parameters:**
-- `data: NullifierInstructionData` - validity proof, tree info, indices
-- `nullifiers: Vec<[u8; 32]>` - nullifier values to register
-
-**Behavior:**
-- Derives address from `[b"nullifier", nullifier_value]`
-- Creates compressed account at derived address
-- Fails if address already exists (prevents replay)
-
-## Build and Test
-
 ### Using Makefile
 
 From the parent `zk/` directory:

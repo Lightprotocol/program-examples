@@ -52,8 +52,6 @@ describe("nullifier", () => {
     it("should create a nullifier", async () => {
       const nullifier = randomBytes32();
 
-      console.log("Nullifier:", Buffer.from(nullifier).toString("hex").slice(0, 16) + "...");
-
       const { data, remainingAccounts } = await createNullifierInstructionData(
         rpc, PROGRAM_ID, [nullifier]
       );
@@ -72,22 +70,19 @@ describe("nullifier", () => {
       const sig = await rpc.sendTransaction(tx, [signer]);
       await confirmTx(rpc, sig);
 
-      console.log("Transaction signature:", sig);
+      console.log("Tx:", sig);
 
       const slot = await rpc.getSlot();
       await rpc.confirmTransactionIndexed(slot);
 
       const accounts = await rpc.getCompressedAccountsByOwner(PROGRAM_ID);
       assert.ok(accounts.items.length > 0, "Nullifier account should be created");
-      console.log("Created nullifier accounts:", accounts.items.length);
     });
   });
 
   describe("Multiple nullifiers", () => {
     it("should create multiple nullifiers in one transaction", async () => {
       const nullifiers = [randomBytes32(), randomBytes32()];
-
-      console.log("Creating 3 nullifiers in one transaction...");
 
       const { data, remainingAccounts } = await createNullifierInstructionData(
         rpc, PROGRAM_ID, nullifiers
@@ -107,13 +102,10 @@ describe("nullifier", () => {
       const sig = await rpc.sendTransaction(tx, [signer]);
       await confirmTx(rpc, sig);
 
-      console.log("Transaction signature:", sig);
+      console.log("Tx:", sig);
 
       const slot = await rpc.getSlot();
       await rpc.confirmTransactionIndexed(slot);
-
-      const accounts = await rpc.getCompressedAccountsByOwner(PROGRAM_ID);
-      console.log("Total nullifier accounts:", accounts.items.length);
     });
   });
 });

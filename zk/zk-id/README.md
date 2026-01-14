@@ -3,6 +3,7 @@
 
 A minimal zk id Solana program that uses zero-knowledge proofs for identity verification with compressed accounts.
 Note this is an example how to verify a zk inclusion proof, not a full zk identity protocol and not production-ready.
+
 For examples of zk identity protocols, see:
 - [Iden3](https://github.com/iden3) - Full decentralized identity protocol with claims, revocation, and recovery
 - [Semaphore](https://github.com/semaphore-protocol/semaphore) - Privacy-preserving group signaling with nullifiers
@@ -67,7 +68,7 @@ This script will:
 
 ## Build and Test
 
-### Using Makefile (recommended)
+### Using Makefile
 
 From the parent `zk/` directory:
 

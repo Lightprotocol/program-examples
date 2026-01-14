@@ -11,11 +11,6 @@ pub mod nullifier {
     use super::*;
 
     /// Creates nullifier accounts for the provided nullifier values.
-    ///
-    /// # Arguments
-    /// * `data` - Nullifier instruction data (proof, tree info, indices)
-    /// * `namespace` - Naespace for address derivation
-    /// * `nullifiers` - Vector of nullifier values to create accounts for
     pub fn create_nullifier<'info>(
         ctx: Context<'_, '_, '_, 'info, CreateNullifierAccounts<'info>>,
         data: NullifierInstructionData,
@@ -81,8 +76,7 @@ pub mod nullifier_creation {
     ///
     /// # Arguments
     /// * `nullifiers` - Slice of nullifier values to create accounts for
-    /// * `namespace` - Namespace for address derivation (e.g., your program's verification ID)
-    /// * `data` - Instruction data containing proof and tree info
+    /// * `data` - Instruction data with proof and tree info
     /// * `remaining_accounts` - Remaining accounts from the instruction context
     pub fn create_nullifiers<'info>(
         nullifiers: &[[u8; 32]],
