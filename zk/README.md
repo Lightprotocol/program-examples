@@ -3,8 +3,8 @@
 Building a private Solana program requires a Merkle tree to store state, a way to track nullifiers, and an indexer to serve Merkle proofs.
 
 You can use Light to:
-- Track and store nullifiers rent-free in indexed address Merkle trees
-- Store state rent-free in indexed state Merkle trees as compressed accounts
+- Track and store nullifiers rent-free in address Merkle trees, indexed by Solana RPCs.
+- Store state rent-free in state Merkle trees as compressed accounts, indexed by Solana RPCs.
 
 [Learn more in the documentation](https://www.zkcompression.com/zk/overview)
 
