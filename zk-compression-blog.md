@@ -1,10 +1,10 @@
-# ZK Compression for ZK Applications
+# How to use Zk compression in ZK Solana Programs
 
 Every transaction on Solana is public. This lack of privacy prevents mainstream adoption for many use cases.
 
 Zero knowledge proofs enable privacy in Solana programs, such as private transactions, private voting, and private identity verification.
 
-The key building blocks for private Solana programs are:
+The key building blocks for zk in Solana programs are:
 1. Zero Knowledge Proofs (ZKPs) to prove application logic privately.
 2. Poseidon Merkle Trees to store data in a format that can be efficiently proven in a ZK circuit.
 3. Nullifiers to prevent double spending.
