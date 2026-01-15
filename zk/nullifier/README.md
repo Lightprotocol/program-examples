@@ -15,7 +15,7 @@ Can be added to your custom program without requiring a custom circuit.
 | Compressed PDA | ~0.000015 SOL |
 
 In detail, a nullifier is a hash derived from your secret and the leaf the transaction is using.
-When you use private state (stored in a Merkle tree leaf), you publish the nullifier. The program stores it in a set.
+When you use private state (stored in a Merkle tree leaf), you publish the nullifier to invalidate the state to prevent double spending. The program stores all nullifiers in a set.
 If anyone tries to spend the same leaf again, the nullifier would match one already stored, so the transaction fails.
 The nullifier reveals nothing about which leaf was spent.
 Different state produces different nullifiers, so observers can't link a nullifier back to its source leaf.
