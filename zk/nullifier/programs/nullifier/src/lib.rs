@@ -75,7 +75,7 @@ pub mod nullifier_creation {
     /// Creates nullifier accounts for the given nullifier values.
     ///
     /// # Arguments
-    /// * `nullifiers` - Slice of nullifier values to create accounts for
+    /// * `nullifiers` - Slice of nullifier values to create compressed pdas for
     /// * `data` - Instruction data with proof and tree info
     /// * `remaining_accounts` - Remaining accounts from the instruction context
     pub fn create_nullifiers<'info>(
