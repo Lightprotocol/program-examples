@@ -50,8 +50,8 @@ Full compressed account lifecycle (create, increment, decrement, reset, close):
 ### ZK Programs
 
 
-- **[zk-id](./zk/zk-id)** - Identity verification using Groth16 proofs. Issuers create credentials; users prove ownership without revealing the credential.
-- **[nullifier](./zk/nullifier)** - Simple Program to Create Nullifiers. Requires no custom circuit.
+- **[zk-id](./zk/zk-id)** - Identity verification using Groth16 proofs. Issuers create credentials; users prove ownershp without revealing the credential.
+- **[nullifier](./zk/nullifier)** - Simple Program to Create Nullifiers.
 
 
   
