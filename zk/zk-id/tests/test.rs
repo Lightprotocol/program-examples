@@ -176,8 +176,9 @@ where
     R: Rpc + Indexer,
 {
     let mut remaining_accounts = PackedAccounts::default();
+    remaining_accounts.add_pre_accounts_signer(payer.pubkey());
     let config = SystemAccountMetaConfig::new(zk_id::ID);
-    remaining_accounts.add_system_accounts(config)?;
+    remaining_accounts.add_system_accounts_v2(config)?;
 
     let rpc_result = rpc
         .get_validity_proof(
@@ -197,10 +198,13 @@ where
         .get_random_state_tree_info()?
         .pack_output_tree_index(&mut remaining_accounts)?;
 
+    let (remaining_accounts_metas, system_accounts_offset, _) = remaining_accounts.to_account_metas();
+
     let instruction_data = zk_id::instruction::CreateIssuer {
         proof: rpc_result.proof,
         address_tree_info: packed_address_tree_accounts[0],
         output_state_tree_index,
+        system_accounts_offset: system_accounts_offset as u8,
     };
 
     let accounts = zk_id::accounts::GenericAnchorAccounts {
@@ -211,7 +215,7 @@ where
         program_id: zk_id::ID,
         accounts: [
             accounts.to_account_metas(None),
-            remaining_accounts.to_account_metas().0,
+            remaining_accounts_metas,
         ]
         .concat(),
         data: instruction_data.data(),
@@ -233,8 +237,9 @@ where
     R: Rpc + Indexer,
 {
     let mut remaining_accounts = PackedAccounts::default();
+    remaining_accounts.add_pre_accounts_signer(payer.pubkey());
     let config = SystemAccountMetaConfig::new(zk_id::ID);
-    remaining_accounts.add_system_accounts(config)?;
+    remaining_accounts.add_system_accounts_v2(config)?;
 
     let rpc_result = rpc
         .get_validity_proof(
@@ -268,10 +273,13 @@ where
     let issuer_account_parsed: zk_id::IssuerAccount =
         anchor_lang::AnchorDeserialize::deserialize(&mut issuer_data.data.as_slice()).unwrap();
 
+    let (remaining_accounts_metas, system_accounts_offset, _) = remaining_accounts.to_account_metas();
+
     let instruction_data = zk_id::instruction::AddCredential {
         proof: rpc_result.proof,
         address_tree_info: packed_address_tree_accounts[0],
         output_state_tree_index,
+        system_accounts_offset: system_accounts_offset as u8,
         issuer_account_meta,
         credential_pubkey: Pubkey::new_from_array(credential_commitment),
         num_credentials_issued: issuer_account_parsed.num_credentials_issued,
@@ -285,7 +293,7 @@ where
         program_id: zk_id::ID,
         accounts: [
             accounts.to_account_metas(None),
-            remaining_accounts.to_account_metas().0,
+            remaining_accounts_metas,
         ]
         .concat(),
         data: instruction_data.data(),
@@ -351,8 +359,9 @@ where
 
     // Create the verification transaction
     let mut remaining_accounts = PackedAccounts::default();
+    remaining_accounts.add_pre_accounts_signer(payer.pubkey());
     let config = SystemAccountMetaConfig::new(zk_id::ID);
-    remaining_accounts.add_system_accounts(config)?;
+    remaining_accounts.add_system_accounts_v2(config)?;
 
     let (event_address, _) = derive_address(
         &[
@@ -384,10 +393,13 @@ where
         .get_random_state_tree_info_v1()?
         .pack_output_tree_index(&mut remaining_accounts)?;
 
+    let (remaining_accounts_metas, system_accounts_offset, _) = remaining_accounts.to_account_metas();
+
     let instruction_data = zk_id::instruction::ZkVerifyCredential {
         proof: rpc_result.proof,
         address_tree_info: packed_address_tree_accounts[0],
         output_state_tree_index,
+        system_accounts_offset: system_accounts_offset as u8,
         input_root_index: root_index,
         public_data: encrypted_data,
         credential_proof,
@@ -405,7 +417,7 @@ where
         program_id: zk_id::ID,
         accounts: [
             accounts.to_account_metas(None),
-            remaining_accounts.to_account_metas().0,
+            remaining_accounts_metas,
         ]
         .concat(),
         data: instruction_data.data(),

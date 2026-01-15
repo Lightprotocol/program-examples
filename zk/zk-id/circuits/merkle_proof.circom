@@ -14,7 +14,6 @@ template MerkleProof(levels) {
 
     component switcher[levels];
     component hasher[levels];
-
     component indexBits = Num2Bits(levels);
     indexBits.in <== leafIndex;
 

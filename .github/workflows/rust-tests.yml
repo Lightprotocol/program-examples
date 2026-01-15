@@ -29,7 +29,6 @@ jobs:
           - counter/native
           - counter/pinocchio
           - account-comparison
-          - zk-id
           - airdrop-implementations/simple-claim/program
         include:
           - example: basic-operations/native
@@ -51,12 +50,6 @@ jobs:
           example: ${{ matrix.example }}
           solana-cli-version: ${{ env.SOLANA_CLI_VERSION }}
           rust-toolchain: ${{ env.RUST_TOOLCHAIN }}
-          install-circom: ${{ matrix.example == 'zk-id' }}
-
-      - name: Setup ZK circuits
-        if: matrix.example == 'zk-id'
-        working-directory: ${{ matrix.example }}
-        run: ./scripts/setup.sh
 
       - name: Build and test
         working-directory: ${{ matrix.example }}

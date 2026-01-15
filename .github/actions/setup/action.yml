@@ -69,6 +69,7 @@ runs:
 
     - name: Cache AVM and Anchor
       if: inputs.node-version != ''
+      id: cache-avm
       uses: actions/cache@v4
       with:
         path: |
@@ -78,6 +79,7 @@ runs:
 
     - name: Cache Photon indexer
       if: inputs.photon-indexer == 'true'
+      id: cache-photon
       uses: actions/cache@v4
       with:
         path: ~/.cargo/bin/photon
@@ -97,12 +99,17 @@ runs:
         fi
 
     - name: Install Anchor CLI
-      if: inputs.node-version != ''
+      if: inputs.node-version != '' && steps.cache-avm.outputs.cache-hit != 'true'
       shell: bash
       run: |
         cargo install --git https://github.com/coral-xyz/anchor avm --locked --force
         avm install ${{ inputs.anchor-version }}
         avm use ${{ inputs.anchor-version }}
+
+    - name: Set Anchor version
+      if: inputs.node-version != '' && steps.cache-avm.outputs.cache-hit == 'true'
+      shell: bash
+      run: avm use ${{ inputs.anchor-version }}
 
     - name: Install Light CLI
       shell: bash
@@ -137,7 +144,7 @@ runs:
       run: npm install -g snarkjs
 
     - name: Install Photon indexer
-      if: inputs.photon-indexer == 'true'
+      if: inputs.photon-indexer == 'true' && steps.cache-photon.outputs.cache-hit != 'true'
       shell: bash
       env:
         RUSTFLAGS: "-A dead-code"

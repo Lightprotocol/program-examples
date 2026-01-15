@@ -1,0 +1,19 @@
+[toolchain]
+anchor_version = "0.31.1"
+
+[features]
+resolution = true
+skip-lint = false
+
+[programs.localnet]
+zk_id = "8HYAuAkoLp2UG4mgkqUcJBXo2bzaaKy8nBL62L4S3SSB"
+
+[registry]
+url = "https://api.apr.dev"
+
+[provider]
+cluster = "localnet"
+wallet = "~/.config/solana/id.json"
+
+[scripts]
+test = "npm run test"

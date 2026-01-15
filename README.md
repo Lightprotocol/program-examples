@@ -47,9 +47,12 @@ Full compressed account lifecycle (create, increment, decrement, reset, close):
 
 - **[account-comparison](./account-comparison/)** - Compare compressed vs regular Solana accounts.
 
-### zk-id Program
+### ZK Programs
 
-- **[zk-id](./zk-id)** - A minimal zk id Solana program that uses zero-knowledge proofs for identity verification with compressed accounts.
+
+- **[zk-id](./zk/zk-id)** - Identity verification using Groth16 proofs. Issuers create credentials; users prove ownership without revealing the credential.
+- **[nullifier](./zk/nullifier)** - Simple Program to Create Nullifiers. Requires no custom circuit.
+
 
   
 ## Light Protocol dependencies

@@ -1,16 +1,16 @@
 #![allow(unexpected_cfgs)]
 #![allow(deprecated)]
 
-use anchor_lang::{prelude::*, AnchorDeserialize, AnchorSerialize};
+use anchor_lang::prelude::*;
 use borsh::{BorshDeserialize, BorshSerialize};
 use groth16_solana::groth16::Groth16Verifier;
 use light_hasher::to_byte_array::ToByteArray;
-use light_hasher::HasherError;
+use light_hasher::{Hasher, HasherError, Sha256};
 use light_sdk::account::{poseidon::LightAccount as LightAccountPoseidon, LightAccount};
-use light_sdk::cpi::v1::CpiAccounts;
+use light_sdk::cpi::v2::CpiAccounts;
 use light_sdk::{
     address::v2::derive_address,
-    cpi::{v1::LightSystemProgramCpi, InvokeLightSystemProgram, LightCpiInstruction},
+    cpi::{v2::LightSystemProgramCpi, InvokeLightSystemProgram, LightCpiInstruction},
     derive_light_cpi_signer,
     instruction::{
         account_meta::CompressedAccountMeta, CompressedProof, PackedAddressTreeInfo, ValidityProof,
@@ -20,10 +20,10 @@ use light_sdk::{
 };
 use light_sdk_types::CpiSigner;
 
-declare_id!("HNqStLMpNuNJqhBF1FbGTKHEFbBLJmq8RdJJmZKWz6jH");
+declare_id!("8HYAuAkoLp2UG4mgkqUcJBXo2bzaaKy8nBL62L4S3SSB");
 
 pub const LIGHT_CPI_SIGNER: CpiSigner =
-    derive_light_cpi_signer!("HNqStLMpNuNJqhBF1FbGTKHEFbBLJmq8RdJJmZKWz6jH");
+    derive_light_cpi_signer!("8HYAuAkoLp2UG4mgkqUcJBXo2bzaaKy8nBL62L4S3SSB");
 
 pub const ISSUER: &[u8] = b"issuer";
 pub const CREDENTIAL: &[u8] = b"credential";
@@ -46,10 +46,11 @@ pub mod zk_id {
         proof: ValidityProof,
         address_tree_info: PackedAddressTreeInfo,
         output_state_tree_index: u8,
+        system_accounts_offset: u8,
     ) -> Result<()> {
         let light_cpi_accounts = CpiAccounts::new(
             ctx.accounts.signer.as_ref(),
-            ctx.remaining_accounts,
+            &ctx.remaining_accounts[system_accounts_offset as usize..],
             crate::LIGHT_CPI_SIGNER,
         );
 
@@ -84,7 +85,9 @@ pub mod zk_id {
 
         LightSystemProgramCpi::new_cpi(LIGHT_CPI_SIGNER, proof)
             .with_light_account(issuer_account)?
-            .with_new_addresses(&[address_tree_info.into_new_address_params_packed(address_seed)])
+            .with_new_addresses(&[
+                address_tree_info.into_new_address_params_assigned_packed(address_seed, Some(0))
+            ])
             .invoke(light_cpi_accounts)?;
 
         Ok(())
@@ -92,18 +95,20 @@ pub mod zk_id {
 
     /// Creates a new credential compressed account storing a pubkey
     /// Requires a valid issuer account - only the issuer can create credentials
+    #[allow(clippy::too_many_arguments)]
     pub fn add_credential<'info>(
         ctx: Context<'_, '_, '_, 'info, GenericAnchorAccounts<'info>>,
         proof: ValidityProof,
         address_tree_info: PackedAddressTreeInfo,
         output_state_tree_index: u8,
+        system_accounts_offset: u8,
         issuer_account_meta: CompressedAccountMeta,
         credential_pubkey: Pubkey,
         num_credentials_issued: u64,
     ) -> Result<()> {
         let light_cpi_accounts = CpiAccounts::new(
             ctx.accounts.signer.as_ref(),
-            ctx.remaining_accounts,
+            &ctx.remaining_accounts[system_accounts_offset as usize..],
             crate::LIGHT_CPI_SIGNER,
         );
 
@@ -156,18 +161,22 @@ pub mod zk_id {
         LightSystemProgramCpi::new_cpi(LIGHT_CPI_SIGNER, proof)
             .with_light_account(issuer_account)?
             .with_light_account_poseidon(credential_account)?
-            .with_new_addresses(&[address_tree_info.into_new_address_params_packed(address_seed)])
+            .with_new_addresses(&[
+                address_tree_info.into_new_address_params_assigned_packed(address_seed, Some(1))
+            ])
             .invoke(light_cpi_accounts)?;
 
         Ok(())
     }
 
     /// Verifies a ZK proof of credential ownership and creates an encrypted event account.
+    #[allow(clippy::too_many_arguments)]
     pub fn zk_verify_credential<'info>(
         ctx: Context<'_, '_, '_, 'info, VerifyAccounts<'info>>,
         proof: ValidityProof,
         address_tree_info: PackedAddressTreeInfo,
         output_state_tree_index: u8,
+        system_accounts_offset: u8,
         input_root_index: u16,
         public_data: Vec<u8>,
         credential_proof: CompressedProof,
@@ -177,7 +186,7 @@ pub mod zk_id {
     ) -> Result<()> {
         let light_cpi_accounts = CpiAccounts::new(
             ctx.accounts.signer.as_ref(),
-            ctx.remaining_accounts,
+            &ctx.remaining_accounts[system_accounts_offset as usize..],
             crate::LIGHT_CPI_SIGNER,
         );
         let address_pubkey = address_tree_info
@@ -203,8 +212,7 @@ pub mod zk_id {
         let expected_root = read_state_merkle_tree_root(
             &ctx.accounts.input_merkle_tree.to_account_info(),
             input_root_index,
-        )
-        .map_err(|e| ProgramError::from(e))?;
+        )?;
 
         let merkle_tree_pubkey = ctx.accounts.input_merkle_tree.key();
         let merkle_tree_hashed =
@@ -224,9 +232,15 @@ pub mod zk_id {
         );
         event_account.data = public_data;
 
-        let event_account_info = event_account
-            .to_output_compressed_account_with_packed_context(None)?
-            .unwrap();
+        // Compute the data hash for the event account to use in ZK proof verification
+        // Use SHA256 with length prefix to match the flat hashing scheme
+        let mut hash_input = Vec::new();
+        hash_input.extend_from_slice(&(event_account.data.len() as u32).to_le_bytes());
+        hash_input.extend_from_slice(&event_account.data);
+        let mut event_data_hash =
+            Sha256::hash(&hash_input).map_err(|_| ProgramError::InvalidAccountData)?;
+        event_data_hash[0] = 0; // Ensure hash is in BN254 field
+
         {
             // Construct public inputs array for the circuit
             // Order MUST match the circuit's public declaration exactly:
@@ -241,12 +255,7 @@ pub mod zk_id {
                 issuer_hashed,
                 expected_root,
                 padded_verification_id,
-                event_account_info
-                    .compressed_account
-                    .data
-                    .as_ref()
-                    .unwrap()
-                    .data_hash, // This is public_encrypted_data_hash
+                event_data_hash, // This is public_encrypted_data_hash
                 nullifier,
             ];
             msg!("public_inputs {:?}", public_inputs);
@@ -284,8 +293,10 @@ pub mod zk_id {
             })?;
         }
         LightSystemProgramCpi::new_cpi(LIGHT_CPI_SIGNER, proof)
-            .with_output_compressed_accounts(&[event_account_info])
-            .with_new_addresses(&[address_tree_info.into_new_address_params_packed(address_seed)])
+            .with_light_account(event_account)?
+            .with_new_addresses(&[
+                address_tree_info.into_new_address_params_assigned_packed(address_seed, Some(0))
+            ])
             .invoke(light_cpi_accounts)?;
 
         Ok(())

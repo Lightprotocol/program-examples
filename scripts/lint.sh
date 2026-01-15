@@ -20,6 +20,12 @@ cd counter/pinocchio && cargo fmt --check && cd ../..
 echo "Checking account-comparison..."
 cd account-comparison && cargo fmt --check && cd ..
 
+echo "Checking zk/nullifier..."
+cd zk/nullifier && cargo fmt --check && cd ../..
+
+echo "Checking zk/zk-id..."
+cd zk/zk-id && cargo fmt --check && cd ../..
+
 echo "Running clippy..."
 
 # Run clippy for each crate
@@ -37,5 +43,11 @@ cargo clippy --manifest-path counter/pinocchio/Cargo.toml --all-targets --all-fe
 
 echo "Running clippy on account-comparison..."
 cargo clippy --manifest-path account-comparison/Cargo.toml --all-targets --all-features -- -D warnings
+
+echo "Running clippy on zk/nullifier..."
+cargo clippy --manifest-path zk/nullifier/Cargo.toml --all-targets --all-features -- -D warnings
+
+echo "Running clippy on zk/zk-id..."
+cargo clippy --manifest-path zk/zk-id/Cargo.toml --all-targets --all-features -- -D warnings
 
 echo "Lint checks completed successfully!"

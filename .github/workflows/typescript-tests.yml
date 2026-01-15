@@ -34,6 +34,8 @@ jobs:
           - basic-operations/anchor/update
           - basic-operations/anchor/close
           - basic-operations/anchor/reinit
+          - zk/zk-id
+          - zk/nullifier
     steps:
       - uses: actions/checkout@v4
 
@@ -45,6 +47,12 @@ jobs:
           solana-cli-version: ${{ env.SOLANA_CLI_VERSION }}
           rust-toolchain: ${{ env.RUST_TOOLCHAIN }}
           photon-indexer: "true"
+          install-circom: ${{ matrix.example == 'zk/zk-id' }}
+
+      - name: Setup ZK circuits
+        if: matrix.example == 'zk/zk-id'
+        working-directory: ${{ matrix.example }}
+        run: ./scripts/setup.sh
 
       - name: Install dependencies
         working-directory: ${{ matrix.example }}

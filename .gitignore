@@ -8,3 +8,8 @@ test-ledger
 .claude
 build
 pot
+
+# ZK examples - not ready
+zk/mixer/
+zk/shielded-pool/
+zk/zk-merkle-proof/
