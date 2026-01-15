@@ -40,13 +40,3 @@ make zk-id
 # Show all available commands
 make help
 ```
-
-## Light Protocol V2 API
-
-These examples use Light Protocol SDK v0.17+ with the V2 accounts layout:
-
-- `light_sdk::cpi::v2::CpiAccounts` - V2 CPI accounts builder
-- `light_sdk::cpi::v2::LightSystemProgramCpi` - V2 system program CPI
-- `PackedAddressTreeInfo::into_new_address_params_assigned_packed()` - V2 address parameters
-
-The V2 layout requires a `system_accounts_offset` parameter to locate system accounts in remaining accounts.
