@@ -1,6 +1,6 @@
 # Nullifier for ZK 
 
-Program with single instruction to create nullifiers to prevent double-spending.
+Program with a single instruction to create nullifiers to prevent double-spending.
 
 Can be added to your custom program without requiring a custom circuit.
 
