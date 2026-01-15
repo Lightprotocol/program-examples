@@ -77,7 +77,7 @@ pub mod nullifier_creation {
     /// # Arguments
     /// * `nullifiers` - Slice of nullifier values to create compressed pdas for
     /// * `data` - Instruction data with proof and tree info
-    /// * `remaining_accounts` - Remaining accounts from the instruction context
+    /// * `remaining_accounts` - Remaining accounts must contain zk compression system program accounts and Merkle trees.
     pub fn create_nullifiers<'info>(
         nullifiers: &[[u8; 32]],
         data: NullifierInstructionData,
