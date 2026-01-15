@@ -27,10 +27,6 @@ light-client = { version = "0.17.2", features = ["v2"] }
 light-sdk = { version = "0.17.1", features = ["anchor", "poseidon", "merkle-tree", "v2"] }
 groth16-solana = { git = "https://github.com/Lightprotocol/groth16-solana", features = ["vk", "circom"], rev = "66c0dc87d0808c4d2aadb53c61435b6edb8ddfd9" }
 
-[build-dependencies]
-rust-witness = "0.1"
-groth16-solana = { git = "https://github.com/Lightprotocol/groth16-solana", features = ["vk"], rev = "66c0dc87d0808c4d2aadb53c61435b6edb8ddfd9" }
-
 [profile.release]
 overflow-checks = true
 lto = "fat"
