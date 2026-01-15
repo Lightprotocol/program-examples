@@ -6,7 +6,7 @@ fn main() {
 
     // Generate the verifying key Rust file from the JSON
     let vk_json_path = "./build/verification_key.json";
-    let output_dir = "./src";
+    let output_dir = "./programs/zk-id/src";
     let output_file = "verifying_key.rs";
 
     if std::path::Path::new(vk_json_path).exists() {

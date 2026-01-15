@@ -51,14 +51,23 @@ impl CredentialKeypair {
         }
     }
 
-    /// Compute nullifier for a given verification_id
-    pub fn compute_nullifier(&self, verification_id: &[u8; 31]) -> [u8; 32] {
-        // Nullifier = Poseidon(verification_id, private_key)
-        // Both need to be padded to 32 bytes for Poseidon
+    /// Compute nullifier for a given verification_id and issuer
+    /// Nullifier = Poseidon(verification_id, private_key, data_hash)
+    /// where data_hash = Poseidon(issuer_hashed, public_key)
+    pub fn compute_nullifier(
+        &self,
+        verification_id: &[u8; 31],
+        issuer_hashed: &[u8; 32],
+    ) -> [u8; 32] {
+        // First compute data_hash = Poseidon(issuer_hashed, public_key)
+        let data_hash = Poseidon::hashv(&[issuer_hashed, &self.public_key]).unwrap();
+
+        // Then compute nullifier = Poseidon(verification_id, private_key, data_hash)
+        // verification_id needs to be padded to 32 bytes for Poseidon
         let mut padded_verification = [0u8; 32];
         padded_verification[1..32].copy_from_slice(verification_id);
 
-        Poseidon::hashv(&[&padded_verification, &self.private_key]).unwrap()
+        Poseidon::hashv(&[&padded_verification, &self.private_key, &data_hash]).unwrap()
     }
 }
 
@@ -198,7 +207,8 @@ where
         .get_random_state_tree_info()?
         .pack_output_tree_index(&mut remaining_accounts)?;
 
-    let (remaining_accounts_metas, system_accounts_offset, _) = remaining_accounts.to_account_metas();
+    let (remaining_accounts_metas, system_accounts_offset, _) =
+        remaining_accounts.to_account_metas();
 
     let instruction_data = zk_id::instruction::CreateIssuer {
         proof: rpc_result.proof,
@@ -213,11 +223,7 @@ where
 
     let instruction = Instruction {
         program_id: zk_id::ID,
-        accounts: [
-            accounts.to_account_metas(None),
-            remaining_accounts_metas,
-        ]
-        .concat(),
+        accounts: [accounts.to_account_metas(None), remaining_accounts_metas].concat(),
         data: instruction_data.data(),
     };
 
@@ -273,7 +279,8 @@ where
     let issuer_account_parsed: zk_id::IssuerAccount =
         anchor_lang::AnchorDeserialize::deserialize(&mut issuer_data.data.as_slice()).unwrap();
 
-    let (remaining_accounts_metas, system_accounts_offset, _) = remaining_accounts.to_account_metas();
+    let (remaining_accounts_metas, system_accounts_offset, _) =
+        remaining_accounts.to_account_metas();
 
     let instruction_data = zk_id::instruction::AddCredential {
         proof: rpc_result.proof,
@@ -291,11 +298,7 @@ where
 
     let instruction = Instruction {
         program_id: zk_id::ID,
-        accounts: [
-            accounts.to_account_metas(None),
-            remaining_accounts_metas,
-        ]
-        .concat(),
+        accounts: [accounts.to_account_metas(None), remaining_accounts_metas].concat(),
         data: instruction_data.data(),
     };
 
@@ -393,7 +396,8 @@ where
         .get_random_state_tree_info_v1()?
         .pack_output_tree_index(&mut remaining_accounts)?;
 
-    let (remaining_accounts_metas, system_accounts_offset, _) = remaining_accounts.to_account_metas();
+    let (remaining_accounts_metas, system_accounts_offset, _) =
+        remaining_accounts.to_account_metas();
 
     let instruction_data = zk_id::instruction::ZkVerifyCredential {
         proof: rpc_result.proof,
@@ -415,11 +419,7 @@ where
 
     let instruction = Instruction {
         program_id: zk_id::ID,
-        accounts: [
-            accounts.to_account_metas(None),
-            remaining_accounts_metas,
-        ]
-        .concat(),
+        accounts: [accounts.to_account_metas(None), remaining_accounts_metas].concat(),
         data: instruction_data.data(),
     };
 
@@ -562,7 +562,7 @@ fn generate_credential_proof(
     );
 
     // Compute nullifier
-    let nullifier = credential.compute_nullifier(verification_id);
+    let nullifier = credential.compute_nullifier(verification_id, &issuer_hashed);
     proof_inputs.insert(
         "nullifier".to_string(),
         vec![BigUint::from_bytes_be(&nullifier).to_string()],

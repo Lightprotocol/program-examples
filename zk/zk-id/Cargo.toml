@@ -1,6 +1,35 @@
+[package]
+name = "zk-id-tests"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
 [workspace]
 members = ["programs/zk-id"]
 resolver = "2"
+
+[dependencies]
+zk-id = { path = "programs/zk-id" }
+
+[dev-dependencies]
+anchor-lang = "0.31.1"
+circom-prover = "0.1"
+rust-witness = "0.1"
+num-bigint = "0.4"
+serde_json = "1.0"
+solana-sdk = "2.2"
+tokio = "1.40.0"
+light-hasher = { version = "5.0.0", features = ["sha256", "keccak", "poseidon"] }
+light-compressed-account = { version = "0.7.0", features = ["new-unique"] }
+light-merkle-tree-reference = "4.0.0"
+light-program-test = { version = "0.17.1", features = ["v2"] }
+light-client = { version = "0.17.2", features = ["v2"] }
+light-sdk = { version = "0.17.1", features = ["anchor", "poseidon", "merkle-tree", "v2"] }
+groth16-solana = { git = "https://github.com/Lightprotocol/groth16-solana", features = ["vk", "circom"], rev = "66c0dc87d0808c4d2aadb53c61435b6edb8ddfd9" }
+
+[build-dependencies]
+rust-witness = "0.1"
+groth16-solana = { git = "https://github.com/Lightprotocol/groth16-solana", features = ["vk"], rev = "66c0dc87d0808c4d2aadb53c61435b6edb8ddfd9" }
 
 [profile.release]
 overflow-checks = true

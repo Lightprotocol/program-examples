@@ -49,20 +49,22 @@ template CompressedAccountMerkleProof(levels) {
     keypair.privateKey <== credentialPrivateKey;
     signal credential_pubkey_commitment <== keypair.publicKey;
 
-    // Step 2: Compute and verify nullifier
-    // Nullifier = Poseidon(verification_id, credentialPrivateKey)
-    // This ensures each credential can only be used once per verification_id
-    // without leaking information about the credential itself.
-    component nullifierHasher = Poseidon(2);
-    nullifierHasher.inputs[0] <== verification_id;
-    nullifierHasher.inputs[1] <== credentialPrivateKey;
-    nullifier === nullifierHasher.out;
-
-    // Step 3: Compute the credential data hash (used internally for account hash)
+    // Step 2: Compute the credential data hash
+    // data_hash = Poseidon(issuer_hashed, credential_pubkey_commitment)
     component data_hasher = Poseidon(2);
     data_hasher.inputs[0] <== issuer_hashed;
     data_hasher.inputs[1] <== credential_pubkey_commitment;
     signal data_hash <== data_hasher.out;
+
+    // Step 3: Compute and verify nullifier
+    // Nullifier = Poseidon(verification_id, credentialPrivateKey, data_hash)
+    // This ensures each credential can only be used once per verification_id
+    // and binds the nullifier to the credential's on-chain data commitment.
+    component nullifierHasher = Poseidon(3);
+    nullifierHasher.inputs[0] <== verification_id;
+    nullifierHasher.inputs[1] <== credentialPrivateKey;
+    nullifierHasher.inputs[2] <== data_hash;
+    nullifier === nullifierHasher.out;
 
     // Step 4: Compute compressed account hash
     component accountHasher = CompressedAccountHash();
