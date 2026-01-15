@@ -72,7 +72,7 @@ pub mod nullifier_creation {
         pub system_accounts_offset: u8,
     }
 
-    /// Creates nullifier accounts for the given nullifier values.
+    /// Creates nullifier compressed pdas for the given nullifier values.
     ///
     /// # Arguments
     /// * `nullifiers` - Slice of nullifier values to create compressed pdas for
