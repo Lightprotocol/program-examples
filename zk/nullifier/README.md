@@ -5,7 +5,7 @@ Program with a single instruction to create nullifiers to prevent double-spendin
 * Nullifiers require a data structure that ensures the nullifier is only created once.
 * On Solana a straight forward way is to derive a PDA with the nullifier as seed for the PDA account.
 * Nullifier accounts must remain active, hence lock ~0.001 SOL in rent per nullifier PDA permanently.
-* Compressed addresses are rent-free, provide similar functionality and derivation.
+* Compressed pdas are rent-free, provide similar functionality and derivation.
 
 | Storage | Cost per nullifier |
 |---------|-------------------|
