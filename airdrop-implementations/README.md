@@ -1,6 +1,6 @@
 # Airdrop Implementations
 
-Simple Implementation: [simple-claim](./simple-claim) - Distributes compressed tokens that get decompressed on claim
+Simple Implementation: [simple-claim](./simple-claim) - Distributes compressed tokens that get decompressed on claim.
 
 Advanced Implementation: [distributor](https://github.com/Lightprotocol/distributor/tree/master) - Distributes SPL tokens, uses compressed PDAs to track claims. Based on jito Merkle distributor.
 
@@ -11,7 +11,6 @@ Advanced Implementation: [distributor](https://github.com/Lightprotocol/distribu
 | Vesting | Cliff at Slot X	 | Linear Vesting |
 | Partial claims | No | Yes |
 | Clawback | No | Yes |
-| Admin controls | No | Yes |
 | Frontend | None | REST API + CLI |
 
 ## Cost
