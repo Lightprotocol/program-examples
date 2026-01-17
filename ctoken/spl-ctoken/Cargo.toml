@@ -1,0 +1,26 @@
+[package]
+name = "spl-ctoken"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["lib"]
+
+[dependencies]
+# Light Protocol SDK dependencies
+light-ctoken-sdk = "0.2.1"
+light-client = "0.17.2"
+light-program-test = { version = "0.17.1", features = ["v2"] }
+
+# Solana dependencies
+solana-sdk = "2.2"
+solana-program = "2.2"
+
+# SPL dependencies
+spl-token = "7"
+spl-token-2022 = "7"
+spl-pod = "0.5"
+anchor-spl = "0.31"
+
+# Async runtime
+tokio = { version = "1.36", features = ["full"] }
