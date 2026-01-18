@@ -6,7 +6,7 @@ Zero-knowledge identity verification using Groth16 proofs with compressed accoun
 
 - Issuers create credentials for users; users prove credential ownership without revealing the credential
 - Credential keypair: private key = `Sha256(sign("CREDENTIAL"))` truncated to 248 bits; public key = `Poseidon(private_key)`
-- Nullifier = `Poseidon(verification_id, credential_private_key)` - prevents double-use per verification context
+- Nullifier = `Poseidon(verification_id, credential_private_key, data_hash)` where `data_hash = Poseidon(issuer_hashed, credential_public_key)` - prevents double-use per verification context and binds to credential's on-chain data
 - ZK circuit verifies 26-level Merkle proof of credential account inclusion
 
 ## [README](README.md)
@@ -78,8 +78,8 @@ derive_address(&[seed_prefix, identifier], &address_tree_pubkey, &program_id)
 
 **Circuit flow**:
 1. Derive `credential_pubkey = Poseidon(privateKey)` via `Keypair` template
-2. Verify `nullifier = Poseidon(verification_id, privateKey)`
-3. Compute `data_hash = Poseidon(issuer_hashed, credential_pubkey)`
+2. Compute `data_hash = Poseidon(issuer_hashed, credential_pubkey)`
+3. Verify `nullifier = Poseidon(verification_id, privateKey, data_hash)`
 4. Compute account hash via `CompressedAccountHash` (adds discriminator domain `+36893488147419103232`)
 5. Verify 26-level Merkle proof against `expectedRoot`
 6. Verify `public_encrypted_data_hash === encrypted_data_hash`

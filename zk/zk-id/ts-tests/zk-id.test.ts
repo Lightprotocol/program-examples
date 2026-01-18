@@ -111,11 +111,26 @@ describe("zk-id", () => {
     return { privateKey, publicKey };
   }
 
-  /** Compute nullifier = Poseidon(verification_id, credentialPrivateKey) */
-  function computeNullifier(verificationId: Uint8Array, credentialPrivateKey: Uint8Array): Uint8Array {
+  /** Compute nullifier = Poseidon(verification_id, credentialPrivateKey, data_hash) */
+  /** where data_hash = Poseidon(issuer_hashed, credential_pubkey) */
+  function computeNullifier(
+    verificationId: Uint8Array,
+    credentialPrivateKey: Uint8Array,
+    issuerHashed: Uint8Array,
+    credentialPubkey: Uint8Array
+  ): Uint8Array {
+    // First compute data_hash = Poseidon(issuer_hashed, credential_pubkey)
+    const dataHash = poseidon([
+      BigInt("0x" + Buffer.from(issuerHashed).toString("hex")),
+      BigInt("0x" + Buffer.from(credentialPubkey).toString("hex")),
+    ]);
+    const dataHashBigInt = poseidon.F.toObject(dataHash);
+
+    // Then compute nullifier = Poseidon(verification_id, credentialPrivateKey, data_hash)
     const hash = poseidon([
       BigInt("0x" + Buffer.from(verificationId).toString("hex")),
       BigInt("0x" + Buffer.from(credentialPrivateKey).toString("hex")),
+      dataHashBigInt,
     ]);
     return bigintToBytes32(poseidon.F.toObject(hash));
   }
@@ -259,20 +274,30 @@ describe("zk-id", () => {
     });
 
     it("should compute nullifier correctly", () => {
-      const { privateKey } = generateCredentialKeypair();
+      const { privateKey, publicKey } = generateCredentialKeypair();
       const verificationId = generateFieldElement();
-      const nullifier = computeNullifier(verificationId, privateKey);
+      const issuerHashed = hashToBn254Field(issuer.publicKey.toBytes());
+      const nullifier = computeNullifier(verificationId, privateKey, issuerHashed, publicKey);
 
+      // Compute data_hash = Poseidon(issuer_hashed, credential_pubkey)
+      const dataHash = poseidon([
+        BigInt("0x" + Buffer.from(issuerHashed).toString("hex")),
+        BigInt("0x" + Buffer.from(publicKey).toString("hex")),
+      ]);
+      const dataHashBigInt = poseidon.F.toObject(dataHash);
+
+      // Compute nullifier = Poseidon(verification_id, privateKey, data_hash)
       const hash = poseidon([
         BigInt("0x" + Buffer.from(verificationId).toString("hex")),
         BigInt("0x" + Buffer.from(privateKey).toString("hex")),
+        dataHashBigInt,
       ]);
       const computedNullifier = bigintToBytes32(poseidon.F.toObject(hash));
 
       assert.deepStrictEqual(
         Array.from(nullifier),
         Array.from(computedNullifier),
-        "Nullifier should be Poseidon(verification_id, privateKey)"
+        "Nullifier should be Poseidon(verification_id, privateKey, data_hash)"
       );
     });
   });
@@ -291,7 +316,7 @@ describe("zk-id", () => {
       discriminator.set(Buffer.from([0x2e, 0x9c, 0x4a, 0x87, 0x12, 0x34, 0x56, 0x78]), 24);
 
       const verificationId = generateFieldElement();
-      const nullifier = computeNullifier(verificationId, credentialPrivateKey);
+      const nullifier = computeNullifier(verificationId, credentialPrivateKey, issuerHashed, credentialPubkey);
 
       const encryptedDataHash = generateFieldElement();
       const address = generateFieldElement();
@@ -339,13 +364,14 @@ describe("zk-id", () => {
     });
 
     it("should verify nullifier uniqueness property", () => {
-      const { privateKey } = generateCredentialKeypair();
+      const { privateKey, publicKey } = generateCredentialKeypair();
+      const issuerHashed = hashToBn254Field(issuer.publicKey.toBytes());
 
       const verificationId1 = generateFieldElement();
       const verificationId2 = generateFieldElement();
 
-      const nullifier1 = computeNullifier(verificationId1, privateKey);
-      const nullifier2 = computeNullifier(verificationId2, privateKey);
+      const nullifier1 = computeNullifier(verificationId1, privateKey, issuerHashed, publicKey);
+      const nullifier2 = computeNullifier(verificationId2, privateKey, issuerHashed, publicKey);
 
       assert.notDeepStrictEqual(
         Array.from(nullifier1),

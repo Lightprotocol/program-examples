@@ -8819,6 +8819,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "zk-id-tests"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "circom-prover",
+ "groth16-solana",
+ "light-client",
+ "light-compressed-account",
+ "light-hasher",
+ "light-merkle-tree-reference",
+ "light-program-test",
+ "light-sdk",
+ "num-bigint 0.4.6",
+ "rust-witness",
+ "serde_json",
+ "solana-sdk",
+ "tokio",
+ "zk-id",
+]
+
+[[package]]
 name = "zstd"
 version = "0.13.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"

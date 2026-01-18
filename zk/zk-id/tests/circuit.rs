@@ -56,14 +56,23 @@ impl CredentialKeypair {
         BigUint::from_bytes_be(&self.private_key)
     }
 
-    /// Compute nullifier for a given verification_id
-    pub fn compute_nullifier(&self, verification_id: &[u8; 31]) -> [u8; 32] {
-        // Nullifier = Poseidon(verification_id, private_key)
-        // Both need to be padded to 32 bytes for Poseidon
+    /// Compute nullifier for a given verification_id and issuer
+    /// Nullifier = Poseidon(verification_id, private_key, data_hash)
+    /// where data_hash = Poseidon(issuer_hashed, public_key)
+    pub fn compute_nullifier(
+        &self,
+        verification_id: &[u8; 31],
+        issuer_hashed: &[u8; 32],
+    ) -> [u8; 32] {
+        // First compute data_hash = Poseidon(issuer_hashed, public_key)
+        let data_hash = Poseidon::hashv(&[issuer_hashed, &self.public_key]).unwrap();
+
+        // Then compute nullifier = Poseidon(verification_id, private_key, data_hash)
+        // verification_id needs to be padded to 32 bytes for Poseidon
         let mut padded_verification = [0u8; 32];
         padded_verification[1..32].copy_from_slice(verification_id);
 
-        Poseidon::hashv(&[&padded_verification, &self.private_key]).unwrap()
+        Poseidon::hashv(&[&padded_verification, &self.private_key, &data_hash]).unwrap()
     }
 }
 
@@ -110,8 +119,8 @@ fn add_compressed_account_to_circuit_inputs(
     let mut encrypted_data_hash = Sha256::hash(&hash_input).unwrap();
     encrypted_data_hash[0] = 0;
 
-    // Compute nullifier using credential private key and verification_id
-    let nullifier = credential.compute_nullifier(verification_id);
+    // Compute nullifier using credential private key, verification_id, and issuer
+    let nullifier = credential.compute_nullifier(verification_id, &issuer_hashed);
 
     // Add all inputs to the HashMap
     inputs.insert(
