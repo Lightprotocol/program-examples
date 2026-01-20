@@ -3208,6 +3208,7 @@ dependencies = [
 name = "native-program-burn"
 version = "0.1.0"
 dependencies = [
+ "blake3",
  "borsh 0.10.4",
  "light-client",
  "light-hasher",
@@ -3223,6 +3224,7 @@ dependencies = [
 name = "native-program-close"
 version = "0.1.0"
 dependencies = [
+ "blake3",
  "borsh 0.10.4",
  "light-client",
  "light-hasher",
@@ -3238,6 +3240,7 @@ dependencies = [
 name = "native-program-create"
 version = "0.1.0"
 dependencies = [
+ "blake3",
  "borsh 0.10.4",
  "light-client",
  "light-hasher",
@@ -3253,6 +3256,7 @@ dependencies = [
 name = "native-program-reinit"
 version = "0.1.0"
 dependencies = [
+ "blake3",
  "borsh 0.10.4",
  "light-client",
  "light-hasher",
@@ -3268,6 +3272,7 @@ dependencies = [
 name = "native-program-update"
 version = "0.1.0"
 dependencies = [
+ "blake3",
  "borsh 0.10.4",
  "light-client",
  "light-hasher",

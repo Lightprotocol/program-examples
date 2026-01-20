@@ -31,6 +31,7 @@ light-program-test = "0.18.0"
 light-client = "0.18.0"
 tokio = "1.43.0"
 solana-sdk = "2.2"
+blake3 = "=1.8.2"
 
 [lints.rust.unexpected_cfgs]
 level = "allow"
