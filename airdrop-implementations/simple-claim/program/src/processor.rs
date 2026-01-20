@@ -66,7 +66,7 @@ fn process_claim(accounts: &[AccountInfo], ix_data: ClaimIxData) -> ProgramResul
         return Err(ProgramError::MissingRequiredSignature);
     }
     // CHECK:
-    if ctoken_program_info.key != &light_token::ctoken::id() {
+    if ctoken_program_info.key != &light_token::instruction::id() {
         msg!("Invalid compressed token program.",);
         ctoken_program_info.key.log();
         return Err(ProgramError::InvalidArgument);

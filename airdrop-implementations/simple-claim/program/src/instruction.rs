@@ -139,8 +139,8 @@ pub fn compress(
     recipient: Pubkey,
     merkle_tree: Pubkey,
     token_program_id: Pubkey,
-) -> Result<Instruction, light_token::error::CTokenSdkError> {
-    let spl_interface_info = derive_spl_interface_pda(&mint, 0);
+) -> Result<Instruction, light_token::error::TokenSdkError> {
+    let spl_interface_info = derive_spl_interface_pda(&mint, 0, false);
 
     let inputs = BatchCompressInputs {
         fee_payer,
