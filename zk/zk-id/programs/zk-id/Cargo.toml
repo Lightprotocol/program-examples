@@ -29,7 +29,7 @@ rust-witness = "0.1"
 num-bigint = "0.4"
 serde_json = "1.0"
 light-compressed-account = "0.8.0"
-light-merkle-tree-reference = { git = "https://github.com/Lightprotocol/light-protocol", rev = "b043f6225a04d75ee7e06ccbab21c582032ec673" }
+light-merkle-tree-reference = "4.0.0"
 groth16-solana = { git = "https://github.com/Lightprotocol/groth16-solana", features = ["vk", "circom"], rev = "66c0dc87d0808c4d2aadb53c61435b6edb8ddfd9" }
 blake3 = "=1.8.2"
 
