@@ -9,7 +9,7 @@ use light_sdk::{
     instruction::{account_meta::CompressedAccountMeta, PackedAddressTreeInfo, ValidityProof},
     LightDiscriminator, LightHasher,
 };
-use light_sdk_types::ADDRESS_TREE_V2;
+use light_sdk::constants::ADDRESS_TREE_V2;
 
 #[error_code]
 pub enum CustomError {

@@ -49,7 +49,7 @@ pub mod nullifier_creation {
         instruction::{PackedAddressTreeInfo, ValidityProof},
         LightDiscriminator,
     };
-    use light_sdk_types::CpiSigner;
+    use light_sdk::CpiSigner;
     #[error_code]
     pub enum ErrorCode {
         #[msg("Not enough keys in remaining accounts")]

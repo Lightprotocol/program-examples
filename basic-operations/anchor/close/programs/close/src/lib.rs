@@ -10,7 +10,7 @@ use light_sdk::{
     instruction::{account_meta::CompressedAccountMeta, PackedAddressTreeInfo, ValidityProof},
     LightDiscriminator,
 };
-use light_sdk_types::ADDRESS_TREE_V2;
+use light_sdk::constants::ADDRESS_TREE_V2;
 
 declare_id!("DzQ3za3DVCpXkXhmZVSrNchwbbSsJXmi9MBc8v5tvZuQ");
 
