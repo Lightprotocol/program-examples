@@ -30,12 +30,9 @@ async fn test_burn() {
         &address_tree_pubkey,
         &ID,
     );
-    let merkle_tree_pubkey = rpc.get_random_state_tree_info().unwrap().tree;
-
     native_program_burn::test_helpers::create_compressed_account(
         &payer,
         &mut rpc,
-        &merkle_tree_pubkey,
         address_tree_pubkey,
         address,
         "Hello, compressed world!".to_string(),

@@ -1,5 +1,5 @@
 use borsh::{BorshDeserialize, BorshSerialize};
-use light_ctoken_sdk::ValidityProof;
+use light_token::ValidityProof;
 use light_sdk::instruction::PackedStateTreeInfo;
 use solana_program::pubkey::Pubkey;
 
@@ -7,7 +7,7 @@ use solana_program::pubkey::Pubkey;
 use solana_program::instruction::{AccountMeta, Instruction};
 
 #[cfg(not(target_os = "solana"))]
-use light_ctoken_sdk::{
+use light_token::{
     compressed_token::batch_compress::{
         create_batch_compress_instruction, BatchCompressInputs, Recipient,
     },
@@ -139,8 +139,8 @@ pub fn compress(
     recipient: Pubkey,
     merkle_tree: Pubkey,
     token_program_id: Pubkey,
-) -> Result<Instruction, light_ctoken_sdk::error::CTokenSdkError> {
-    let spl_interface_info = derive_spl_interface_pda(&mint, 0);
+) -> Result<Instruction, light_token::error::TokenSdkError> {
+    let spl_interface_info = derive_spl_interface_pda(&mint, 0, false);
 
     let inputs = BatchCompressInputs {
         fee_payer,

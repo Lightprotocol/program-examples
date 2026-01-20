@@ -7,7 +7,6 @@ import {
   CompressedAccountWithMerkleContext,
   confirmTx,
   createRpc,
-  defaultTestStateTreeAccounts,
   deriveAddressV2,
   deriveAddressSeedV2,
   batchAddressTree,
@@ -17,6 +16,8 @@ import {
   SystemAccountMetaConfig,
   featureFlags,
   VERSION,
+  selectStateTreeInfo,
+  TreeInfo,
 } from "@lightprotocol/stateless.js";
 import * as assert from "assert";
 
@@ -48,7 +49,8 @@ describe("test-anchor-close", () => {
     await rpc.requestAirdrop(signer.publicKey, lamports);
     await sleep(2000);
 
-    const outputStateTree = defaultTestStateTreeAccounts().merkleTree;
+    const stateTreeInfos = await rpc.getStateTreeInfos();
+    const stateTreeInfo = selectStateTreeInfo(stateTreeInfos);
     const addressTree = new web3.PublicKey(batchAddressTree);
 
     const messageSeed = new TextEncoder().encode("message");
@@ -64,7 +66,7 @@ describe("test-anchor-close", () => {
       addressTree,
       address,
       closeProgram,
-      outputStateTree,
+      stateTreeInfo,
       signer,
       "Hello, compressed world!",
     );
@@ -87,7 +89,7 @@ describe("test-anchor-close", () => {
       rpc,
       compressedAccount,
       closeProgram,
-      outputStateTree,
+      stateTreeInfo,
       signer,
       "Hello, compressed world!",
     );
@@ -114,7 +116,7 @@ async function createCompressedAccount(
   addressTree: anchor.web3.PublicKey,
   address: anchor.web3.PublicKey,
   program: anchor.Program<Close>,
-  outputStateTree: anchor.web3.PublicKey,
+  stateTreeInfo: TreeInfo,
   signer: anchor.web3.Keypair,
   message: string,
 ) {
@@ -141,7 +143,7 @@ async function createCompressedAccount(
     addressQueuePubkeyIndex,
   };
   const outputStateTreeIndex =
-    remainingAccounts.insertOrGet(outputStateTree);
+    remainingAccounts.insertOrGet(stateTreeInfo.queue);
 
   let proof = {
     0: proofRpcResult.compressedProof,
@@ -170,7 +172,7 @@ async function closeCompressedAccount(
   rpc: Rpc,
   compressedAccount: CompressedAccountWithMerkleContext,
   program: anchor.Program<Close>,
-  outputStateTree: anchor.web3.PublicKey,
+  stateTreeInfo: TreeInfo,
   signer: anchor.web3.Keypair,
   message: string,
 ) {
@@ -196,7 +198,7 @@ async function closeCompressedAccount(
     compressedAccount.treeInfo.queue,
   );
   const outputStateTreeIndex =
-    remainingAccounts.insertOrGet(outputStateTree);
+    remainingAccounts.insertOrGet(stateTreeInfo.queue);
 
   const coder = new anchor.BorshCoder(closeIdl as anchor.Idl);
   const currentAccount = coder.types.decode(
@@ -209,7 +211,7 @@ async function closeCompressedAccount(
       merkleTreePubkeyIndex,
       queuePubkeyIndex,
       leafIndex: compressedAccount.leafIndex,
-      proveByIndex: false,
+      proveByIndex: true,
       rootIndex: proofRpcResult.rootIndices[0],
     },
     address: compressedAccount.address,

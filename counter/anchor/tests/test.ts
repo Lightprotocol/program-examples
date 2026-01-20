@@ -7,7 +7,6 @@ import {
   CompressedAccountWithMerkleContext,
   confirmTx,
   createRpc,
-  defaultTestStateTreeAccounts,
   deriveAddressV2,
   deriveAddressSeedV2,
   batchAddressTree,
@@ -17,6 +16,8 @@ import {
   SystemAccountMetaConfig,
   featureFlags,
   VERSION,
+  selectStateTreeInfo,
+  TreeInfo,
 } from "@lightprotocol/stateless.js";
 import { assert } from "chai";
 
@@ -47,7 +48,8 @@ describe("test-anchor", () => {
     await rpc.requestAirdrop(signer.publicKey, lamports);
     await sleep(2000);
 
-    const outputMerkleTree = defaultTestStateTreeAccounts().merkleTree;
+    const stateTreeInfos = await rpc.getStateTreeInfos();
+    const stateTreeInfo = selectStateTreeInfo(stateTreeInfos);
     const addressTree = new web3.PublicKey(batchAddressTree);
 
     const counterSeed = new TextEncoder().encode("counter");
@@ -63,7 +65,7 @@ describe("test-anchor", () => {
       addressTree,
       address,
       program,
-      outputMerkleTree,
+      stateTreeInfo,
       signer
     );
 
@@ -81,7 +83,7 @@ describe("test-anchor", () => {
       counter.value,
       counterAccount,
       program,
-      outputMerkleTree,
+      stateTreeInfo,
       signer
     );
 
@@ -95,7 +97,7 @@ describe("test-anchor", () => {
       counter.value,
       counterAccount,
       program,
-      outputMerkleTree,
+      stateTreeInfo,
       signer
     );
 
@@ -121,7 +123,7 @@ async function CreateCounterCompressedAccount(
   addressTree: anchor.web3.PublicKey,
   address: anchor.web3.PublicKey,
   program: anchor.Program<Counter>,
-  outputMerkleTree: anchor.web3.PublicKey,
+  stateTreeInfo: TreeInfo,
   signer: anchor.web3.Keypair
 ) {
   {
@@ -148,7 +150,7 @@ async function CreateCounterCompressedAccount(
       addressQueuePubkeyIndex,
     };
     const outputMerkleTreeIndex =
-      remainingAccounts.insertOrGet(outputMerkleTree);
+      remainingAccounts.insertOrGet(stateTreeInfo.queue);
 
     let proof = {
       0: proofRpcResult.compressedProof,
@@ -180,7 +182,7 @@ async function incrementCounterCompressedAccount(
   counterValue: anchor.BN,
   counterAccount: CompressedAccountWithMerkleContext,
   program: anchor.Program<Counter>,
-  outputMerkleTree: anchor.web3.PublicKey,
+  stateTreeInfo: TreeInfo,
   signer: anchor.web3.Keypair
 ) {
   {
@@ -205,11 +207,11 @@ async function incrementCounterCompressedAccount(
       counterAccount.treeInfo.queue
     );
     const outputMerkleTreeIndex =
-      remainingAccounts.insertOrGet(outputMerkleTree);
+      remainingAccounts.insertOrGet(stateTreeInfo.queue);
     const compressedAccountMeta = {
       treeInfo: {
         rootIndex: proofRpcResult.rootIndices[0],
-        proveByIndex: false,
+        proveByIndex: true,
         merkleTreePubkeyIndex,
         queuePubkeyIndex,
         leafIndex: counterAccount.leafIndex,
@@ -248,7 +250,7 @@ async function deleteCounterCompressedAccount(
   counterValue: anchor.BN,
   counterAccount: CompressedAccountWithMerkleContext,
   program: anchor.Program<Counter>,
-  outputMerkleTree: anchor.web3.PublicKey,
+  stateTreeInfo: TreeInfo,
   signer: anchor.web3.Keypair
 ) {
   {
@@ -273,12 +275,12 @@ async function deleteCounterCompressedAccount(
       counterAccount.treeInfo.queue
     );
     const outputMerkleTreeIndex =
-      remainingAccounts.insertOrGet(outputMerkleTree);
+      remainingAccounts.insertOrGet(stateTreeInfo.queue);
 
     const compressedAccountMeta = {
       treeInfo: {
         rootIndex: proofRpcResult.rootIndices[0],
-        proveByIndex: false,
+        proveByIndex: true,
         merkleTreePubkeyIndex,
         queuePubkeyIndex,
         leafIndex: counterAccount.leafIndex,

@@ -4,8 +4,8 @@ use light_client::indexer::GetCompressedTokenAccountsByOwnerOrDelegateOptions;
 use light_compressed_claim::instruction::{
     build_claim_and_decompress_instruction, compress, ClaimAccounts,
 };
-use light_ctoken_sdk::constants::{ACCOUNT_COMPRESSION_PROGRAM_ID, LIGHT_SYSTEM_PROGRAM_ID};
-use light_ctoken_sdk::spl_interface::{get_spl_interface_pda, CreateSplInterfacePda};
+use light_token::constants::{ACCOUNT_COMPRESSION_PROGRAM_ID, LIGHT_SYSTEM_PROGRAM_ID};
+use light_token::spl_interface::{get_spl_interface_pda, CreateSplInterfacePda};
 use light_program_test::accounts::test_accounts::NOOP_PROGRAM_ID;
 use light_program_test::program_test::TestRpc;
 use light_program_test::{program_test::LightProgramTest, Indexer, ProgramTestConfig, Rpc};
@@ -82,7 +82,7 @@ async fn test_claim_and_decompress() {
         .await
         .unwrap();
 
-    let spl_interface_pda = get_spl_interface_pda(&mint.pubkey());
+    let spl_interface_pda = get_spl_interface_pda(&mint.pubkey(), false);
     let accounts = ClaimAccounts {
         claimant: claimant.pubkey(),
         fee_payer: payer.pubkey(),
@@ -170,7 +170,7 @@ pub fn find_claimant_pda(claimant: Pubkey, mint: Pubkey, slot: u64) -> (Pubkey, 
 
 pub async fn setup_token_pool(rpc: &mut LightProgramTest, mint: &Keypair, payer: &Keypair) {
     let create_spl_interface_pda_ix =
-        CreateSplInterfacePda::new(payer.pubkey(), mint.pubkey(), spl_token::ID).instruction();
+        CreateSplInterfacePda::new(payer.pubkey(), mint.pubkey(), spl_token::ID, false).instruction();
     rpc.create_and_send_transaction(&[create_spl_interface_pda_ix], &payer.pubkey(), &[&payer])
         .await
         .unwrap();

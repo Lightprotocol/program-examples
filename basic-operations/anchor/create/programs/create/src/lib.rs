@@ -10,7 +10,7 @@ use light_sdk::{
     instruction::{PackedAddressTreeInfo, ValidityProof},
     LightDiscriminator,
 };
-use light_sdk_types::ADDRESS_TREE_V2;
+use light_sdk::constants::ADDRESS_TREE_V2;
 
 declare_id!("Hps5oaKdYWqjVZJnAxUE1uwbozwEgZZGCRA57p2wdqcS");
 

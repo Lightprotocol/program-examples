@@ -5,7 +5,6 @@ import {
   bn,
   confirmTx,
   createRpc,
-  defaultTestStateTreeAccounts,
   deriveAddressV2,
   deriveAddressSeedV2,
   batchAddressTree,
@@ -15,6 +14,8 @@ import {
   SystemAccountMetaConfig,
   featureFlags,
   VERSION,
+  selectStateTreeInfo,
+  TreeInfo,
 } from "@lightprotocol/stateless.js";
 import * as assert from "assert";
 
@@ -38,7 +39,8 @@ describe("test-create-nullifier", () => {
     await rpc.requestAirdrop(signer.publicKey, lamports);
     await sleep(2000);
 
-    const outputStateTree = defaultTestStateTreeAccounts().merkleTree;
+    const stateTreeInfos = await rpc.getStateTreeInfos();
+    const stateTreeInfo = selectStateTreeInfo(stateTreeInfos);
     const addressTree = new web3.PublicKey(batchAddressTree);
 
     // Create a 32-byte id
@@ -61,7 +63,7 @@ describe("test-create-nullifier", () => {
       addressTree,
       address,
       program,
-      outputStateTree,
+      stateTreeInfo,
       signer,
       Array.from(id)
     );
@@ -89,7 +91,8 @@ describe("test-create-nullifier", () => {
     await rpc.requestAirdrop(signer.publicKey, lamports);
     await sleep(2000);
 
-    const outputStateTree = defaultTestStateTreeAccounts().merkleTree;
+    const stateTreeInfos = await rpc.getStateTreeInfos();
+    const stateTreeInfo = selectStateTreeInfo(stateTreeInfos);
     const addressTree = new web3.PublicKey(batchAddressTree);
 
     // Use same id for both attempts
@@ -112,7 +115,7 @@ describe("test-create-nullifier", () => {
       addressTree,
       address,
       program,
-      outputStateTree,
+      stateTreeInfo,
       signer,
       Array.from(id)
     );
@@ -128,7 +131,7 @@ describe("test-create-nullifier", () => {
         addressTree,
         address,
         program,
-        outputStateTree,
+        stateTreeInfo,
         signer,
         Array.from(id)
       );
@@ -144,7 +147,7 @@ async function createNullifierAccount(
   addressTree: anchor.web3.PublicKey,
   address: anchor.web3.PublicKey,
   program: anchor.Program<CreateNullifier>,
-  outputStateTree: anchor.web3.PublicKey,
+  stateTreeInfo: TreeInfo,
   signer: anchor.web3.Keypair,
   id: number[]
 ) {
@@ -170,7 +173,7 @@ async function createNullifierAccount(
     addressMerkleTreePubkeyIndex,
     addressQueuePubkeyIndex,
   };
-  const outputStateTreeIndex = remainingAccounts.insertOrGet(outputStateTree);
+  const outputStateTreeIndex = remainingAccounts.insertOrGet(stateTreeInfo.queue);
   let proof = {
     0: proofRpcResult.compressedProof,
   };

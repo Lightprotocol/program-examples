@@ -26,12 +26,10 @@ async fn test_create() {
         &address_tree_pubkey,
         &ID,
     );
-    let merkle_tree_pubkey = rpc.get_random_state_tree_info().unwrap().tree;
 
     create_compressed_account(
         &payer,
         &mut rpc,
-        &merkle_tree_pubkey,
         address_tree_pubkey,
         address,
         "Hello, compressed world!".to_string(),
@@ -60,7 +58,6 @@ async fn test_create() {
 pub async fn create_compressed_account(
     payer: &Keypair,
     rpc: &mut LightProgramTest,
-    merkle_tree_pubkey: &Pubkey,
     address_tree_pubkey: Pubkey,
     address: [u8; 32],
     message: String,
@@ -82,8 +79,10 @@ pub async fn create_compressed_account(
         .await?
         .value;
 
-    let output_state_tree_index = accounts.insert_or_get(*merkle_tree_pubkey);
     let packed_address_tree_info = rpc_result.pack_tree_infos(&mut accounts).address_trees[0];
+    let output_state_tree_index = rpc
+        .get_random_state_tree_info()?
+        .pack_output_tree_index(&mut accounts)?;
     let (account_metas, _, _) = accounts.to_account_metas();
 
     let instruction_data = CreateInstructionData {

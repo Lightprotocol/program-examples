@@ -15,7 +15,7 @@ use light_sdk::{
     },
     LightDiscriminator,
 };
-use light_sdk_types::ADDRESS_TREE_V2;
+use light_sdk::constants::ADDRESS_TREE_V2;
 
 declare_id!("HNqStLMpNuNJqhBF1FbGTKHEFbBLJmq8RdJJmZKWz6jH");
 

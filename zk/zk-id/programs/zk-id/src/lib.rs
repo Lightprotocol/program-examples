@@ -18,7 +18,7 @@ use light_sdk::{
     merkle_tree::v1::read_state_merkle_tree_root,
     LightDiscriminator, LightHasher,
 };
-use light_sdk_types::CpiSigner;
+use light_sdk::CpiSigner;
 
 declare_id!("8HYAuAkoLp2UG4mgkqUcJBXo2bzaaKy8nBL62L4S3SSB");
 

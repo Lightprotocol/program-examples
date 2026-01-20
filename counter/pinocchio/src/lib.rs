@@ -13,7 +13,7 @@ use light_sdk_pinocchio::{
     instruction::{account_meta::CompressedAccountMeta, PackedAddressTreeInfo, ValidityProof},
     LightAccount, LightDiscriminator, LightHasher,
 };
-use light_sdk_types::ADDRESS_TREE_V2;
+use light_sdk_pinocchio::constants::ADDRESS_TREE_V2;
 use pinocchio::{
     account_info::AccountInfo, entrypoint, program_error::ProgramError, pubkey::Pubkey,
 };

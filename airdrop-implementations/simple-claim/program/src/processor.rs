@@ -4,7 +4,7 @@ use crate::{
 };
 use borsh::BorshDeserialize;
 
-use light_ctoken_sdk::compressed_token::{
+use light_token::compressed_token::{
     transfer::instruction::DecompressInputs, CTokenAccount, TokenAccountMeta,
 };
 use solana_program::{
@@ -66,7 +66,7 @@ fn process_claim(accounts: &[AccountInfo], ix_data: ClaimIxData) -> ProgramResul
         return Err(ProgramError::MissingRequiredSignature);
     }
     // CHECK:
-    if ctoken_program_info.key != &light_ctoken_sdk::ctoken::id() {
+    if ctoken_program_info.key != &light_token::instruction::id() {
         msg!("Invalid compressed token program.",);
         ctoken_program_info.key.log();
         return Err(ProgramError::InvalidArgument);
@@ -102,7 +102,7 @@ fn process_claim(accounts: &[AccountInfo], ix_data: ClaimIxData) -> ProgramResul
     };
 
     let instruction =
-        light_ctoken_sdk::compressed_token::transfer::instruction::decompress(decompress_inputs)?;
+        light_token::compressed_token::transfer::instruction::decompress(decompress_inputs)?;
 
     // CHECK:
     let current_slot = Clock::get()?.slot;
