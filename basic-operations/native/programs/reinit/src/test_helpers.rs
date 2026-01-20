@@ -12,7 +12,6 @@ use solana_sdk::{
 pub async fn create_compressed_account(
     payer: &Keypair,
     rpc: &mut LightProgramTest,
-    merkle_tree_pubkey: &Pubkey,
     address_tree_pubkey: Pubkey,
     address: [u8; 32],
     message: String,
@@ -34,14 +33,16 @@ pub async fn create_compressed_account(
         .await?
         .value;
 
-    let output_state_tree_index = accounts.insert_or_get(*merkle_tree_pubkey);
+    let output_state_tree_index = rpc
+        .get_random_state_tree_info()?
+        .pack_output_tree_index(&mut accounts)?;
     let packed_address_tree_info = rpc_result.pack_tree_infos(&mut accounts).address_trees[0];
     let (account_metas, _, _) = accounts.to_account_metas();
 
     let instruction_data = CreateInstructionData {
         proof: rpc_result.proof,
         address_tree_info: packed_address_tree_info,
-        output_state_tree_index: output_state_tree_index,
+        output_state_tree_index,
         message,
     };
     let inputs = instruction_data.try_to_vec().unwrap();

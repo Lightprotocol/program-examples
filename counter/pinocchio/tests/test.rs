@@ -34,12 +34,9 @@ async fn test_counter() {
         &address_tree_pubkey,
         &counter::ID.into(),
     );
-    let merkle_tree_pubkey = rpc.get_random_state_tree_info().unwrap().tree;
-
     create_counter(
         &payer,
         &mut rpc,
-        &merkle_tree_pubkey,
         address_tree_pubkey,
         address,
     )
@@ -100,7 +97,6 @@ async fn test_counter() {
 pub async fn create_counter(
     payer: &Keypair,
     rpc: &mut LightProgramTest,
-    merkle_tree_pubkey: &Pubkey,
     address_tree_pubkey: Pubkey,
     address: [u8; 32],
 ) -> Result<(), RpcError> {
@@ -121,14 +117,16 @@ pub async fn create_counter(
         .await?
         .value;
 
-    let output_merkle_tree_index = accounts.insert_or_get(*merkle_tree_pubkey);
+    let output_state_tree_index = rpc
+        .get_random_state_tree_info()?
+        .pack_output_tree_index(&mut accounts)?;
     let packed_address_tree_info = rpc_result.pack_tree_infos(&mut accounts).address_trees[0];
     let (accounts, _, _) = accounts.to_account_metas();
 
     let instruction_data = CreateCounterInstructionData {
         proof: rpc_result.proof,
         address_tree_info: packed_address_tree_info,
-        output_state_tree_index: output_merkle_tree_index,
+        output_state_tree_index,
     };
     let inputs = instruction_data.try_to_vec().unwrap();
 
