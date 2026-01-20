@@ -211,7 +211,7 @@ async function incrementCounterCompressedAccount(
     const compressedAccountMeta = {
       treeInfo: {
         rootIndex: proofRpcResult.rootIndices[0],
-        proveByIndex: false,
+        proveByIndex: true,
         merkleTreePubkeyIndex,
         queuePubkeyIndex,
         leafIndex: counterAccount.leafIndex,
@@ -280,7 +280,7 @@ async function deleteCounterCompressedAccount(
     const compressedAccountMeta = {
       treeInfo: {
         rootIndex: proofRpcResult.rootIndices[0],
-        proveByIndex: false,
+        proveByIndex: true,
         merkleTreePubkeyIndex,
         queuePubkeyIndex,
         leafIndex: counterAccount.leafIndex,

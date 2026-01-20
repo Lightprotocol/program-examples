@@ -211,7 +211,7 @@ async function closeCompressedAccount(
       merkleTreePubkeyIndex,
       queuePubkeyIndex,
       leafIndex: compressedAccount.leafIndex,
-      proveByIndex: false,
+      proveByIndex: true,
       rootIndex: proofRpcResult.rootIndices[0],
     },
     address: compressedAccount.address,

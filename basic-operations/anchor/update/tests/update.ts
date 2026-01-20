@@ -216,7 +216,7 @@ async function updateCompressedAccount(
       merkleTreePubkeyIndex,
       queuePubkeyIndex,
       leafIndex: compressedAccount.leafIndex,
-      proveByIndex: false,
+      proveByIndex: true,
       rootIndex: proofRpcResult.rootIndices[0],
     },
     outputStateTreeIndex,
