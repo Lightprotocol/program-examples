@@ -7,7 +7,6 @@ import {
   CompressedAccountWithMerkleContext,
   confirmTx,
   createRpc,
-  defaultTestStateTreeAccounts,
   deriveAddressV2,
   deriveAddressSeedV2,
   batchAddressTree,
@@ -17,6 +16,8 @@ import {
   SystemAccountMetaConfig,
   featureFlags,
   VERSION,
+  selectStateTreeInfo,
+  TreeInfo,
 } from "@lightprotocol/stateless.js";
 import * as assert from "assert";
 
@@ -48,7 +49,8 @@ describe("test-anchor-burn", () => {
     await rpc.requestAirdrop(signer.publicKey, lamports);
     await sleep(2000);
 
-    const outputStateTree = defaultTestStateTreeAccounts().merkleTree;
+    const stateTreeInfos = await rpc.getStateTreeInfos();
+    const stateTreeInfo = selectStateTreeInfo(stateTreeInfos);
     const addressTree = new web3.PublicKey(batchAddressTree);
 
     const messageSeed = new TextEncoder().encode("message");
@@ -65,7 +67,7 @@ describe("test-anchor-burn", () => {
       addressTree,
       address,
       burnProgram,
-      outputStateTree,
+      stateTreeInfo,
       signer,
       "Hello, compressed world!",
     );
@@ -115,7 +117,7 @@ async function createCompressedAccount(
   addressTree: anchor.web3.PublicKey,
   address: anchor.web3.PublicKey,
   program: anchor.Program<Burn>,
-  outputStateTree: anchor.web3.PublicKey,
+  stateTreeInfo: TreeInfo,
   signer: anchor.web3.Keypair,
   message: string,
 ) {
@@ -142,7 +144,7 @@ async function createCompressedAccount(
     addressQueuePubkeyIndex,
   };
   const outputStateTreeIndex =
-    remainingAccounts.insertOrGet(outputStateTree);
+    remainingAccounts.insertOrGet(stateTreeInfo.queue);
 
   let proof = {
     0: proofRpcResult.compressedProof,
