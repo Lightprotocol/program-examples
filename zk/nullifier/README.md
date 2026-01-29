@@ -73,3 +73,7 @@ nullifier/
 └── ts-tests/
     └── nullifier.test.ts    # TypeScript tests
 ```
+
+## Documentation
+
+Learn more [about how to use nullifiers for ZK Solana programs here](https://www.zkcompression.com/zk/overview).
