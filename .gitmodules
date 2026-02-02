@@ -1,3 +1,6 @@
 [submodule "airdrop-implementations/distributor"]
 	path = airdrop-implementations/distributor
 	url = https://github.com/Lightprotocol/distributor.git
+[submodule "nullifier-program"]
+	path = nullifier-program
+	url = https://github.com/Lightprotocol/nullifier-program.git

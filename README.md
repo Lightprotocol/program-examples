@@ -13,7 +13,6 @@ For simple client side distribution visit [this example](https://github.com/Ligh
 
 ### Basic Operations
 
-- **[create-nullifier](./basic-operations/anchor/create-nullifier)** - Basic Anchor example to create nullifiers for payments.
 - **create** - Initialize a new compressed account
   - [Anchor](./basic-operations/anchor/create) | [Native](./basic-operations/native/programs/create)
 - **update** - Modify data in an existing compressed account
@@ -24,6 +23,10 @@ For simple client side distribution visit [this example](https://github.com/Ligh
   - [Anchor](./basic-operations/anchor/reinit) | [Native](./basic-operations/native/programs/reinit)
 - **burn** - Permanently delete a compressed account
   - [Anchor](./basic-operations/anchor/burn) | [Native](./basic-operations/native/programs/burn)
+
+### Nullifier Program
+
+* [**nullifier-program**](https://github.com/Lightprotocol/nullifier-program) - For some use cases, such as sending payments, you might want to prevent your onchain instruction from being executed more than once. Creates a rent-free PDA derived from an id. If the id has been used before, the PDA already exists, causing the instruction to fail. SDK: [`light-nullifier-program`](https://docs.rs/light-nullifier-program) | [Example client usage](https://github.com/Lightprotocol/examples-light-token/blob/main/rust-client/actions/create_nullifier.rs)
 
 ### Counter Program
 
