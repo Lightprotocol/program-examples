@@ -116,3 +116,11 @@ $ npm -g i @lightprotocol/zk-compression-cli@0.27.1-alpha.2
 ```bash
 $ light init <project-name>
 ```
+
+---
+
+## Learn More
+
+* Find agent skills here: [agent skills](https://github.com/Lightprotocol/skills)
+* Find more examples to ZK Compression here: [examples](https://github.com/Lightprotocol/examples-zk-compression)
+* For additional documentation and navigation, see: https://www.zkcompression.com
