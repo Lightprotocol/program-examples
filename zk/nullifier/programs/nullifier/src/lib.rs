@@ -47,7 +47,7 @@ pub mod nullifier_creation {
         cpi::{v2::LightSystemProgramCpi, InvokeLightSystemProgram, LightCpiInstruction},
         derive_light_cpi_signer,
         instruction::{PackedAddressTreeInfo, ValidityProof},
-        LightDiscriminator,
+        LightDiscriminator, PackedAddressTreeInfoExt,
     };
     use light_sdk::CpiSigner;
     #[error_code]

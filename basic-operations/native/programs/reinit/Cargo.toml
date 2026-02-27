@@ -19,17 +19,17 @@ name = "test"
 required-features = ["test-helpers"]
 
 [dependencies]
-light-sdk = "0.18.0"
+light-sdk = "0.23.0"
 light-hasher = "5.0.0"
 light-macros = "2.2.0"
 solana-program = "2.2"
 borsh = "0.10.4"
-light-program-test = { version = "0.18.0", optional = true }
-light-client = { version = "0.18.0", optional = true }
+light-program-test = { version = "0.23.0", optional = true }
+light-client = { version = "0.23.0", optional = true }
 solana-sdk = { version = "2.2", optional = true }
 
 [dev-dependencies]
-tokio = "1.36.0"
+tokio = "1.49.0"
 blake3 = "=1.8.2"
 
 [lints.rust.unexpected_cfgs]

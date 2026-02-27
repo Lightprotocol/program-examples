@@ -19,16 +19,16 @@ idl-build = ["anchor-lang/idl-build", "light-sdk/idl-build"]
 
 [dependencies]
 anchor-lang = "0.31.1"
-light-sdk = { version = "0.18.0", features = ["anchor", "anchor-discriminator", "cpi-context"] }
+light-sdk = { version = "0.23.0", features = ["anchor", "cpi-context"] }
 light-hasher = "5.0.0"
 
 [target.'cfg(not(target_os = "solana"))'.dependencies]
 solana-sdk = "2.2"
 
 [dev-dependencies]
-light-client = "0.18.0"
-light-program-test = "0.18.0"
-tokio = "1.36.0"
+light-client = "0.23.0"
+light-program-test = "0.23.0"
+tokio = "1.49.0"
 blake3 = "=1.8.2"
 
 [lints.rust.unexpected_cfgs]

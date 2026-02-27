@@ -16,7 +16,7 @@ use light_sdk::{
         account_meta::CompressedAccountMeta, CompressedProof, PackedAddressTreeInfo, ValidityProof,
     },
     merkle_tree::v1::read_state_merkle_tree_root,
-    LightDiscriminator, LightHasher,
+    LightDiscriminator, LightHasher, PackedAddressTreeInfoExt,
 };
 use light_sdk::CpiSigner;
 

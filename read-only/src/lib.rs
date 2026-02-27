@@ -13,7 +13,7 @@ use light_sdk::{
     instruction::{
         account_meta::CompressedAccountMetaReadOnly, PackedAddressTreeInfo, ValidityProof,
     },
-    LightDiscriminator,
+    LightDiscriminator, PackedAddressTreeInfoExt,
 };
 use light_sdk::constants::ADDRESS_TREE_V2;
 
