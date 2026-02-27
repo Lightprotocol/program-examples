@@ -18,6 +18,7 @@ use light_sdk::{
     LightDiscriminator,
 };
 use light_sdk::constants::ADDRESS_TREE_V2;
+use light_sdk::PackedAddressTreeInfoExt;
 use solana_program::{
     account_info::AccountInfo, entrypoint, program_error::ProgramError, pubkey::Pubkey,
 };

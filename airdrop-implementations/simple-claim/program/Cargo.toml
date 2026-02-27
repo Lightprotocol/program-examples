@@ -16,18 +16,19 @@ default = ["cpi"]
 
 [dependencies]
 solana-program = "2.3"
-thiserror = "2.0.11"
+thiserror = "2.0.18"
 borsh = "0.10.0"
-light-compressed-account = "0.8.0"
-light-token = { version = "0.3", features = ["v1"] }
-light-sdk = "0.18.0"
+light-compressed-account = "0.11.0"
+light-token = "0.23.0"
+light-compressed-token-sdk = { version = "0.23.0", features = ["v1"] }
+light-sdk = "0.23.0"
 spl-token = { version = "5.0.0", features = ["no-entrypoint"] }
 
 [dev-dependencies]
 solana-sdk = "2.3"
-light-program-test = "0.18.0"
-light-client = "0.18.0"
-tokio = "1.4"
+light-program-test = "0.23.0"
+light-client = "0.23.0"
+tokio = "1.49.0"
 blake3 = "=1.8.2"
 
 [lib]

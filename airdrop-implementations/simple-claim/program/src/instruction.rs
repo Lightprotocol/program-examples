@@ -7,12 +7,11 @@ use solana_program::pubkey::Pubkey;
 use solana_program::instruction::{AccountMeta, Instruction};
 
 #[cfg(not(target_os = "solana"))]
-use light_token::{
-    compressed_token::batch_compress::{
-        create_batch_compress_instruction, BatchCompressInputs, Recipient,
-    },
-    spl_interface::derive_spl_interface_pda,
+use light_compressed_token_sdk::compressed_token::batch_compress::{
+    create_batch_compress_instruction, BatchCompressInputs, Recipient,
 };
+#[cfg(not(target_os = "solana"))]
+use light_token::spl_interface::derive_spl_interface_pda;
 
 #[derive(BorshSerialize, BorshDeserialize, Debug, Clone)]
 pub struct ClaimIxData {

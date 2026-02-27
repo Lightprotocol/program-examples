@@ -10,19 +10,19 @@ name = "nullifier"
 [features]
 default = []
 test-sbf = []
-idl-build = ["anchor-lang/idl-build"]
+idl-build = ["anchor-lang/idl-build", "light-sdk/idl-build"]
 
 [dependencies]
 anchor-lang = "0.31.1"
 borsh = "0.10.4"
-light-sdk = { version = "0.18.0", features = ["anchor", "anchor-discriminator", "cpi-context"] }
+light-sdk = { version = "0.23.0", features = ["anchor", "cpi-context"] }
 
 [dev-dependencies]
-light-program-test = "0.18.0"
-light-client = "0.18.0"
+light-program-test = "0.23.0"
+light-client = "0.23.0"
 light-hasher = "5.0.0"
-tokio = "1.40.0"
+tokio = "1.49.0"
 solana-sdk = "2.2"
-light-compressed-account = "0.8.0"
+light-compressed-account = "0.11.0"
 blake3 = "=1.8.2"
 

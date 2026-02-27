@@ -8,7 +8,7 @@ use light_sdk::{
     cpi::{v2::CpiAccounts, CpiSigner},
     derive_light_cpi_signer,
     instruction::{account_meta::CompressedAccountMeta, PackedAddressTreeInfo, ValidityProof},
-    LightDiscriminator, LightHasher,
+    LightDiscriminator, LightHasher, PackedAddressTreeInfoExt,
 };
 use light_sdk::constants::ADDRESS_TREE_V2;
 
