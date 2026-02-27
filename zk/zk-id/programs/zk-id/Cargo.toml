@@ -10,7 +10,7 @@ name = "zk_id"
 [features]
 default = []
 test-sbf = []
-idl-build = ["anchor-lang/idl-build"]
+idl-build = ["anchor-lang/idl-build", "light-sdk/idl-build"]
 
 [dependencies]
 anchor-lang = "0.31.1"
