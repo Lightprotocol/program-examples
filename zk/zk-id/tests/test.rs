@@ -11,15 +11,16 @@ use light_client::{
 };
 use light_hasher::{hash_to_field_size::hash_to_bn254_field_size_be, Hasher, Poseidon, Sha256};
 use light_sdk::{
-    address::v1::derive_address,
+    address::v2::derive_address,
     instruction::{PackedAccounts, SystemAccountMetaConfig},
 };
 use num_bigint::BigUint;
 use solana_instruction::Instruction;
 use solana_keypair::Keypair;
-use solana_pubkey::Pubkey;
+use solana_pubkey::{pubkey, Pubkey};
 use solana_signature::Signature;
 use solana_signer::Signer;
+use light_sdk_types::lca::TreeType;
 use zk_id::{CREDENTIAL, ISSUER, ZK_ID_CHECK};
 
 /// Starts `light test-validator` (Solana test validator + Photon indexer + Light
@@ -67,6 +68,19 @@ async fn start_validator_and_connect() -> LightClient {
         assert!(attempt < 119, "indexer did not become healthy in time");
         tokio::time::sleep(Duration::from_secs(1)).await;
     }
+
+    // The client is built with the `v2` feature, which only exposes V2 batched
+    // state trees. zk-id stores its accounts in the localnet V1 (concurrent)
+    // state tree so their merkle proofs are available immediately (no forester /
+    // batch needed for `verify_credential`). Register it so V1 state-tree lookups
+    // resolve. Addresses still use the V2 address tree.
+    rpc.state_merkle_trees.push(TreeInfo {
+        tree: pubkey!("smt1NamzXdq4AMqS2fS2F1i5KTYPZRhoHgWx38d8WsT"),
+        queue: pubkey!("nfq1NvQDJ2GEgnS8zt9prAe8rjjpAW1zFkrvZoBR148"),
+        cpi_context: Some(pubkey!("cpi1uHzrEhBG733DoEJNgHCyRS3XmmyVNZx5fonubE4")),
+        next_tree_info: None,
+        tree_type: TreeType::StateV1,
+    });
 
     rpc
 }
@@ -160,7 +174,7 @@ async fn test_create_issuer_and_add_credential() {
         .await
         .unwrap();
 
-    let address_tree_info = rpc.get_address_tree_v1();
+    let address_tree_info = rpc.get_address_tree_v2();
 
     let (issuer_address, _) = derive_address(
         &[ISSUER, payer.pubkey().as_ref()],
