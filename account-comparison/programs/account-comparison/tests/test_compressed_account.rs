@@ -54,7 +54,16 @@ async fn start_validator_and_connect() -> LightClient {
         tokio::time::sleep(Duration::from_secs(1)).await;
         rpc = LightClient::new(LightClientConfig::local()).await.unwrap();
     }
-    tokio::time::sleep(Duration::from_secs(10)).await;
+
+    // Wait for the indexer + prover to be ready (not just the validator RPC),
+    // otherwise proof requests race the still-initializing indexer/prover.
+    for attempt in 0..120 {
+        if matches!(rpc.get_indexer_health(None).await, Ok(true)) {
+            break;
+        }
+        assert!(attempt < 119, "indexer did not become healthy in time");
+        tokio::time::sleep(Duration::from_secs(1)).await;
+    }
 
     rpc
 }
