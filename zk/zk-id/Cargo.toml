@@ -8,58 +8,24 @@ publish = false
 members = ["programs/zk-id"]
 resolver = "2"
 
-# Use the local light-protocol SDK checkout instead of the released crates.
-# Patching light-sdk, light-hasher and light-client to local paths pulls their
-# entire transitive light-* graph (including light-sdk-types) from the
-# ~/dev/light/light-sdks workspace.
-[patch.crates-io]
-light-sdk = { git = "https://github.com/Lightprotocol/light-sdks", rev = "12ab48bde9260b80c7d8b6d38b066be357c1acc2" }
-light-hasher = { git = "https://github.com/Lightprotocol/light-sdks", rev = "12ab48bde9260b80c7d8b6d38b066be357c1acc2" }
-light-client = { git = "https://github.com/Lightprotocol/light-sdks", rev = "12ab48bde9260b80c7d8b6d38b066be357c1acc2" }
-# The 0.23.0 `light-sdk` shipped a `merkle_tree::v1::read_state_merkle_tree_root`
-# helper that the local SDK dropped; the program vendors that helper and pulls
-# the concurrent merkle tree zero-copy reader from the local workspace so its
-# `light-hasher::Poseidon` type matches the rest of the patched graph.
-light-concurrent-merkle-tree = { git = "https://github.com/Lightprotocol/light-sdks", rev = "12ab48bde9260b80c7d8b6d38b066be357c1acc2" }
-# The tests reference `light_sdk_types::lca::*`, which only exists in the local
-# checkout (the released 0.23.0 has no `lca` module); patch it to local so the
-# test dependency and the SDK share one type.
-light-sdk-types = { git = "https://github.com/Lightprotocol/light-sdks", rev = "12ab48bde9260b80c7d8b6d38b066be357c1acc2" }
-
-[features]
-test-sbf = []
-
 [dependencies]
 zk-id = { path = "programs/zk-id" }
 
 [dev-dependencies]
-anchor-lang = "1.0.2"
+anchor-lang = "0.31.1"
 circom-prover = "0.1"
 rust-witness = "0.1"
 num-bigint = "0.4"
 serde_json = "1.0"
+solana-sdk = "2.2"
 tokio = "1.49.0"
-light-hasher = { git = "https://github.com/Lightprotocol/light-sdks", rev = "12ab48bde9260b80c7d8b6d38b066be357c1acc2", features = ["sha256", "keccak", "poseidon"] }
-light-sdk-types = { git = "https://github.com/Lightprotocol/light-sdks", rev = "12ab48bde9260b80c7d8b6d38b066be357c1acc2" }
-light-merkle-tree-reference = { git = "https://github.com/Lightprotocol/light-sdks", rev = "12ab48bde9260b80c7d8b6d38b066be357c1acc2" }
-# Disable the `v2` feature so the client uses the V1 proof endpoint
-# (get_validity_proof). zk-id stores accounts in a V1 state tree, which the V2
-# proof endpoint (get_validity_proof_v2) cannot prove; the V1 endpoint still
-# forwards V2 address trees via `new_addresses_with_trees`, so addresses stay
-# on the V2 address tree.
-light-client = { git = "https://github.com/Lightprotocol/light-sdks", rev = "12ab48bde9260b80c7d8b6d38b066be357c1acc2", default-features = false }
-light-sdk = { git = "https://github.com/Lightprotocol/light-sdks", rev = "12ab48bde9260b80c7d8b6d38b066be357c1acc2", features = ["anchor", "poseidon"] }
+light-hasher = { version = "5.0.0", features = ["sha256", "keccak", "poseidon"] }
+light-compressed-account = "0.11.0"
+light-merkle-tree-reference = "4.0.0"
+light-program-test = "0.23.0"
+light-client = "0.23.0"
+light-sdk = { version = "0.23.0", features = ["anchor", "poseidon", "merkle-tree"] }
 groth16-solana = { git = "https://github.com/Lightprotocol/groth16-solana", features = ["vk", "circom"], rev = "66c0dc87d0808c4d2aadb53c61435b6edb8ddfd9" }
-
-solana-instruction = "3.4"
-solana-keypair = "3.1.2"
-solana-pubkey = { version = "4.2", features = ["curve25519", "sha2"] }
-solana-signature = "3.4"
-solana-signer = "3.0"
-
-# solana-keypair -> five8 1.0 -> five8_core 0.1.2 gates `impl Error for
-# DecodeError` behind `std`; enable it so the error type satisfies the bound.
-five8_core = { version = "0.1.2", features = ["std"] }
 
 [profile.release]
 overflow-checks = true

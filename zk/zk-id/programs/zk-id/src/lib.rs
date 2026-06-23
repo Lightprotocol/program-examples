@@ -2,6 +2,7 @@
 #![allow(deprecated)]
 
 use anchor_lang::prelude::*;
+use borsh::{BorshDeserialize, BorshSerialize};
 use groth16_solana::groth16::Groth16Verifier;
 use light_hasher::to_byte_array::ToByteArray;
 use light_hasher::{Hasher, HasherError, Sha256};
@@ -14,11 +15,10 @@ use light_sdk::{
     instruction::{
         account_meta::CompressedAccountMeta, CompressedProof, PackedAddressTreeInfo, ValidityProof,
     },
+    merkle_tree::v1::read_state_merkle_tree_root,
     LightDiscriminator, LightHasher, PackedAddressTreeInfoExt,
 };
 use light_sdk::CpiSigner;
-
-use crate::merkle_tree::read_state_merkle_tree_root;
 
 declare_id!("8HYAuAkoLp2UG4mgkqUcJBXo2bzaaKy8nBL62L4S3SSB");
 
@@ -32,9 +32,6 @@ pub const ZK_ID_CHECK: &[u8] = b"ZK_ID_CHECK";
 // Include the generated verifying key module
 pub mod verifying_key;
 
-// Vendored `read_state_merkle_tree_root` (dropped from the local light-sdk).
-pub mod merkle_tree;
-
 #[program]
 pub mod zk_id {
 
@@ -45,7 +42,7 @@ pub mod zk_id {
 
     /// Creates a new issuer compressed account
     pub fn create_issuer<'info>(
-        ctx: Context<'info, GenericAnchorAccounts<'info>>,
+        ctx: Context<'_, '_, '_, 'info, GenericAnchorAccounts<'info>>,
         proof: ValidityProof,
         address_tree_info: PackedAddressTreeInfo,
         output_state_tree_index: u8,
@@ -100,7 +97,7 @@ pub mod zk_id {
     /// Requires a valid issuer account - only the issuer can create credentials
     #[allow(clippy::too_many_arguments)]
     pub fn add_credential<'info>(
-        ctx: Context<'info, GenericAnchorAccounts<'info>>,
+        ctx: Context<'_, '_, '_, 'info, GenericAnchorAccounts<'info>>,
         proof: ValidityProof,
         address_tree_info: PackedAddressTreeInfo,
         output_state_tree_index: u8,
@@ -175,7 +172,7 @@ pub mod zk_id {
     /// Verifies a ZK proof of credential ownership and creates an encrypted event account.
     #[allow(clippy::too_many_arguments)]
     pub fn zk_verify_credential<'info>(
-        ctx: Context<'info, VerifyAccounts<'info>>,
+        ctx: Context<'_, '_, '_, 'info, VerifyAccounts<'info>>,
         proof: ValidityProof,
         address_tree_info: PackedAddressTreeInfo,
         output_state_tree_index: u8,
@@ -320,7 +317,7 @@ pub struct VerifyAccounts<'info> {
 }
 
 #[derive(
-    Clone, Debug, Default, AnchorSerialize, AnchorDeserialize, LightDiscriminator, LightHasher,
+    Clone, Debug, Default, BorshSerialize, BorshDeserialize, LightDiscriminator, LightHasher,
 )]
 pub struct CredentialAccount {
     #[hash]
@@ -329,7 +326,7 @@ pub struct CredentialAccount {
     pub credential_pubkey: CredentialPubkey,
 }
 
-#[derive(Clone, Debug, Default, AnchorSerialize, AnchorDeserialize, LightDiscriminator)]
+#[derive(Clone, Debug, Default, BorshSerialize, BorshDeserialize, LightDiscriminator)]
 pub struct CredentialPubkey {
     pub credential_pubkey: Pubkey,
 }
@@ -349,12 +346,12 @@ impl ToByteArray for CredentialPubkey {
     }
 }
 
-#[derive(Clone, Debug, Default, AnchorSerialize, AnchorDeserialize, LightDiscriminator)]
+#[derive(Clone, Debug, Default, BorshSerialize, BorshDeserialize, LightDiscriminator)]
 pub struct EncryptedEventAccount {
     pub data: Vec<u8>,
 }
 
-#[derive(Clone, Debug, Default, AnchorSerialize, AnchorDeserialize, LightDiscriminator)]
+#[derive(Clone, Debug, Default, BorshSerialize, BorshDeserialize, LightDiscriminator)]
 pub struct IssuerAccount {
     pub issuer_pubkey: Pubkey,
     pub num_credentials_issued: u64,
