@@ -50,6 +50,7 @@ jobs:
           example: ${{ matrix.example }}
           solana-cli-version: ${{ env.SOLANA_CLI_VERSION }}
           rust-toolchain: ${{ env.RUST_TOOLCHAIN }}
+          photon-indexer: "true"
 
       - name: Build and test
         working-directory: ${{ matrix.example }}
