@@ -16,15 +16,15 @@ inputs:
   solana-cli-version:
     description: "Solana CLI version"
     required: false
-    default: "2.3.11"
+    default: "4.0.0-rc.0"
   rust-toolchain:
     description: "Rust toolchain version"
     required: false
-    default: "1.90.0"
+    default: "1.91.0"
   anchor-version:
     description: "Anchor CLI version (for TypeScript tests)"
     required: false
-    default: "0.31.1"
+    default: "1.0.2"
   photon-indexer:
     description: "Install Photon indexer (required for TypeScript tests)"
     required: false
