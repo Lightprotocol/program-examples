@@ -58,7 +58,7 @@ async fn start_validator_and_connect() -> LightClient {
     // Wait for the indexer + prover to be ready (not just the validator RPC),
     // otherwise proof requests race the still-initializing indexer/prover.
     for attempt in 0..120 {
-        if matches!(rpc.get_indexer_health(None).await, Ok(true)) {
+        if matches!(rpc.get_indexer_health(Some(light_client::indexer::RetryConfig { num_retries: 0, delay_ms: 0, max_delay_ms: 0 })).await, Ok(true)) {
             break;
         }
         assert!(attempt < 119, "indexer did not become healthy in time");
