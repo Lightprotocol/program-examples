@@ -11,7 +11,7 @@ use light_client::{
 };
 use light_hasher::{hash_to_field_size::hash_to_bn254_field_size_be, Hasher, Poseidon, Sha256};
 use light_sdk::{
-    address::v2::derive_address,
+    address::v1::derive_address,
     instruction::{PackedAccounts, SystemAccountMetaConfig},
 };
 use num_bigint::BigUint;
@@ -160,7 +160,7 @@ async fn test_create_issuer_and_add_credential() {
         .await
         .unwrap();
 
-    let address_tree_info = rpc.get_address_tree_v2();
+    let address_tree_info = rpc.get_address_tree_v1();
 
     let (issuer_address, _) = derive_address(
         &[ISSUER, payer.pubkey().as_ref()],
@@ -235,21 +235,6 @@ async fn test_create_issuer_and_add_credential() {
         .value
         .expect("Credential account not found");
     println!("credential_account {:?}", credential_account);
-
-    // The credential account is indexed before its merkle-tree leaf/proof is,
-    // so wait until the proof is available before verifying (avoids
-    // "Leaf nodes not found for hashes").
-    for _ in 0..30 {
-        if rpc
-            .get_multiple_compressed_account_proofs(vec![credential_account.hash], None)
-            .await
-            .is_ok()
-        {
-            break;
-        }
-        tokio::time::sleep(Duration::from_millis(500)).await;
-    }
-
     verify_credential(
         &mut rpc,
         &payer,
@@ -300,7 +285,7 @@ where
         .pack_tree_infos(&mut remaining_accounts)
         .address_trees;
     let output_state_tree_index = rpc
-        .get_random_state_tree_info()?
+        .get_random_state_tree_info_v1()?
         .pack_output_tree_index(&mut remaining_accounts)?;
 
     let (remaining_accounts_metas, system_accounts_offset, _) =
@@ -367,7 +352,7 @@ where
     };
 
     let output_state_tree_index = rpc
-        .get_random_state_tree_info()?
+        .get_random_state_tree_info_v1()?
         .pack_output_tree_index(&mut remaining_accounts)?;
 
     // Parse the issuer account data to get num_credentials_issued
@@ -489,7 +474,7 @@ where
         .address_trees;
 
     let output_state_tree_index = rpc
-        .get_random_state_tree_info()?
+        .get_random_state_tree_info_v1()?
         .pack_output_tree_index(&mut remaining_accounts)?;
 
     let (remaining_accounts_metas, system_accounts_offset, _) =
