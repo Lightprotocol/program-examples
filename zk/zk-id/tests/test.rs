@@ -352,7 +352,7 @@ where
     };
 
     let output_state_tree_index = rpc
-        .get_random_state_tree_info_v1()?
+        .get_random_state_tree_info()?
         .pack_output_tree_index(&mut remaining_accounts)?;
 
     // Parse the issuer account data to get num_credentials_issued
@@ -474,7 +474,7 @@ where
         .address_trees;
 
     let output_state_tree_index = rpc
-        .get_random_state_tree_info_v1()?
+        .get_random_state_tree_info()?
         .pack_output_tree_index(&mut remaining_accounts)?;
 
     let (remaining_accounts_metas, system_accounts_offset, _) =
