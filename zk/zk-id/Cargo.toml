@@ -13,18 +13,18 @@ resolver = "2"
 # entire transitive light-* graph (including light-sdk-types) from the
 # ~/dev/light/light-sdks workspace.
 [patch.crates-io]
-light-sdk = { path = "/Users/jorrit/dev/light/light-sdks/sdk" }
-light-hasher = { path = "/Users/jorrit/dev/light/light-sdks/hasher" }
-light-client = { path = "/Users/jorrit/dev/light/light-sdks/client" }
+light-sdk = { git = "https://github.com/Lightprotocol/light-sdks", rev = "12ab48bde9260b80c7d8b6d38b066be357c1acc2" }
+light-hasher = { git = "https://github.com/Lightprotocol/light-sdks", rev = "12ab48bde9260b80c7d8b6d38b066be357c1acc2" }
+light-client = { git = "https://github.com/Lightprotocol/light-sdks", rev = "12ab48bde9260b80c7d8b6d38b066be357c1acc2" }
 # The 0.23.0 `light-sdk` shipped a `merkle_tree::v1::read_state_merkle_tree_root`
 # helper that the local SDK dropped; the program vendors that helper and pulls
 # the concurrent merkle tree zero-copy reader from the local workspace so its
 # `light-hasher::Poseidon` type matches the rest of the patched graph.
-light-concurrent-merkle-tree = { path = "/Users/jorrit/dev/light/light-sdks/concurrent-merkle-tree" }
+light-concurrent-merkle-tree = { git = "https://github.com/Lightprotocol/light-sdks", rev = "12ab48bde9260b80c7d8b6d38b066be357c1acc2" }
 # The tests reference `light_sdk_types::lca::*`, which only exists in the local
 # checkout (the released 0.23.0 has no `lca` module); patch it to local so the
 # test dependency and the SDK share one type.
-light-sdk-types = { path = "/Users/jorrit/dev/light/light-sdks/sdk-types" }
+light-sdk-types = { git = "https://github.com/Lightprotocol/light-sdks", rev = "12ab48bde9260b80c7d8b6d38b066be357c1acc2" }
 
 [features]
 test-sbf = []

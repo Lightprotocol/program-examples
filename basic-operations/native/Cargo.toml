@@ -10,10 +10,10 @@ resolver = "2"
 
 # Use the local light-protocol SDK checkout instead of the released crates.
 [patch.crates-io]
-light-sdk = { path = "/Users/jorrit/dev/light/light-sdks/sdk" }
-light-hasher = { path = "/Users/jorrit/dev/light/light-sdks/hasher" }
-light-client = { path = "/Users/jorrit/dev/light/light-sdks/client" }
-light-macros = { path = "/Users/jorrit/dev/light/light-sdks/macros" }
+light-sdk = { git = "https://github.com/Lightprotocol/light-sdks", rev = "12ab48bde9260b80c7d8b6d38b066be357c1acc2" }
+light-hasher = { git = "https://github.com/Lightprotocol/light-sdks", rev = "12ab48bde9260b80c7d8b6d38b066be357c1acc2" }
+light-client = { git = "https://github.com/Lightprotocol/light-sdks", rev = "12ab48bde9260b80c7d8b6d38b066be357c1acc2" }
+light-macros = { git = "https://github.com/Lightprotocol/light-sdks", rev = "12ab48bde9260b80c7d8b6d38b066be357c1acc2" }
 
 [profile.release]
 overflow-checks = true
