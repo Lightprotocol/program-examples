@@ -1,15 +1,102 @@
+#![cfg(feature = "test-sbf")]
+
+use std::{process::Command, time::Duration};
+
 use anchor_lang::{InstructionData, ToAccountMetas};
-use light_program_test::{
-    program_test::LightProgramTest, Indexer, ProgramTestConfig, Rpc, RpcError,
+use light_client::{
+    indexer::{AddressWithTree, Indexer},
+    rpc::{LightClient, LightClientConfig, Rpc, RpcError},
 };
 use nullifier::nullifier_creation::NullifierInstructionData;
-use solana_sdk::{instruction::Instruction, pubkey::Pubkey, signature::Signer};
+use solana_instruction::{AccountMeta, Instruction};
+use solana_keypair::Keypair;
+use solana_pubkey::Pubkey;
+use solana_signer::Signer;
 
-#[tokio::test]
+/// Starts `light test-validator` (Solana test validator + Photon indexer + Light
+/// prover) with the nullifier program loaded, and returns a [`LightClient`]
+/// connected to it once the RPC is responsive.
+///
+/// Requires the Light CLI (`npm i -g @lightprotocol/zk-compression-cli`) and the
+/// program `.so`, which `cargo test-sbf` builds into `target/deploy/nullifier.so`.
+async fn start_validator_and_connect() -> LightClient {
+    let so_path = format!(
+        "{}/../../target/deploy/nullifier.so",
+        env!("CARGO_MANIFEST_DIR")
+    );
+
+    // Stop any previously running validator/indexer/prover for a clean slate.
+    let _ = Command::new("light")
+        .args(["test-validator", "--stop"])
+        .status();
+
+    Command::new("light")
+        .args([
+            "test-validator",
+            "--sbf-program",
+            &nullifier::ID.to_string(),
+            &so_path,
+        ])
+        .spawn()
+        .expect("failed to launch `light test-validator`; is the Light CLI installed?");
+
+    // Wait until the validator RPC is responsive, then give the indexer and
+    // prover a moment to finish initializing.
+    let mut rpc = LightClient::new(LightClientConfig::local()).await.unwrap();
+    for attempt in 0..60 {
+        if rpc.get_slot().await.is_ok() {
+            break;
+        }
+        assert!(attempt < 59, "validator RPC did not come up in time");
+        tokio::time::sleep(Duration::from_secs(1)).await;
+        rpc = LightClient::new(LightClientConfig::local()).await.unwrap();
+    }
+
+    // Wait for the indexer + prover to be ready (not just the validator RPC),
+    // otherwise proof requests race the still-initializing indexer/prover.
+    for attempt in 0..120 {
+        if matches!(rpc.get_indexer_health(Some(light_client::indexer::RetryConfig { num_retries: 0, delay_ms: 0, max_delay_ms: 0 })).await, Ok(true)) {
+            break;
+        }
+        assert!(attempt < 119, "indexer did not become healthy in time");
+        tokio::time::sleep(Duration::from_secs(1)).await;
+    }
+
+    rpc
+}
+
+/// Wait until the indexer has processed up to the current chain slot, so that
+/// reads after a mutating transaction reflect the new state (avoids stale reads).
+async fn wait_for_indexer_catchup(rpc: &LightClient) {
+    let target = rpc.get_slot().await.unwrap_or(0);
+    for _ in 0..60 {
+        if rpc
+            .get_indexer_slot(Some(light_client::indexer::RetryConfig {
+                num_retries: 0,
+                delay_ms: 0,
+                max_delay_ms: 0,
+            }))
+            .await
+            .map(|s| s >= target)
+            .unwrap_or(false)
+        {
+            return;
+        }
+        tokio::time::sleep(Duration::from_millis(500)).await;
+    }
+}
+
+// `LightClient` wraps the blocking `solana_rpc_client::RpcClient`, which uses
+// `block_in_place` internally and therefore requires a multi-threaded runtime.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn test_create_single_nullifier() {
-    let config = ProgramTestConfig::new(true, Some(vec![("nullifier", nullifier::ID)]));
-    let mut rpc = LightProgramTest::new(config).await.unwrap();
-    let payer = rpc.get_payer().insecure_clone();
+    let mut rpc = start_validator_and_connect().await;
+
+    // Fund a fresh payer on the local validator.
+    let payer = Keypair::new();
+    rpc.airdrop_lamports(&payer.pubkey(), 10_000_000_000)
+        .await
+        .unwrap();
 
     let nullifier = Pubkey::new_unique().to_bytes();
 
@@ -34,39 +121,30 @@ async fn test_create_single_nullifier() {
     rpc.create_and_send_transaction(&[instruction], &payer.pubkey(), &[&payer])
         .await
         .unwrap();
+    wait_for_indexer_catchup(&rpc).await;
 
     assert_nullifiers_exist(&mut rpc, &[nullifier]).await;
 
-    // Duplicate should fail
-    let (dup_data, dup_remaining_accounts) =
-        build_create_nullifier_instruction_data(&mut rpc, &[nullifier])
-            .await
-            .unwrap();
-
-    let dup_instruction_data = nullifier::instruction::CreateNullifier {
-        data: dup_data,
-        nullifiers: vec![nullifier],
-    };
-    let dup_accounts = nullifier::accounts::CreateNullifierAccounts {
-        signer: payer.pubkey(),
-    };
-    let dup_instruction = Instruction {
-        program_id: nullifier::ID,
-        accounts: [dup_accounts.to_account_metas(None), dup_remaining_accounts].concat(),
-        data: dup_instruction_data.data(),
-    };
-
-    let result = rpc
-        .create_and_send_transaction(&[dup_instruction], &payer.pubkey(), &[&payer])
-        .await;
-    assert!(result.is_err());
+    // Duplicate should fail: with a real indexer, requesting a non-inclusion
+    // validity proof for an address that already exists returns an error, so the
+    // duplicate is rejected at proof-building time. (The in-process test indexer
+    // surfaced this only when the transaction executed.)
+    let dup_result = build_create_nullifier_instruction_data(&mut rpc, &[nullifier]).await;
+    assert!(
+        dup_result.is_err(),
+        "expected duplicate nullifier creation to be rejected"
+    );
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn test_create_multiple_nullifiers() {
-    let config = ProgramTestConfig::new(true, Some(vec![("nullifier", nullifier::ID)]));
-    let mut rpc = LightProgramTest::new(config).await.unwrap();
-    let payer = rpc.get_payer().insecure_clone();
+    let mut rpc = start_validator_and_connect().await;
+
+    // Fund a fresh payer on the local validator.
+    let payer = Keypair::new();
+    rpc.airdrop_lamports(&payer.pubkey(), 10_000_000_000)
+        .await
+        .unwrap();
 
     let nullifiers: Vec<[u8; 32]> = (0..3).map(|_| Pubkey::new_unique().to_bytes()).collect();
 
@@ -90,6 +168,7 @@ async fn test_create_multiple_nullifiers() {
     rpc.create_and_send_transaction(&[instruction], &payer.pubkey(), &[&payer])
         .await
         .unwrap();
+    wait_for_indexer_catchup(&rpc).await;
 
     assert_nullifiers_exist(&mut rpc, &nullifiers).await;
 }
@@ -127,17 +206,10 @@ where
 async fn build_create_nullifier_instruction_data<R>(
     rpc: &mut R,
     nullifiers: &[[u8; 32]],
-) -> Result<
-    (
-        NullifierInstructionData,
-        Vec<solana_sdk::instruction::AccountMeta>,
-    ),
-    RpcError,
->
+) -> Result<(NullifierInstructionData, Vec<AccountMeta>), RpcError>
 where
     R: Rpc + Indexer,
 {
-    use light_program_test::AddressWithTree;
     use light_sdk::{
         address::v2::derive_address,
         instruction::{PackedAccounts, SystemAccountMetaConfig},

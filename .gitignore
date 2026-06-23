@@ -13,3 +13,6 @@ pot
 zk/mixer/
 zk/shielded-pool/
 zk/zk-merkle-proof/
+
+# surfpool local simnet artifacts
+.surfpool/

@@ -16,15 +16,19 @@ inputs:
   solana-cli-version:
     description: "Solana CLI version"
     required: false
-    default: "2.3.11"
+    default: "4.0.0-rc.0"
   rust-toolchain:
     description: "Rust toolchain version"
     required: false
-    default: "1.90.0"
+    default: "1.91.0"
   anchor-version:
     description: "Anchor CLI version (for TypeScript tests)"
     required: false
-    default: "0.31.1"
+    default: "1.0.2"
+  light-cli-version:
+    description: "Light CLI (@lightprotocol/zk-compression-cli) version"
+    required: false
+    default: "0.28.4"
   photon-indexer:
     description: "Install Photon indexer (required for TypeScript tests)"
     required: false
@@ -83,7 +87,7 @@ runs:
       uses: actions/cache@v4
       with:
         path: ~/.cargo/bin/photon
-        key: photon-${{ runner.os }}-1a785036de52896b68d06413e3b0231122d6aa4a
+        key: photon-${{ runner.os }}-52ca110cf8e3d5aca6e65e1ef8e98b7632d3a16f
 
     - name: Install Solana CLI tools
       shell: bash
@@ -113,7 +117,7 @@ runs:
 
     - name: Install Light CLI
       shell: bash
-      run: npm install -g @lightprotocol/zk-compression-cli@0.27.1-alpha.2
+      run: npm install -g @lightprotocol/zk-compression-cli@${{ inputs.light-cli-version }}
 
     - name: Cache Powers of Tau file
       if: inputs.install-circom == 'true'
@@ -148,7 +152,7 @@ runs:
       shell: bash
       env:
         RUSTFLAGS: "-A dead-code"
-      run: cargo install --git https://github.com/lightprotocol/photon.git --rev 1a785036de52896b68d06413e3b0231122d6aa4a --locked --force
+      run: cargo install --git https://github.com/lightprotocol/photon.git --rev 52ca110cf8e3d5aca6e65e1ef8e98b7632d3a16f --locked --force
 
     - name: Generate keypair
       shell: bash

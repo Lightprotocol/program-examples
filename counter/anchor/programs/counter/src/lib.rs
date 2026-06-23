@@ -26,7 +26,7 @@ pub mod counter {
     };
 
     pub fn create_counter<'info>(
-        ctx: Context<'_, '_, '_, 'info, GenericAnchorAccounts<'info>>,
+        ctx: Context<'info, GenericAnchorAccounts<'info>>,
         proof: ValidityProof,
         address_tree_info: PackedAddressTreeInfo,
         output_state_tree_index: u8,
@@ -78,7 +78,7 @@ pub mod counter {
     }
 
     pub fn increment_counter<'info>(
-        ctx: Context<'_, '_, '_, 'info, GenericAnchorAccounts<'info>>,
+        ctx: Context<'info, GenericAnchorAccounts<'info>>,
         proof: ValidityProof,
         counter_value: u64,
         account_meta: CompressedAccountMeta,
@@ -115,7 +115,7 @@ pub mod counter {
     }
 
     pub fn decrement_counter<'info>(
-        ctx: Context<'_, '_, '_, 'info, GenericAnchorAccounts<'info>>,
+        ctx: Context<'info, GenericAnchorAccounts<'info>>,
         proof: ValidityProof,
         counter_value: u64,
         account_meta: CompressedAccountMeta,
@@ -145,7 +145,7 @@ pub mod counter {
     }
 
     pub fn reset_counter<'info>(
-        ctx: Context<'_, '_, '_, 'info, GenericAnchorAccounts<'info>>,
+        ctx: Context<'info, GenericAnchorAccounts<'info>>,
         proof: ValidityProof,
         counter_value: u64,
         account_meta: CompressedAccountMeta,
@@ -174,7 +174,7 @@ pub mod counter {
     }
 
     pub fn close_counter<'info>(
-        ctx: Context<'_, '_, '_, 'info, GenericAnchorAccounts<'info>>,
+        ctx: Context<'info, GenericAnchorAccounts<'info>>,
         proof: ValidityProof,
         counter_value: u64,
         account_meta: CompressedAccountMeta,

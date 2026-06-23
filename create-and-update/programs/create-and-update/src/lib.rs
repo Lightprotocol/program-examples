@@ -30,7 +30,7 @@ pub mod create_and_update {
 
     /// Creates a new compressed account with initial data
     pub fn create_compressed_account<'info>(
-        ctx: Context<'_, '_, '_, 'info, GenericAnchorAccounts<'info>>,
+        ctx: Context<'info, GenericAnchorAccounts<'info>>,
         proof: ValidityProof,
         address_tree_info: PackedAddressTreeInfo,
         output_state_tree_index: u8,
@@ -78,7 +78,7 @@ pub mod create_and_update {
 
     /// Creates a new compressed account and updates an existing one in a single instruction
     pub fn create_and_update<'info>(
-        ctx: Context<'_, '_, '_, 'info, GenericAnchorAccounts<'info>>,
+        ctx: Context<'info, GenericAnchorAccounts<'info>>,
         proof: ValidityProof,
         existing_account: ExistingCompressedAccountIxData,
         new_account: NewCompressedAccountIxData,
@@ -145,7 +145,7 @@ pub mod create_and_update {
 
     /// Updates two existing compressed accounts in a single instruction
     pub fn update_two_accounts<'info>(
-        ctx: Context<'_, '_, '_, 'info, GenericAnchorAccounts<'info>>,
+        ctx: Context<'info, GenericAnchorAccounts<'info>>,
         proof: ValidityProof,
         first_account: ExistingCompressedAccountIxData,
         second_account: ExistingCompressedAccountIxData,
@@ -198,7 +198,7 @@ pub mod create_and_update {
 
     /// Creates two new compressed accounts with different addresses in a single instruction
     pub fn create_two_accounts<'info>(
-        ctx: Context<'_, '_, '_, 'info, GenericAnchorAccounts<'info>>,
+        ctx: Context<'info, GenericAnchorAccounts<'info>>,
         proof: ValidityProof,
         address_tree_info: PackedAddressTreeInfo,
         output_state_tree_index: u8,

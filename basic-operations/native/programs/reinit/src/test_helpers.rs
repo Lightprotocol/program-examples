@@ -1,21 +1,27 @@
-use borsh::{BorshDeserialize, BorshSerialize};
-use light_client::indexer::CompressedAccount;
-use light_program_test::{AddressWithTree, Indexer, LightProgramTest, Rpc, RpcError};
-use light_sdk::instruction::{account_meta::CompressedAccountMeta, PackedAccounts, SystemAccountMetaConfig};
 use crate::{CloseInstructionData, CreateInstructionData, InstructionType, MyCompressedAccount, ID};
-use solana_sdk::{
-    instruction::Instruction,
-    pubkey::Pubkey,
-    signature::{Keypair, Signer},
+use borsh::BorshDeserialize;
+use light_client::{
+    indexer::{AddressWithTree, CompressedAccount, Indexer},
+    rpc::{Rpc, RpcError},
 };
+use light_sdk::instruction::{
+    account_meta::CompressedAccountMeta, PackedAccounts, SystemAccountMetaConfig,
+};
+use solana_instruction::Instruction;
+use solana_keypair::Keypair;
+use solana_program::pubkey::Pubkey;
+use solana_signer::Signer;
 
-pub async fn create_compressed_account(
+pub async fn create_compressed_account<R>(
     payer: &Keypair,
-    rpc: &mut LightProgramTest,
+    rpc: &mut R,
     address_tree_pubkey: Pubkey,
     address: [u8; 32],
     message: String,
-) -> Result<(), RpcError> {
+) -> Result<(), RpcError>
+where
+    R: Rpc + Indexer,
+{
     let system_account_meta_config = SystemAccountMetaConfig::new(ID);
     let mut accounts = PackedAccounts::default();
     accounts.add_pre_accounts_signer(payer.pubkey());
@@ -45,16 +51,12 @@ pub async fn create_compressed_account(
         output_state_tree_index,
         message,
     };
-    let inputs = instruction_data.try_to_vec().unwrap();
+    let inputs = borsh::to_vec(&instruction_data).unwrap();
 
     let instruction = Instruction {
         program_id: ID,
         accounts: account_metas,
-        data: [
-            &[InstructionType::Create as u8][..],
-            &inputs[..],
-        ]
-        .concat(),
+        data: [&[InstructionType::Create as u8][..], &inputs[..]].concat(),
     };
 
     rpc.create_and_send_transaction(&[instruction], &payer.pubkey(), &[payer])
@@ -62,11 +64,14 @@ pub async fn create_compressed_account(
     Ok(())
 }
 
-pub async fn close_compressed_account(
+pub async fn close_compressed_account<R>(
     payer: &Keypair,
-    rpc: &mut LightProgramTest,
+    rpc: &mut R,
     compressed_account: &CompressedAccount,
-) -> Result<(), RpcError> {
+) -> Result<(), RpcError>
+where
+    R: Rpc + Indexer,
+{
     let system_account_meta_config = SystemAccountMetaConfig::new(ID);
     let mut accounts = PackedAccounts::default();
     accounts.add_pre_accounts_signer(payer.pubkey());
@@ -84,9 +89,10 @@ pub async fn close_compressed_account(
         .state_trees
         .unwrap();
 
-    let current_account =
-        MyCompressedAccount::deserialize(&mut compressed_account.data.as_ref().unwrap().data.as_slice())
-            .unwrap();
+    let current_account = MyCompressedAccount::deserialize(
+        &mut compressed_account.data.as_ref().unwrap().data.as_slice(),
+    )
+    .unwrap();
 
     let meta = CompressedAccountMeta {
         tree_info: packed_accounts.packed_tree_infos[0],
@@ -100,16 +106,12 @@ pub async fn close_compressed_account(
         account_meta: meta,
         current_message: current_account.message,
     };
-    let inputs = instruction_data.try_to_vec().unwrap();
+    let inputs = borsh::to_vec(&instruction_data).unwrap();
 
     let instruction = Instruction {
         program_id: ID,
         accounts: account_metas,
-        data: [
-            &[InstructionType::Close as u8][..],
-            &inputs[..],
-        ]
-        .concat(),
+        data: [&[InstructionType::Close as u8][..], &inputs[..]].concat(),
     };
 
     rpc.create_and_send_transaction(&[instruction], &payer.pubkey(), &[payer])

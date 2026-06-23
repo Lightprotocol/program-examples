@@ -1,20 +1,24 @@
-use borsh::BorshSerialize;
-use light_program_test::{AddressWithTree, Indexer, LightProgramTest, Rpc, RpcError};
-use light_sdk::instruction::{PackedAccounts, SystemAccountMetaConfig};
 use crate::{CreateInstructionData, InstructionType, ID};
-use solana_sdk::{
-    instruction::Instruction,
-    pubkey::Pubkey,
-    signature::{Keypair, Signer},
+use light_client::{
+    indexer::{AddressWithTree, Indexer},
+    rpc::{Rpc, RpcError},
 };
+use light_sdk::instruction::{PackedAccounts, SystemAccountMetaConfig};
+use solana_instruction::Instruction;
+use solana_keypair::Keypair;
+use solana_program::pubkey::Pubkey;
+use solana_signer::Signer;
 
-pub async fn create_compressed_account(
+pub async fn create_compressed_account<R>(
     payer: &Keypair,
-    rpc: &mut LightProgramTest,
+    rpc: &mut R,
     address_tree_pubkey: Pubkey,
     address: [u8; 32],
     message: String,
-) -> Result<(), RpcError> {
+) -> Result<(), RpcError>
+where
+    R: Rpc + Indexer,
+{
     let system_account_meta_config = SystemAccountMetaConfig::new(ID);
     let mut accounts = PackedAccounts::default();
     accounts.add_pre_accounts_signer(payer.pubkey());
@@ -41,19 +45,15 @@ pub async fn create_compressed_account(
     let instruction_data = CreateInstructionData {
         proof: rpc_result.proof,
         address_tree_info: packed_address_tree_info,
-        output_state_tree_index: output_state_tree_index,
+        output_state_tree_index,
         message,
     };
-    let inputs = instruction_data.try_to_vec().unwrap();
+    let inputs = borsh::to_vec(&instruction_data).unwrap();
 
     let instruction = Instruction {
         program_id: ID,
         accounts: account_metas,
-        data: [
-            &[InstructionType::Create as u8][..],
-            &inputs[..],
-        ]
-        .concat(),
+        data: [&[InstructionType::Create as u8][..], &inputs[..]].concat(),
     };
 
     rpc.create_and_send_transaction(&[instruction], &payer.pubkey(), &[payer])

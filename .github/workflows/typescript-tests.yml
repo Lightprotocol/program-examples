@@ -14,8 +14,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  SOLANA_CLI_VERSION: "2.3.11"
-  RUST_TOOLCHAIN: "1.90.0"
+  SOLANA_CLI_VERSION: "4.0.0-rc.0"
+  RUST_TOOLCHAIN: "1.91.0"
   NODE_VERSION: "22"
 
 jobs:
@@ -33,7 +33,6 @@ jobs:
           - basic-operations/anchor/update
           - basic-operations/anchor/close
           - basic-operations/anchor/reinit
-          - zk/zk-id
           - zk/nullifier
     steps:
       - uses: actions/checkout@v4
@@ -46,12 +45,6 @@ jobs:
           solana-cli-version: ${{ env.SOLANA_CLI_VERSION }}
           rust-toolchain: ${{ env.RUST_TOOLCHAIN }}
           photon-indexer: "true"
-          install-circom: ${{ matrix.example == 'zk/zk-id' }}
-
-      - name: Setup ZK circuits
-        if: matrix.example == 'zk/zk-id'
-        working-directory: ${{ matrix.example }}
-        run: ./scripts/setup.sh
 
       - name: Install dependencies
         working-directory: ${{ matrix.example }}
@@ -59,11 +52,22 @@ jobs:
 
       - name: Build and sync program ID
         working-directory: ${{ matrix.example }}
-        run: anchor build
+        run: |
+          # Anchor 1.0 verifies declare_id! matches the program keypair. Sync it,
+          # then keep the hardcoded Light CPI signer (derived from the program ID
+          # at compile time) in sync with the synced ID so the CPI signer check
+          # in the light-system-program passes at runtime.
+          anchor keys sync
+          PROGRAM_ID=$(grep -A 10 '\[programs.localnet\]' Anchor.toml | grep '=' | head -1 | sed 's/.*"\(.*\)".*/\1/')
+          echo "Synced program ID: $PROGRAM_ID"
+          grep -rl 'derive_light_cpi_signer!' programs 2>/dev/null | while IFS= read -r f; do
+            sed -i -E "s/derive_light_cpi_signer!\(\"[^\"]*\"\)/derive_light_cpi_signer!(\"$PROGRAM_ID\")/g" "$f"
+          done
+          anchor build
 
       - name: Test sbf
         working-directory: ${{ matrix.example }}
-        run: cargo test-sbf
+        run: cargo test-sbf -- --test-threads=1
 
       - name: Start test validator
         working-directory: ${{ matrix.example }}

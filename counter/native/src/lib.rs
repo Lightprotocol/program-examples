@@ -122,38 +122,37 @@ pub fn process_instruction(
         return Err(ProgramError::InvalidInstructionData);
     }
 
-    let discriminator = InstructionType::try_from(instruction_data[0])
+    let (discriminator_byte, rest) = instruction_data
+        .split_first()
+        .ok_or(ProgramError::InvalidInstructionData)?;
+
+    let discriminator = InstructionType::try_from(*discriminator_byte)
         .map_err(|_| ProgramError::InvalidInstructionData)?;
 
     match discriminator {
         InstructionType::CreateCounter => {
-            let instuction_data =
-                CreateCounterInstructionData::try_from_slice(&instruction_data[1..])
-                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+            let instuction_data = CreateCounterInstructionData::try_from_slice(rest)
+                .map_err(|_| ProgramError::InvalidInstructionData)?;
             create_counter(accounts, instuction_data)
         }
         InstructionType::IncrementCounter => {
-            let instuction_data =
-                IncrementCounterInstructionData::try_from_slice(&instruction_data[1..])
-                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+            let instuction_data = IncrementCounterInstructionData::try_from_slice(rest)
+                .map_err(|_| ProgramError::InvalidInstructionData)?;
             increment_counter(accounts, instuction_data)
         }
         InstructionType::DecrementCounter => {
-            let instuction_data =
-                DecrementCounterInstructionData::try_from_slice(&instruction_data[1..])
-                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+            let instuction_data = DecrementCounterInstructionData::try_from_slice(rest)
+                .map_err(|_| ProgramError::InvalidInstructionData)?;
             decrement_counter(accounts, instuction_data)
         }
         InstructionType::ResetCounter => {
-            let instuction_data =
-                ResetCounterInstructionData::try_from_slice(&instruction_data[1..])
-                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+            let instuction_data = ResetCounterInstructionData::try_from_slice(rest)
+                .map_err(|_| ProgramError::InvalidInstructionData)?;
             reset_counter(accounts, instuction_data)
         }
         InstructionType::CloseCounter => {
-            let instuction_data =
-                CloseCounterInstructionData::try_from_slice(&instruction_data[1..])
-                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+            let instuction_data = CloseCounterInstructionData::try_from_slice(rest)
+                .map_err(|_| ProgramError::InvalidInstructionData)?;
             close_counter(accounts, instuction_data)
         }
     }
@@ -165,7 +164,10 @@ pub fn create_counter(
 ) -> Result<(), ProgramError> {
     let signer = accounts.first().ok_or(ProgramError::NotEnoughAccountKeys)?;
 
-    let light_cpi_accounts = CpiAccounts::new(signer, &accounts[1..], LIGHT_CPI_SIGNER);
+    let remaining_accounts = accounts
+        .get(1..)
+        .ok_or(ProgramError::NotEnoughAccountKeys)?;
+    let light_cpi_accounts = CpiAccounts::new(signer, remaining_accounts, LIGHT_CPI_SIGNER);
 
     let address_tree_pubkey = instuction_data
         .address_tree_info
@@ -220,7 +222,10 @@ pub fn increment_counter(
 
     counter.value = counter.value.checked_add(1).ok_or(CounterError::Overflow)?;
 
-    let light_cpi_accounts = CpiAccounts::new(signer, &accounts[1..], LIGHT_CPI_SIGNER);
+    let remaining_accounts = accounts
+        .get(1..)
+        .ok_or(ProgramError::NotEnoughAccountKeys)?;
+    let light_cpi_accounts = CpiAccounts::new(signer, remaining_accounts, LIGHT_CPI_SIGNER);
 
     LightSystemProgramCpi::new_cpi(LIGHT_CPI_SIGNER, instuction_data.proof)
         .with_light_account(counter)?
@@ -249,7 +254,10 @@ pub fn decrement_counter(
         .checked_sub(1)
         .ok_or(CounterError::Underflow)?;
 
-    let light_cpi_accounts = CpiAccounts::new(signer, &accounts[1..], LIGHT_CPI_SIGNER);
+    let remaining_accounts = accounts
+        .get(1..)
+        .ok_or(ProgramError::NotEnoughAccountKeys)?;
+    let light_cpi_accounts = CpiAccounts::new(signer, remaining_accounts, LIGHT_CPI_SIGNER);
 
     LightSystemProgramCpi::new_cpi(LIGHT_CPI_SIGNER, instuction_data.proof)
         .with_light_account(counter)?
@@ -275,7 +283,10 @@ pub fn reset_counter(
 
     counter.value = 0;
 
-    let light_cpi_accounts = CpiAccounts::new(signer, &accounts[1..], LIGHT_CPI_SIGNER);
+    let remaining_accounts = accounts
+        .get(1..)
+        .ok_or(ProgramError::NotEnoughAccountKeys)?;
+    let light_cpi_accounts = CpiAccounts::new(signer, remaining_accounts, LIGHT_CPI_SIGNER);
     LightSystemProgramCpi::new_cpi(LIGHT_CPI_SIGNER, instuction_data.proof)
         .with_light_account(counter)?
         .invoke(light_cpi_accounts)?;
@@ -298,7 +309,10 @@ pub fn close_counter(
         },
     )?;
 
-    let light_cpi_accounts = CpiAccounts::new(signer, &accounts[1..], LIGHT_CPI_SIGNER);
+    let remaining_accounts = accounts
+        .get(1..)
+        .ok_or(ProgramError::NotEnoughAccountKeys)?;
+    let light_cpi_accounts = CpiAccounts::new(signer, remaining_accounts, LIGHT_CPI_SIGNER);
 
     LightSystemProgramCpi::new_cpi(LIGHT_CPI_SIGNER, instuction_data.proof)
         .with_light_account(counter)?

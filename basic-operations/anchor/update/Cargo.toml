@@ -4,6 +4,14 @@ members = [
 ]
 resolver = "2"
 
+# Use the local light-protocol SDK checkout instead of the released crates.
+# Patching light-sdk, light-hasher and light-client to local paths pulls their
+# entire transitive light-* graph from the ~/dev/light/light-sdks workspace.
+[patch.crates-io]
+light-sdk = { git = "https://github.com/Lightprotocol/light-sdks", rev = "12ab48bde9260b80c7d8b6d38b066be357c1acc2" }
+light-hasher = { git = "https://github.com/Lightprotocol/light-sdks", rev = "12ab48bde9260b80c7d8b6d38b066be357c1acc2" }
+light-client = { git = "https://github.com/Lightprotocol/light-sdks", rev = "12ab48bde9260b80c7d8b6d38b066be357c1acc2" }
+
 [profile.release]
 overflow-checks = true
 lto = "fat"
