@@ -42,7 +42,12 @@ tokio = "1.49.0"
 light-hasher = { git = "https://github.com/Lightprotocol/light-sdks", rev = "12ab48bde9260b80c7d8b6d38b066be357c1acc2", features = ["sha256", "keccak", "poseidon"] }
 light-sdk-types = { git = "https://github.com/Lightprotocol/light-sdks", rev = "12ab48bde9260b80c7d8b6d38b066be357c1acc2" }
 light-merkle-tree-reference = { git = "https://github.com/Lightprotocol/light-sdks", rev = "12ab48bde9260b80c7d8b6d38b066be357c1acc2" }
-light-client = { git = "https://github.com/Lightprotocol/light-sdks", rev = "12ab48bde9260b80c7d8b6d38b066be357c1acc2" }
+# Disable the `v2` feature so the client uses the V1 proof endpoint
+# (get_validity_proof). zk-id stores accounts in a V1 state tree, which the V2
+# proof endpoint (get_validity_proof_v2) cannot prove; the V1 endpoint still
+# forwards V2 address trees via `new_addresses_with_trees`, so addresses stay
+# on the V2 address tree.
+light-client = { git = "https://github.com/Lightprotocol/light-sdks", rev = "12ab48bde9260b80c7d8b6d38b066be357c1acc2", default-features = false }
 light-sdk = { git = "https://github.com/Lightprotocol/light-sdks", rev = "12ab48bde9260b80c7d8b6d38b066be357c1acc2", features = ["anchor", "poseidon"] }
 groth16-solana = { git = "https://github.com/Lightprotocol/groth16-solana", features = ["vk", "circom"], rev = "66c0dc87d0808c4d2aadb53c61435b6edb8ddfd9" }
 
