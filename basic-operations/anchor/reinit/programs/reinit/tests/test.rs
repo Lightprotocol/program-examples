@@ -68,6 +68,27 @@ async fn start_validator_and_connect() -> LightClient {
     rpc
 }
 
+/// Wait until the indexer has processed up to the current chain slot, so that
+/// reads after a mutating transaction reflect the new state (avoids stale reads).
+async fn wait_for_indexer_catchup(rpc: &LightClient) {
+    let target = rpc.get_slot().await.unwrap_or(0);
+    for _ in 0..60 {
+        if rpc
+            .get_indexer_slot(Some(light_client::indexer::RetryConfig {
+                num_retries: 0,
+                delay_ms: 0,
+                max_delay_ms: 0,
+            }))
+            .await
+            .map(|s| s >= target)
+            .unwrap_or(false)
+        {
+            return;
+        }
+        tokio::time::sleep(Duration::from_millis(500)).await;
+    }
+}
+
 // `LightClient` wraps the blocking `solana_rpc_client::RpcClient`, which uses
 // `block_in_place` internally and therefore requires a multi-threaded runtime.
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
@@ -111,6 +132,9 @@ async fn test_reinit() {
     )
     .await
     .unwrap();
+
+    // Wait for the indexer to index the close before reading it back.
+    wait_for_indexer_catchup(&rpc).await;
 
     let closed = rpc
         .get_compressed_account(address, None)

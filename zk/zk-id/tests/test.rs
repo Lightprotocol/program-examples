@@ -71,6 +71,27 @@ async fn start_validator_and_connect() -> LightClient {
     rpc
 }
 
+/// Wait until the indexer has processed up to the current chain slot, so that
+/// state trees and accounts from a prior transaction are available.
+async fn wait_for_indexer_catchup(rpc: &LightClient) {
+    let target = rpc.get_slot().await.unwrap_or(0);
+    for _ in 0..60 {
+        if rpc
+            .get_indexer_slot(Some(light_client::indexer::RetryConfig {
+                num_retries: 0,
+                delay_ms: 0,
+                max_delay_ms: 0,
+            }))
+            .await
+            .map(|s| s >= target)
+            .unwrap_or(false)
+        {
+            return;
+        }
+        tokio::time::sleep(Duration::from_millis(500)).await;
+    }
+}
+
 /// Derives a credential keypair from a Solana keypair
 /// The private key is derived by signing "CREDENTIAL" and truncating to 248 bits
 /// The public key is Poseidon(private_key)
@@ -151,6 +172,10 @@ async fn test_create_issuer_and_add_credential() {
     create_issuer(&mut rpc, &payer, &issuer_address, address_tree_info.clone())
         .await
         .unwrap();
+
+    // Wait for the indexer to index the issuer + its state tree before the
+    // next account creation (which needs an available output state tree).
+    wait_for_indexer_catchup(&rpc).await;
 
     // Verify the issuer account was created
     let issuer_accounts = rpc
