@@ -72,12 +72,16 @@ pub fn process_instruction(
         return Err(ProgramError::InvalidInstructionData);
     }
 
-    let discriminator = InstructionType::try_from(instruction_data[0])
+    let (discriminator_byte, rest) = instruction_data
+        .split_first()
+        .ok_or(ProgramError::InvalidInstructionData)?;
+
+    let discriminator = InstructionType::try_from(*discriminator_byte)
         .map_err(|_| ProgramError::InvalidInstructionData)?;
 
     match discriminator {
         InstructionType::Create => {
-            let instruction_data = CreateInstructionData::try_from_slice(&instruction_data[1..])
+            let instruction_data = CreateInstructionData::try_from_slice(rest)
                 .map_err(|_| ProgramError::InvalidInstructionData)?;
             create(accounts, instruction_data)
         }
@@ -90,7 +94,10 @@ pub fn create(
 ) -> Result<(), ProgramError> {
     let signer = accounts.first().ok_or(ProgramError::NotEnoughAccountKeys)?;
 
-    let light_cpi_accounts = CpiAccounts::new(signer, &accounts[1..], LIGHT_CPI_SIGNER);
+    let remaining_accounts = accounts
+        .get(1..)
+        .ok_or(ProgramError::NotEnoughAccountKeys)?;
+    let light_cpi_accounts = CpiAccounts::new(signer, remaining_accounts, LIGHT_CPI_SIGNER);
 
     let address_tree_pubkey = instruction_data
         .address_tree_info

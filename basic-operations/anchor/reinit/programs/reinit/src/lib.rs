@@ -27,7 +27,7 @@ pub mod reinit {
 
     /// Setup: Create a compressed account
     pub fn create_account<'info>(
-        ctx: Context<'_, '_, '_, 'info, GenericAnchorAccounts<'info>>,
+        ctx: Context<'info, GenericAnchorAccounts<'info>>,
         proof: ValidityProof,
         address_tree_info: PackedAddressTreeInfo,
         output_state_tree_index: u8,
@@ -78,7 +78,7 @@ pub mod reinit {
 
     /// Setup: Close compressed account
     pub fn close_account<'info>(
-        ctx: Context<'_, '_, '_, 'info, GenericAnchorAccounts<'info>>,
+        ctx: Context<'info, GenericAnchorAccounts<'info>>,
         proof: ValidityProof,
         account_meta: CompressedAccountMeta,
         current_message: String,
@@ -109,7 +109,7 @@ pub mod reinit {
 
     /// Reinitialize closed compressed account
     pub fn reinit_account<'info>(
-        ctx: Context<'_, '_, '_, 'info, GenericAnchorAccounts<'info>>,
+        ctx: Context<'info, GenericAnchorAccounts<'info>>,
         proof: ValidityProof,
         account_meta: CompressedAccountMeta,
     ) -> Result<()> {

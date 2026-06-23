@@ -1,28 +1,77 @@
+use std::{process::Command, time::Duration};
+
 use account_comparison::CompressedAccountData;
 use anchor_lang::{AnchorDeserialize, InstructionData, ToAccountMetas};
-use light_client::indexer::{CompressedAccount, TreeInfo};
-use light_program_test::{
-    program_test::LightProgramTest, AddressWithTree, Indexer, ProgramTestConfig, Rpc, RpcError,
+use light_client::{
+    indexer::{AddressWithTree, CompressedAccount, Indexer, TreeInfo},
+    rpc::{LightClient, LightClientConfig, Rpc, RpcError},
 };
 use light_sdk::{
     address::v2::derive_address,
     instruction::{account_meta::CompressedAccountMeta, PackedAccounts, SystemAccountMetaConfig},
 };
-use solana_sdk::{
-    instruction::Instruction,
-    signature::{Keypair, Signature, Signer},
-};
+use solana_instruction::Instruction;
+use solana_keypair::Keypair;
+use solana_signature::Signature;
+use solana_signer::Signer;
 
-#[tokio::test]
+/// Starts `light test-validator` (Solana test validator + Photon indexer + Light
+/// prover) with the account-comparison program loaded, and returns a
+/// [`LightClient`] connected to it once the RPC is responsive.
+///
+/// Requires the Light CLI (`npm i -g @lightprotocol/zk-compression-cli`) and the
+/// program `.so`, which `cargo test-sbf` builds into
+/// `target/deploy/account_comparison.so`.
+async fn start_validator_and_connect() -> LightClient {
+    let so_path = format!(
+        "{}/../../target/deploy/account_comparison.so",
+        env!("CARGO_MANIFEST_DIR")
+    );
+
+    // Stop any previously running validator/indexer/prover for a clean slate.
+    let _ = Command::new("light")
+        .args(["test-validator", "--stop"])
+        .status();
+
+    Command::new("light")
+        .args([
+            "test-validator",
+            "--sbf-program",
+            &account_comparison::ID.to_string(),
+            &so_path,
+        ])
+        .spawn()
+        .expect("failed to launch `light test-validator`; is the Light CLI installed?");
+
+    // Wait until the validator RPC is responsive, then give the indexer and
+    // prover a moment to finish initializing.
+    let mut rpc = LightClient::new(LightClientConfig::local()).await.unwrap();
+    for attempt in 0..60 {
+        if rpc.get_slot().await.is_ok() {
+            break;
+        }
+        assert!(attempt < 59, "validator RPC did not come up in time");
+        tokio::time::sleep(Duration::from_secs(1)).await;
+        rpc = LightClient::new(LightClientConfig::local()).await.unwrap();
+    }
+    tokio::time::sleep(Duration::from_secs(10)).await;
+
+    rpc
+}
+
+// `LightClient` wraps the blocking `solana_rpc_client::RpcClient`, which uses
+// `block_in_place` internally and therefore requires a multi-threaded runtime.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn test_create_compressed_account() {
     let name = "Heinrich".to_string();
 
-    let config = ProgramTestConfig::new(
-        true,
-        Some(vec![("account_comparison", account_comparison::ID)]),
-    );
-    let mut rpc = LightProgramTest::new(config).await.unwrap();
-    let user = rpc.get_payer().insecure_clone();
+    let mut rpc = start_validator_and_connect().await;
+
+    // Fund a fresh payer on the local validator.
+    let user = Keypair::new();
+    rpc.airdrop_lamports(&user.pubkey(), 10_000_000_000)
+        .await
+        .unwrap();
 
     let address_tree_info = rpc.get_address_tree_v2();
 

@@ -1,6 +1,8 @@
 #![allow(unexpected_cfgs)]
 
-#[cfg(any(test, feature = "test-helpers"))]
+// test_helpers depends on light-client (host-only), so exclude it from the
+// on-chain (SBF) build even when the test-helpers feature is enabled.
+#[cfg(all(any(test, feature = "test-helpers"), not(target_os = "solana")))]
 pub mod test_helpers;
 
 use borsh::{BorshDeserialize, BorshSerialize};
@@ -84,20 +86,22 @@ pub fn process_instruction(
         return Err(ProgramError::InvalidInstructionData);
     }
 
-    let discriminator = InstructionType::try_from(instruction_data[0])
+    let (discriminator_byte, rest) = instruction_data
+        .split_first()
+        .ok_or(ProgramError::InvalidInstructionData)?;
+
+    let discriminator = InstructionType::try_from(*discriminator_byte)
         .map_err(|_| ProgramError::InvalidInstructionData)?;
 
     match discriminator {
         InstructionType::Create => {
-            let instruction_data =
-                CreateInstructionData::try_from_slice(&instruction_data[1..])
-                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+            let instruction_data = CreateInstructionData::try_from_slice(rest)
+                .map_err(|_| ProgramError::InvalidInstructionData)?;
             create(accounts, instruction_data)
         }
         InstructionType::Update => {
-            let instruction_data =
-                UpdateInstructionData::try_from_slice(&instruction_data[1..])
-                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+            let instruction_data = UpdateInstructionData::try_from_slice(rest)
+                .map_err(|_| ProgramError::InvalidInstructionData)?;
             update(accounts, instruction_data)
         }
     }
@@ -109,7 +113,10 @@ pub fn create(
 ) -> Result<(), ProgramError> {
     let signer = accounts.first().ok_or(ProgramError::NotEnoughAccountKeys)?;
 
-    let light_cpi_accounts = CpiAccounts::new(signer, &accounts[1..], LIGHT_CPI_SIGNER);
+    let remaining_accounts = accounts
+        .get(1..)
+        .ok_or(ProgramError::NotEnoughAccountKeys)?;
+    let light_cpi_accounts = CpiAccounts::new(signer, remaining_accounts, LIGHT_CPI_SIGNER);
 
     let address_tree_pubkey = instruction_data
         .address_tree_info
@@ -153,7 +160,10 @@ pub fn update(
 ) -> Result<(), ProgramError> {
     let signer = accounts.first().ok_or(ProgramError::NotEnoughAccountKeys)?;
 
-    let light_cpi_accounts = CpiAccounts::new(signer, &accounts[1..], LIGHT_CPI_SIGNER);
+    let remaining_accounts = accounts
+        .get(1..)
+        .ok_or(ProgramError::NotEnoughAccountKeys)?;
+    let light_cpi_accounts = CpiAccounts::new(signer, remaining_accounts, LIGHT_CPI_SIGNER);
 
     let mut my_compressed_account = LightAccount::<MyCompressedAccount>::new_mut(
         &ID,

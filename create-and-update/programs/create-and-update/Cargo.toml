@@ -18,20 +18,24 @@ test-sbf = []
 idl-build = ["anchor-lang/idl-build", "light-sdk/idl-build"]
 
 [dependencies]
-anchor-lang = "0.31.1"
+anchor-lang = "1.0.2"
 borsh = "0.10.4"
-light-sdk = { version = "0.23.0", features = ["anchor", "cpi-context"] }
-light-hasher = "5.0.0"
-
-[target.'cfg(not(target_os = "solana"))'.dependencies]
-solana-sdk = "2.2"
+light-sdk = { git = "https://github.com/Lightprotocol/light-sdks", rev = "12ab48bde9260b80c7d8b6d38b066be357c1acc2", features = ["anchor", "cpi-context", "keccak"] }
+light-hasher = { git = "https://github.com/Lightprotocol/light-sdks", rev = "12ab48bde9260b80c7d8b6d38b066be357c1acc2" }
 
 [dev-dependencies]
-light-program-test = "0.23.0"
 light-client = "0.23.0"
+solana-instruction = "3.4"
+solana-keypair = "3.1.2"
+solana-pubkey = { version = "4.2", features = ["curve25519", "sha2"] }
+solana-signature = "3.4"
+solana-signer = "3.0"
+
+# solana-keypair -> five8 1.0 -> five8_core 0.1.2 gates `impl Error for
+# DecodeError` behind `std`; enable it so the error type satisfies the bound.
+five8_core = { version = "0.1.2", features = ["std"] }
+
 tokio = "1.49.0"
-serial_test = "3.4.0"
-blake3 = "=1.8.2"
 
 [lints.rust.unexpected_cfgs]
 level = "allow"

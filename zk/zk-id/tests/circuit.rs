@@ -1,15 +1,16 @@
 use circom_prover::{prover::ProofLib, witness::WitnessFn, CircomProver};
 use groth16_solana::groth16::Groth16Verifier;
 use groth16_solana::proof_parser::circom_prover::{convert_proof, convert_public_inputs};
-use light_compressed_account::compressed_account::{CompressedAccount, CompressedAccountData};
-use light_compressed_account::Pubkey;
 use light_hasher::{
     hash_to_field_size::{hash_to_bn254_field_size_be, hashv_to_bn254_field_size_be_const_array},
     Hasher, Poseidon, Sha256,
 };
 use light_merkle_tree_reference::MerkleTree;
+use light_sdk_types::lca::compressed_account::{CompressedAccount, CompressedAccountData};
 use num_bigint::BigUint;
-use solana_sdk::signature::{Keypair, Signer};
+use solana_keypair::Keypair;
+use solana_pubkey::Pubkey;
+use solana_signer::Signer;
 use std::collections::HashMap;
 
 // Link the generated witness library

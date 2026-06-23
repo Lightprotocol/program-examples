@@ -12,7 +12,7 @@ pub mod nullifier {
 
     /// Creates nullifier accounts for the provided nullifier values.
     pub fn create_nullifier<'info>(
-        ctx: Context<'_, '_, '_, 'info, CreateNullifierAccounts<'info>>,
+        ctx: Context<'info, CreateNullifierAccounts<'info>>,
         data: NullifierInstructionData,
         nullifiers: Vec<[u8; 32]>,
     ) -> Result<()> {
@@ -39,7 +39,6 @@ pub struct CreateNullifierAccounts<'info> {
 
 pub mod nullifier_creation {
     use super::*;
-    use borsh::{BorshDeserialize, BorshSerialize};
     use light_sdk::account::LightAccount;
     use light_sdk::cpi::v2::CpiAccounts;
     use light_sdk::{
@@ -56,7 +55,7 @@ pub mod nullifier_creation {
         AccountNotEnoughKeys,
     }
 
-    #[derive(Clone, Debug, Default, BorshSerialize, BorshDeserialize, LightDiscriminator)]
+    #[derive(Clone, Debug, Default, AnchorSerialize, AnchorDeserialize, LightDiscriminator)]
     pub struct NullifierAccount {}
 
     pub const LIGHT_CPI_SIGNER: CpiSigner =

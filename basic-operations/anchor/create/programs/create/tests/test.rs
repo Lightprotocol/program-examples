@@ -1,24 +1,76 @@
 #![cfg(feature = "test-sbf")]
 
-use anchor_lang::AnchorDeserialize;
-use light_program_test::{
-    program_test::LightProgramTest, AddressWithTree, Indexer, ProgramTestConfig, Rpc, RpcError,
+use std::{process::Command, time::Duration};
+
+use anchor_lang::{AnchorDeserialize, InstructionData, ToAccountMetas};
+use create::MyCompressedAccount;
+use light_client::{
+    indexer::{AddressWithTree, Indexer},
+    rpc::{LightClient, LightClientConfig, Rpc, RpcError},
 };
 use light_sdk::{
     address::v2::derive_address,
     instruction::{PackedAccounts, SystemAccountMetaConfig},
 };
-use create::MyCompressedAccount;
-use solana_sdk::{
-    instruction::{AccountMeta, Instruction},
-    signature::{Keypair, Signature, Signer},
-};
+use solana_instruction::Instruction;
+use solana_keypair::Keypair;
+use solana_signature::Signature;
+use solana_signer::Signer;
 
-#[tokio::test]
+/// Starts `light test-validator` (Solana test validator + Photon indexer + Light
+/// prover) with the create program loaded, and returns a [`LightClient`]
+/// connected to it once the RPC is responsive.
+///
+/// Requires the Light CLI (`npm i -g @lightprotocol/zk-compression-cli`) and the
+/// program `.so`, which `cargo test-sbf` builds into `target/deploy/create.so`.
+async fn start_validator_and_connect() -> LightClient {
+    let so_path = format!(
+        "{}/../../target/deploy/create.so",
+        env!("CARGO_MANIFEST_DIR")
+    );
+
+    // Stop any previously running validator/indexer/prover for a clean slate.
+    let _ = Command::new("light")
+        .args(["test-validator", "--stop"])
+        .status();
+
+    Command::new("light")
+        .args([
+            "test-validator",
+            "--sbf-program",
+            &create::ID.to_string(),
+            &so_path,
+        ])
+        .spawn()
+        .expect("failed to launch `light test-validator`; is the Light CLI installed?");
+
+    // Wait until the validator RPC is responsive, then give the indexer and
+    // prover a moment to finish initializing.
+    let mut rpc = LightClient::new(LightClientConfig::local()).await.unwrap();
+    for attempt in 0..60 {
+        if rpc.get_slot().await.is_ok() {
+            break;
+        }
+        assert!(attempt < 59, "validator RPC did not come up in time");
+        tokio::time::sleep(Duration::from_secs(1)).await;
+        rpc = LightClient::new(LightClientConfig::local()).await.unwrap();
+    }
+    tokio::time::sleep(Duration::from_secs(10)).await;
+
+    rpc
+}
+
+// `LightClient` wraps the blocking `solana_rpc_client::RpcClient`, which uses
+// `block_in_place` internally and therefore requires a multi-threaded runtime.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn test_create() {
-    let config = ProgramTestConfig::new(true, Some(vec![("create", create::ID)]));
-    let mut rpc = LightProgramTest::new(config).await.unwrap();
-    let payer = rpc.get_payer().insecure_clone();
+    let mut rpc = start_validator_and_connect().await;
+
+    // Fund a fresh payer on the local validator.
+    let payer = Keypair::new();
+    rpc.airdrop_lamports(&payer.pubkey(), 10_000_000_000)
+        .await
+        .unwrap();
 
     let address_tree_info = rpc.get_address_tree_v2();
 
@@ -44,12 +96,15 @@ async fn test_create() {
     assert_eq!(account.message, "Hello, compressed world!");
 }
 
-async fn create_compressed_account(
-    rpc: &mut LightProgramTest,
+async fn create_compressed_account<R>(
+    rpc: &mut R,
     payer: &Keypair,
     address: &[u8; 32],
     message: String,
-) -> Result<Signature, RpcError> {
+) -> Result<Signature, RpcError>
+where
+    R: Rpc + Indexer,
+{
     let config = SystemAccountMetaConfig::new(create::ID);
     let mut remaining_accounts = PackedAccounts::default();
     remaining_accounts.add_system_accounts_v2(config)?;
@@ -73,25 +128,27 @@ async fn create_compressed_account(
         .get_random_state_tree_info()?
         .pack_output_tree_index(&mut remaining_accounts)?;
 
-    let (remaining_accounts, _, _) = remaining_accounts.to_account_metas();
+    let instruction_data = create::instruction::CreateAccount {
+        proof: rpc_result.proof,
+        address_tree_info: packed_accounts.address_trees[0],
+        output_state_tree_index,
+        message,
+    };
+
+    let accounts = create::accounts::GenericAnchorAccounts {
+        signer: payer.pubkey(),
+    };
+
+    let (remaining_accounts_metas, _, _) = remaining_accounts.to_account_metas();
 
     let instruction = Instruction {
         program_id: create::ID,
         accounts: [
-            vec![AccountMeta::new(payer.pubkey(), true)],
-            remaining_accounts,
+            accounts.to_account_metas(Some(true)),
+            remaining_accounts_metas,
         ]
         .concat(),
-        data: {
-            use anchor_lang::InstructionData;
-            create::instruction::CreateAccount {
-                proof: rpc_result.proof,
-                address_tree_info: packed_accounts.address_trees[0],
-                output_state_tree_index: output_state_tree_index,
-                message,
-            }
-            .data()
-        },
+        data: instruction_data.data(),
     };
 
     rpc.create_and_send_transaction(&[instruction], &payer.pubkey(), &[payer])

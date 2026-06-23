@@ -1,23 +1,72 @@
-use borsh::{BorshDeserialize, BorshSerialize};
-use light_client::indexer::CompressedAccount;
-use light_program_test::{
-    program_test::LightProgramTest, Indexer, ProgramTestConfig, Rpc, RpcError,
+#![cfg(feature = "test-sbf")]
+
+use std::{process::Command, time::Duration};
+
+use borsh::BorshDeserialize;
+use light_client::{
+    indexer::{CompressedAccount, Indexer},
+    rpc::{LightClient, LightClientConfig, Rpc, RpcError},
 };
 use light_sdk::address::v2::derive_address;
 use light_sdk::instruction::{
     account_meta::CompressedAccountMeta, PackedAccounts, SystemAccountMetaConfig,
 };
 use native_program_close::{CloseInstructionData, InstructionType, MyCompressedAccount, ID};
-use solana_sdk::{
-    instruction::Instruction,
-    signature::{Keypair, Signer},
-};
+use solana_instruction::Instruction;
+use solana_keypair::Keypair;
+use solana_signer::Signer;
 
-#[tokio::test]
+/// Starts `light test-validator` (Solana test validator + Photon indexer + Light
+/// prover) with the program loaded, and returns a [`LightClient`] connected to it
+/// once the RPC is responsive.
+async fn start_validator_and_connect() -> LightClient {
+    let so_path = format!(
+        "{}/../../target/deploy/native_program_close.so",
+        env!("CARGO_MANIFEST_DIR")
+    );
+
+    // Stop any previously running validator/indexer/prover for a clean slate.
+    let _ = Command::new("light")
+        .args(["test-validator", "--stop"])
+        .status();
+
+    Command::new("light")
+        .args([
+            "test-validator",
+            "--sbf-program",
+            &ID.to_string(),
+            &so_path,
+        ])
+        .spawn()
+        .expect("failed to launch `light test-validator`; is the Light CLI installed?");
+
+    // Wait until the validator RPC is responsive, then give the indexer and
+    // prover a moment to finish initializing.
+    let mut rpc = LightClient::new(LightClientConfig::local()).await.unwrap();
+    for attempt in 0..60 {
+        if rpc.get_slot().await.is_ok() {
+            break;
+        }
+        assert!(attempt < 59, "validator RPC did not come up in time");
+        tokio::time::sleep(Duration::from_secs(1)).await;
+        rpc = LightClient::new(LightClientConfig::local()).await.unwrap();
+    }
+    tokio::time::sleep(Duration::from_secs(10)).await;
+
+    rpc
+}
+
+// `LightClient` wraps the blocking `solana_rpc_client::RpcClient`, which uses
+// `block_in_place` internally and therefore requires a multi-threaded runtime.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn test_close() {
-    let config = ProgramTestConfig::new(true, Some(vec![("native_program_close", ID)]));
-    let mut rpc = LightProgramTest::new(config).await.unwrap();
-    let payer = rpc.get_payer().insecure_clone();
+    let mut rpc = start_validator_and_connect().await;
+
+    // Fund a fresh payer on the local validator.
+    let payer = Keypair::new();
+    rpc.airdrop_lamports(&payer.pubkey(), 10_000_000_000)
+        .await
+        .unwrap();
 
     let address_tree_info = rpc.get_address_tree_v2();
     let address_tree_pubkey = address_tree_info.tree;
@@ -62,11 +111,14 @@ async fn test_close() {
     assert_eq!(closed_account.data, Some(Default::default()));
 }
 
-pub async fn close_compressed_account(
+pub async fn close_compressed_account<R>(
     payer: &Keypair,
-    rpc: &mut LightProgramTest,
+    rpc: &mut R,
     compressed_account: &CompressedAccount,
-) -> Result<(), RpcError> {
+) -> Result<(), RpcError>
+where
+    R: Rpc + Indexer,
+{
     let system_account_meta_config = SystemAccountMetaConfig::new(ID);
     let mut accounts = PackedAccounts::default();
     accounts.add_pre_accounts_signer(payer.pubkey());
@@ -101,7 +153,7 @@ pub async fn close_compressed_account(
         account_meta: meta,
         current_message: current_account.message,
     };
-    let inputs = instruction_data.try_to_vec().unwrap();
+    let inputs = borsh::to_vec(&instruction_data).unwrap();
 
     let instruction = Instruction {
         program_id: ID,

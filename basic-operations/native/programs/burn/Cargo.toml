@@ -11,7 +11,7 @@ name = "native_program_burn"
 [features]
 no-entrypoint = []
 test-sbf = ["test-helpers"]
-test-helpers = ["dep:light-program-test", "dep:solana-sdk"]
+test-helpers = ["dep:light-client", "dep:solana-keypair", "dep:solana-instruction", "dep:solana-signer"]
 default = []
 
 [[test]]
@@ -19,18 +19,30 @@ name = "test"
 required-features = ["test-helpers"]
 
 [dependencies]
-light-sdk = "0.23.0"
-light-hasher = "5.0.0"
-light-macros = "2.2.0"
-solana-program = "2.2"
-borsh = "0.10.4"
-light-program-test = { version = "0.23.0", optional = true }
-solana-sdk = { version = "2.2", optional = true }
+light-sdk = { git = "https://github.com/Lightprotocol/light-sdks", rev = "12ab48bde9260b80c7d8b6d38b066be357c1acc2", features = ["keccak"] }
+light-hasher = { git = "https://github.com/Lightprotocol/light-sdks", rev = "12ab48bde9260b80c7d8b6d38b066be357c1acc2" }
+light-macros = { git = "https://github.com/Lightprotocol/light-sdks", rev = "12ab48bde9260b80c7d8b6d38b066be357c1acc2" }
+solana-program = "4.0"
+borsh = "1.7"
+
+# test-helpers deps are host-only (light-client/solana-keypair pull getrandom 0.2,
+# which has no solana target). Keep them out of the on-chain (SBF) build so
+# `cargo test-sbf` compiles the program.
+[target.'cfg(not(target_os = "solana"))'.dependencies]
+light-client = { git = "https://github.com/Lightprotocol/light-sdks", rev = "12ab48bde9260b80c7d8b6d38b066be357c1acc2", optional = true }
+solana-keypair = { version = "3.1.2", optional = true }
+solana-instruction = { version = "3.4", optional = true }
+solana-signer = { version = "3.0", optional = true }
 
 [dev-dependencies]
-light-client = "0.23.0"
+light-client = { git = "https://github.com/Lightprotocol/light-sdks", rev = "12ab48bde9260b80c7d8b6d38b066be357c1acc2" }
 tokio = "1.49.0"
-blake3 = "=1.8.2"
+solana-instruction = "3.4"
+solana-keypair = "3.1.2"
+solana-pubkey = { version = "4.2", features = ["curve25519", "sha2"] }
+solana-signature = "3.4"
+solana-signer = "3.0"
+five8_core = { version = "0.1.2", features = ["std"] }
 
 [lints.rust.unexpected_cfgs]
 level = "allow"

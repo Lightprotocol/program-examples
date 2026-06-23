@@ -27,7 +27,7 @@ pub mod update {
 
     /// Setup: Creates a compressed account
     pub fn create_account<'info>(
-        ctx: Context<'_, '_, '_, 'info, GenericAnchorAccounts<'info>>,
+        ctx: Context<'info, GenericAnchorAccounts<'info>>,
         proof: ValidityProof,
         address_tree_info: PackedAddressTreeInfo,
         output_state_tree_index: u8,
@@ -78,7 +78,7 @@ pub mod update {
 
     /// Updates an existing compressed account's message
     pub fn update_account<'info>(
-        ctx: Context<'_, '_, '_, 'info, GenericAnchorAccounts<'info>>,
+        ctx: Context<'info, GenericAnchorAccounts<'info>>,
         proof: ValidityProof,
         current_account: MyCompressedAccount,
         account_meta: CompressedAccountMeta,

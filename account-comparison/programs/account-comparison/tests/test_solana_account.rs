@@ -1,7 +1,7 @@
 use account_comparison::AccountData;
-use anchor_lang::solana_program::instruction::Instruction;
 use anchor_lang::{AnchorDeserialize, InstructionData, ToAccountMetas};
 use litesvm::LiteSVM;
+use solana_instruction::Instruction;
 use solana_keypair::Keypair;
 use solana_message::Message;
 use solana_pubkey::Pubkey;

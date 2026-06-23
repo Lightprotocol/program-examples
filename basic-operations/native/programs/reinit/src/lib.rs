@@ -1,6 +1,8 @@
 #![allow(unexpected_cfgs)]
 
-#[cfg(any(test, feature = "test-helpers"))]
+// test_helpers depends on light-client (host-only), so exclude it from the
+// on-chain (SBF) build even when the test-helpers feature is enabled.
+#[cfg(all(any(test, feature = "test-helpers"), not(target_os = "solana")))]
 pub mod test_helpers;
 
 use borsh::{BorshDeserialize, BorshSerialize};
@@ -89,7 +91,10 @@ fn create(accounts: &[AccountInfo], instruction_data: &[u8]) -> Result<(), Light
 
     let signer = accounts.first().ok_or(ProgramError::NotEnoughAccountKeys)?;
 
-    let light_cpi_accounts = CpiAccounts::new(signer, &accounts[1..], LIGHT_CPI_SIGNER);
+    let remaining_accounts = accounts
+        .get(1..)
+        .ok_or(ProgramError::NotEnoughAccountKeys)?;
+    let light_cpi_accounts = CpiAccounts::new(signer, remaining_accounts, LIGHT_CPI_SIGNER);
 
     let address_tree_pubkey = instruction_data
         .address_tree_info

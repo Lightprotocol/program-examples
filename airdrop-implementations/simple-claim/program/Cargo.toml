@@ -21,13 +21,13 @@ borsh = "0.10.0"
 light-compressed-account = "0.11.0"
 light-token = "0.23.0"
 light-compressed-token-sdk = { version = "0.23.0", features = ["v1"] }
-light-sdk = "0.23.0"
+light-sdk = { git = "https://github.com/Lightprotocol/light-sdks", rev = "12ab48bde9260b80c7d8b6d38b066be357c1acc2" }
 spl-token = { version = "5.0.0", features = ["no-entrypoint"] }
 
 [dev-dependencies]
 solana-sdk = "2.3"
 light-program-test = "0.23.0"
-light-client = "0.23.0"
+light-client = { git = "https://github.com/Lightprotocol/light-sdks", rev = "12ab48bde9260b80c7d8b6d38b066be357c1acc2" }
 tokio = "1.49.0"
 blake3 = "=1.8.2"
 

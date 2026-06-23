@@ -27,7 +27,7 @@ pub mod burn {
 
     /// Setup: Creates a compressed account
     pub fn create_account<'info>(
-        ctx: Context<'_, '_, '_, 'info, GenericAnchorAccounts<'info>>,
+        ctx: Context<'info, GenericAnchorAccounts<'info>>,
         proof: ValidityProof,
         address_tree_info: PackedAddressTreeInfo,
         output_state_tree_index: u8,
@@ -78,7 +78,7 @@ pub mod burn {
 
     /// Burns a compressed account permanently
     pub fn burn_account<'info>(
-        ctx: Context<'_, '_, '_, 'info, GenericAnchorAccounts<'info>>,
+        ctx: Context<'info, GenericAnchorAccounts<'info>>,
         proof: ValidityProof,
         account_meta: CompressedAccountMetaBurn,
         current_message: String,

@@ -47,7 +47,7 @@ pub mod account_comparison {
     }
 
     pub fn create_compressed_account<'info>(
-        ctx: Context<'_, '_, '_, 'info, CreateCompressedAccount<'info>>,
+        ctx: Context<'info, CreateCompressedAccount<'info>>,
         name: String,
         proof: ValidityProof,
         address_tree_info: PackedAddressTreeInfo,
@@ -101,7 +101,7 @@ pub mod account_comparison {
     }
 
     pub fn update_compressed_account<'info>(
-        ctx: Context<'_, '_, '_, 'info, UpdateCompressedAccount<'info>>,
+        ctx: Context<'info, UpdateCompressedAccount<'info>>,
         new_data: [u8; 128],
         existing_data: [u8; 128],
         name: String,

@@ -3,7 +3,6 @@
 #![allow(deprecated)]
 
 use anchor_lang::{prelude::*, AnchorDeserialize, AnchorSerialize};
-use borsh::{BorshDeserialize, BorshSerialize};
 use light_sdk::cpi::{v2::LightSystemProgramCpi, InvokeLightSystemProgram, LightCpiInstruction};
 use light_sdk::{
     account::LightAccount,
@@ -31,7 +30,7 @@ pub mod read_only {
 
     /// Creates a new compressed account with initial data
     pub fn create_compressed_account<'info>(
-        ctx: Context<'_, '_, '_, 'info, GenericAnchorAccounts<'info>>,
+        ctx: Context<'info, GenericAnchorAccounts<'info>>,
         proof: ValidityProof,
         address_tree_info: PackedAddressTreeInfo,
         output_state_tree_index: u8,
@@ -84,7 +83,7 @@ pub mod read_only {
 
     /// Reads a compressed account and validates via read-only CPI
     pub fn read<'info>(
-        ctx: Context<'_, '_, '_, 'info, GenericAnchorAccounts<'info>>,
+        ctx: Context<'info, GenericAnchorAccounts<'info>>,
         proof: ValidityProof,
         existing_account: ExistingCompressedAccountIxData,
     ) -> Result<()> {
@@ -119,7 +118,7 @@ pub struct GenericAnchorAccounts<'info> {
     pub signer: Signer<'info>,
 }
 
-#[derive(Clone, Debug, Default, BorshSerialize, BorshDeserialize, LightDiscriminator)]
+#[derive(Clone, Debug, Default, AnchorSerialize, AnchorDeserialize, LightDiscriminator)]
 pub struct DataAccount {
     pub owner: Pubkey,
     pub message: String,

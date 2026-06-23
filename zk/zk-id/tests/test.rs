@@ -1,25 +1,66 @@
-// #![cfg(feature = "test-sbf")]
+#![cfg(feature = "test-sbf")]
+
+use std::{collections::HashMap, process::Command, time::Duration};
 
 use anchor_lang::{InstructionData, ToAccountMetas};
 use circom_prover::{prover::ProofLib, witness::WitnessFn, CircomProver};
 use groth16_solana::proof_parser::circom_prover::convert_proof;
-use light_client::indexer::CompressedAccount;
-use light_hasher::{hash_to_field_size::hash_to_bn254_field_size_be, Hasher, Poseidon, Sha256};
-use light_program_test::{
-    program_test::LightProgramTest, AddressWithTree, Indexer, ProgramTestConfig, Rpc, RpcError,
+use light_client::{
+    indexer::{AddressWithTree, CompressedAccount, Indexer, TreeInfo},
+    rpc::{LightClient, LightClientConfig, Rpc, RpcError},
 };
+use light_hasher::{hash_to_field_size::hash_to_bn254_field_size_be, Hasher, Poseidon, Sha256};
 use light_sdk::{
     address::v2::derive_address,
     instruction::{PackedAccounts, SystemAccountMetaConfig},
 };
 use num_bigint::BigUint;
-use solana_sdk::{
-    instruction::Instruction,
-    pubkey::Pubkey,
-    signature::{Keypair, Signature, Signer},
-};
-use std::collections::HashMap;
+use solana_instruction::Instruction;
+use solana_keypair::Keypair;
+use solana_pubkey::Pubkey;
+use solana_signature::Signature;
+use solana_signer::Signer;
 use zk_id::{CREDENTIAL, ISSUER, ZK_ID_CHECK};
+
+/// Starts `light test-validator` (Solana test validator + Photon indexer + Light
+/// prover) with the zk-id program loaded, and returns a [`LightClient`]
+/// connected to it once the RPC is responsive.
+///
+/// Requires the Light CLI (`npm i -g @lightprotocol/zk-compression-cli`) and the
+/// program `.so`, which `cargo test-sbf` builds into `target/deploy/zk_id.so`.
+async fn start_validator_and_connect() -> LightClient {
+    let so_path = format!("{}/target/deploy/zk_id.so", env!("CARGO_MANIFEST_DIR"));
+
+    // Stop any previously running validator/indexer/prover for a clean slate.
+    let _ = Command::new("light")
+        .args(["test-validator", "--stop"])
+        .status();
+
+    Command::new("light")
+        .args([
+            "test-validator",
+            "--sbf-program",
+            &zk_id::ID.to_string(),
+            &so_path,
+        ])
+        .spawn()
+        .expect("failed to launch `light test-validator`; is the Light CLI installed?");
+
+    // Wait until the validator RPC is responsive, then give the indexer and
+    // prover a moment to finish initializing.
+    let mut rpc = LightClient::new(LightClientConfig::local()).await.unwrap();
+    for attempt in 0..60 {
+        if rpc.get_slot().await.is_ok() {
+            break;
+        }
+        assert!(attempt < 59, "validator RPC did not come up in time");
+        tokio::time::sleep(Duration::from_secs(1)).await;
+        rpc = LightClient::new(LightClientConfig::local()).await.unwrap();
+    }
+    tokio::time::sleep(Duration::from_secs(10)).await;
+
+    rpc
+}
 
 /// Derives a credential keypair from a Solana keypair
 /// The private key is derived by signing "CREDENTIAL" and truncating to 248 bits
@@ -77,11 +118,17 @@ extern "C" {}
 
 rust_witness::witness!(compressedaccountmerkleproof);
 
-#[tokio::test]
+// `LightClient` wraps the blocking `solana_rpc_client::RpcClient`, which uses
+// `block_in_place` internally and therefore requires a multi-threaded runtime.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 async fn test_create_issuer_and_add_credential() {
-    let config = ProgramTestConfig::new(true, Some(vec![("zk_id", zk_id::ID)]));
-    let mut rpc = LightProgramTest::new(config).await.unwrap();
-    let payer = rpc.get_payer().insecure_clone();
+    let mut rpc = start_validator_and_connect().await;
+
+    // Fund a fresh payer on the local validator.
+    let payer = Keypair::new();
+    rpc.airdrop_lamports(&payer.pubkey(), 10_000_000_000)
+        .await
+        .unwrap();
 
     let address_tree_info = rpc.get_address_tree_v2();
 
@@ -179,7 +226,7 @@ async fn create_issuer<R>(
     rpc: &mut R,
     payer: &Keypair,
     address: &[u8; 32],
-    address_tree_info: light_client::indexer::TreeInfo,
+    address_tree_info: TreeInfo,
 ) -> Result<Signature, RpcError>
 where
     R: Rpc + Indexer,
@@ -235,7 +282,7 @@ async fn add_credential<R>(
     rpc: &mut R,
     payer: &Keypair,
     address: &[u8; 32],
-    address_tree_info: light_client::indexer::TreeInfo,
+    address_tree_info: TreeInfo,
     issuer_account: &CompressedAccount,
     credential_commitment: [u8; 32],
 ) -> Result<Signature, RpcError>
@@ -310,7 +357,7 @@ async fn verify_credential<R>(
     rpc: &mut R,
     payer: &Keypair,
     credential_account: &CompressedAccount,
-    address_tree_info: light_client::indexer::TreeInfo,
+    address_tree_info: TreeInfo,
     user_keypair: &Keypair,
 ) -> Result<Signature, RpcError>
 where
@@ -438,7 +485,7 @@ fn generate_credential_proof(
     encrypted_data: &[u8],
     verification_id: &[u8; 31],
 ) -> (
-    light_compressed_account::instruction_data::compressed_proof::CompressedProof,
+    light_sdk::instruction::CompressedProof,
     [u8; 32], // nullifier
 ) {
     let zkey_path = "./build/compressed_account_merkle_proof_final.zkey".to_string();
@@ -633,12 +680,11 @@ fn generate_credential_proof(
             .expect("Local groth16-solana verification failed");
     }
 
-    let compressed_proof =
-        light_compressed_account::instruction_data::compressed_proof::CompressedProof {
-            a: proof_a,
-            b: proof_b,
-            c: proof_c,
-        };
+    let compressed_proof = light_sdk::instruction::CompressedProof {
+        a: proof_a,
+        b: proof_b,
+        c: proof_c,
+    };
 
     (compressed_proof, nullifier)
 }
