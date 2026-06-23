@@ -59,9 +59,7 @@ jobs:
 
       - name: Build and sync program ID
         working-directory: ${{ matrix.example }}
-        run: |
-          anchor keys sync
-          anchor build
+        run: anchor build
 
       - name: Test sbf
         working-directory: ${{ matrix.example }}
