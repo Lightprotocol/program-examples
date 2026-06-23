@@ -25,6 +25,10 @@ inputs:
     description: "Anchor CLI version (for TypeScript tests)"
     required: false
     default: "1.0.2"
+  light-cli-version:
+    description: "Light CLI (@lightprotocol/zk-compression-cli) version"
+    required: false
+    default: "0.28.4"
   photon-indexer:
     description: "Install Photon indexer (required for TypeScript tests)"
     required: false
@@ -113,7 +117,7 @@ runs:
 
     - name: Install Light CLI
       shell: bash
-      run: npm install -g @lightprotocol/zk-compression-cli@0.28.4
+      run: npm install -g @lightprotocol/zk-compression-cli@${{ inputs.light-cli-version }}
 
     - name: Cache Powers of Tau file
       if: inputs.install-circom == 'true'
