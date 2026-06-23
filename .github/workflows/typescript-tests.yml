@@ -22,12 +22,6 @@ jobs:
   test-typescript:
     name: ${{ matrix.example }}
     runs-on: ubuntu-latest
-    # zk/zk-id needs a validity proof that mixes a V1 state-tree inclusion with a
-    # V2 address-tree non-inclusion; the local Photon indexer errors internally on
-    # that combination (works for every other example). Keep it running and
-    # visible but non-blocking until Photon supports V1 state-tree proofs (or the
-    # example is reworked to request the two proofs separately).
-    continue-on-error: ${{ matrix.example == 'zk/zk-id' }}
     strategy:
       fail-fast: false
       matrix:

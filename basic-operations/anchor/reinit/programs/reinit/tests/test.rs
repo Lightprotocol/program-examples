@@ -118,6 +118,9 @@ async fn test_reinit() {
     .await
     .unwrap();
 
+    // Wait for the indexer to index the create before reading it back.
+    wait_for_indexer_catchup(&rpc).await;
+
     let account = rpc
         .get_compressed_account(address, None)
         .await
