@@ -136,12 +136,31 @@ async fn test_reinit() {
     // Wait for the indexer to index the close before reading it back.
     wait_for_indexer_catchup(&rpc).await;
 
-    let closed = rpc
+    // The close zeroes the account, but the indexer's merkle-tree data can lag
+    // the slot marker, so retry until the zeroed (closed) state is reflected.
+    let mut closed = rpc
         .get_compressed_account(address, None)
         .await
         .unwrap()
         .value
         .unwrap();
+    for _ in 0..30 {
+        if closed
+            .data
+            .as_ref()
+            .map(|d| d.discriminator == [0u8; 8])
+            .unwrap_or(false)
+        {
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(500)).await;
+        closed = rpc
+            .get_compressed_account(address, None)
+            .await
+            .unwrap()
+            .value
+            .unwrap();
+    }
     assert_eq!(closed.address.as_ref().unwrap(), &address);
     assert_eq!(closed.owner, reinit::ID);
 

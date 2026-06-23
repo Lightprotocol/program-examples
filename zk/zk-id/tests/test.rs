@@ -235,6 +235,21 @@ async fn test_create_issuer_and_add_credential() {
         .value
         .expect("Credential account not found");
     println!("credential_account {:?}", credential_account);
+
+    // The credential account is indexed before its merkle-tree leaf/proof is,
+    // so wait until the proof is available before verifying (avoids
+    // "Leaf nodes not found for hashes").
+    for _ in 0..30 {
+        if rpc
+            .get_multiple_compressed_account_proofs(vec![credential_account.hash], None)
+            .await
+            .is_ok()
+        {
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(500)).await;
+    }
+
     verify_credential(
         &mut rpc,
         &payer,
