@@ -19,9 +19,9 @@ name = "test"
 required-features = ["test-helpers"]
 
 [dependencies]
-light-sdk = { git = "https://github.com/Lightprotocol/light-sdks", rev = "12ab48bde9260b80c7d8b6d38b066be357c1acc2", features = ["keccak"] }
-light-hasher = { git = "https://github.com/Lightprotocol/light-sdks", rev = "12ab48bde9260b80c7d8b6d38b066be357c1acc2" }
-light-macros = { git = "https://github.com/Lightprotocol/light-sdks", rev = "12ab48bde9260b80c7d8b6d38b066be357c1acc2" }
+light-sdk = { version = "0.24.0", features = ["keccak"] }
+light-hasher = "6.0.0"
+light-macros = "3.0.0"
 solana-program = "4.0"
 borsh = "1.7"
 
@@ -29,13 +29,13 @@ borsh = "1.7"
 # which has no solana target). Keep them out of the on-chain (SBF) build so
 # `cargo test-sbf` compiles the program.
 [target.'cfg(not(target_os = "solana"))'.dependencies]
-light-client = { git = "https://github.com/Lightprotocol/light-sdks", rev = "12ab48bde9260b80c7d8b6d38b066be357c1acc2", optional = true }
+light-client = { version = "0.24.0", optional = true }
 solana-keypair = { version = "3.1.2", optional = true }
 solana-instruction = { version = "3.4", optional = true }
 solana-signer = { version = "3.0", optional = true }
 
 [dev-dependencies]
-light-client = { git = "https://github.com/Lightprotocol/light-sdks", rev = "12ab48bde9260b80c7d8b6d38b066be357c1acc2" }
+light-client = "0.24.0"
 tokio = "1.49.0"
 solana-instruction = "3.4"
 solana-keypair = "3.1.2"

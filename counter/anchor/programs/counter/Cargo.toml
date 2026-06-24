@@ -19,11 +19,11 @@ idl-build = ["anchor-lang/idl-build", "light-sdk/idl-build"]
 
 [dependencies]
 anchor-lang = "1.0.2"
-light-hasher = { git = "https://github.com/Lightprotocol/light-sdks", rev = "12ab48bde9260b80c7d8b6d38b066be357c1acc2" }
-light-sdk = { git = "https://github.com/Lightprotocol/light-sdks", rev = "12ab48bde9260b80c7d8b6d38b066be357c1acc2", features = ["anchor", "cpi-context", "keccak"] }
+light-hasher = "6.0.0"
+light-sdk = { version = "0.24.0", features = ["anchor", "cpi-context", "keccak"] }
 
 [dev-dependencies]
-light-client = { git = "https://github.com/Lightprotocol/light-sdks", rev = "12ab48bde9260b80c7d8b6d38b066be357c1acc2" }
+light-client = "0.24.0"
 solana-instruction = "3.4"
 solana-keypair = "3.1.2"
 solana-pubkey = { version = "4.2", features = ["curve25519", "sha2"] }
