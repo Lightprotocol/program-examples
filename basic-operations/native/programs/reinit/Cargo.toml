@@ -29,13 +29,13 @@ borsh = "1.7"
 # which has no solana target). Keep them out of the on-chain (SBF) build so
 # `cargo test-sbf` compiles the program.
 [target.'cfg(not(target_os = "solana"))'.dependencies]
-light-client = { version = "0.24.0", optional = true }
+light-client = { version = "0.25.0", optional = true }
 solana-keypair = { version = "3.1.2", optional = true }
 solana-instruction = { version = "3.4", optional = true }
 solana-signer = { version = "3.0", optional = true }
 
 [dev-dependencies]
-light-client = "0.24.0"
+light-client = "0.25.0"
 tokio = "1.49.0"
 solana-instruction = "3.4"
 solana-keypair = "3.1.2"
