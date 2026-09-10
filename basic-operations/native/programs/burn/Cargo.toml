@@ -19,8 +19,8 @@ name = "test"
 required-features = ["test-helpers"]
 
 [dependencies]
-light-sdk = { version = "0.24.0", features = ["keccak"] }
-light-hasher = "6.0.0"
+light-sdk = { version = "0.25.0", features = ["keccak"] }
+light-hasher = "7.0.0"
 light-macros = "3.0.0"
 solana-program = "4.0"
 borsh = "1.7"

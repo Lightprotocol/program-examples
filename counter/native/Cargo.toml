@@ -19,8 +19,8 @@ test-sbf = []
 default = []
 
 [dependencies]
-light-sdk = { version = "0.24.0", features = ["keccak"] }
-light-hasher = "6.0.0"
+light-sdk = { version = "0.25.0", features = ["keccak"] }
+light-hasher = "7.0.0"
 solana-program = "4.0"
 light-macros = "3.0.0"
 borsh = "1.7"
@@ -45,11 +45,3 @@ check-cfg = [
     'cfg(target_os, values("solana"))',
     'cfg(feature, values("frozen-abi", "no-entrypoint"))',
 ]
-
-# Unpublished light-client 0.25.0 (transaction v1 support). Redirect every light-*
-# crate used here to the same light-sdks commit so only one copy of each is built.
-[patch.crates-io]
-light-sdk = { git = "https://github.com/Lightprotocol/light-sdks", rev = "457559391e6b76fbb58c91d5326624dbe4ad870a" }
-light-hasher = { git = "https://github.com/Lightprotocol/light-sdks", rev = "457559391e6b76fbb58c91d5326624dbe4ad870a" }
-light-client = { git = "https://github.com/Lightprotocol/light-sdks", rev = "457559391e6b76fbb58c91d5326624dbe4ad870a" }
-light-macros = { git = "https://github.com/Lightprotocol/light-sdks", rev = "457559391e6b76fbb58c91d5326624dbe4ad870a" }

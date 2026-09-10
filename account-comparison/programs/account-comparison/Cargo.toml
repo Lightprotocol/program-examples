@@ -19,8 +19,8 @@ idl-build = ["anchor-lang/idl-build"]
 
 [dependencies]
 anchor-lang = "1.0.2"
-light-hasher = "6.0.0"
-light-sdk = { version = "0.24.0", features = ["anchor", "cpi-context", "keccak"] }
+light-hasher = "7.0.0"
+light-sdk = { version = "0.25.0", features = ["anchor", "cpi-context", "keccak"] }
 
 [dev-dependencies]
 light-client = "0.25.0"
